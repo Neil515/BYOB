@@ -1,0 +1,13 @@
+列出磁碟區 Acer 的資料夾 PATH
+磁碟區序號為 A4E9-3314
+C:.
+    ai_progress_byob.md
+    Byob Form Draft.md
+    BYOB 主資料庫欄位範本（鎖定格式）.md
+    BYOB 台北餐廳資料庫.csv
+    Next Task Prompt Byob.md
+    output.txt
+    README.md
+    
+子資料夾不存在 
+
