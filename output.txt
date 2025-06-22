@@ -13,8 +13,11 @@ C:.
 │      BYOB 台北餐廳資料庫.csv
 │      seed_list_raw.txt
 │      
-└─doc
-        ai_progress_byob.md
-        Next Task Prompt Byob.md
-        README.md
+├─doc
+│      ai_progress_byob.md
+│      Next Task Prompt Byob.md
+│      README.md
+│      
+└─supplement
+        pixnet_scraper.py
         
