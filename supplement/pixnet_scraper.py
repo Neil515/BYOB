@@ -2,32 +2,28 @@ import requests
 import time
 import csv
 import os
-from collections import defaultdict
+from collections import defaultdict, Counter
 from bs4 import BeautifulSoup
+from tqdm import tqdm
 
 QUERIES = [
-    # 主題型
-    "自帶酒水",
-    "自帶酒",
-    "帶酒",
-    "BYOB",
-    "自備酒",
-    "免開瓶費",
-    # 行為型
-    "可帶酒",
-    "酒自帶",
-    "攜帶酒",
-    "侍酒費",
-    "洗杯費",
-    # 服務型
-    "酒杯服務",
-    "提供酒杯",
-    "收杯費",
-    "免酒杯費"
+    "自帶酒水", "自帶酒", "帶酒", "BYOB", "自備酒", "免開瓶費",
+    "可帶酒", "酒自帶", "攜帶酒", "侍酒費", "洗杯費",
+    "酒杯服務", "提供酒杯", "收杯費", "免酒杯費"
 ]
 
 PIXNET_HITS_PATH = "data/pixnet_hits.csv"
 PIXNET_SUMMARY_PATH = "data/pixnet_summary.csv"
+LOG_PATH = "data/pixnet_log.txt"
+SEED_LIST_PATH = "data/seed_list_raw.txt"
+
+FAST_MODE = True  # True = 只用 meta 篩選；False = 一律深入內文分析
+
+
+def read_seed_list(path):
+    with open(path, 'r', encoding='utf-8') as f:
+        return [line.split('#')[0].strip() for line in f if line.strip()]
+
 
 def search_pixnet(broad_query, target_name, num_results=10, in_content=False):
     api_key = "7583e8557b72d1542cb957969f3a70df8ad0156866dc5cdfbf3103a1e5074ca4"
@@ -48,33 +44,25 @@ def search_pixnet(broad_query, target_name, num_results=10, in_content=False):
         snippet = item.get("snippet", "")
 
         contains_in_meta = target_name in title or target_name in link or target_name in snippet
-        contains_in_content = False
-
-        content = ""
-        if in_content and "pixnet.net" in link:
-            content = fetch_pixnet_article(link)
-            contains_in_content = target_name in content
-
-        if "pixnet.net" in link and (contains_in_meta or contains_in_content):
-            results.append({
-                "restaurant": target_name,
-                "keyword": broad_query,
-                "title": title,
-                "url": link,
-                "snippet": content[:300] if content else snippet
-            })
+        results.append({
+            "restaurant": target_name,
+            "keyword": broad_query,
+            "title": title,
+            "url": link,
+            "snippet": snippet,
+            "meta_match": contains_in_meta
+        })
     return results
+
 
 def fetch_pixnet_article(url):
     headers = {"User-Agent": "Mozilla/5.0"}
     response = requests.get(url, headers=headers)
     soup = BeautifulSoup(response.text, 'html.parser')
 
-    article_body = soup.find('div', class_='article-content-inner')
-    if not article_body:
-        article_body = soup.find('div', class_='article-content')
-    if not article_body:
-        article_body = soup.find('div', class_='content')
+    article_body = soup.find('div', class_='article-content-inner') or \
+                   soup.find('div', class_='article-content') or \
+                   soup.find('div', class_='content')
 
     if not article_body:
         return ""
@@ -82,6 +70,7 @@ def fetch_pixnet_article(url):
     paragraphs = article_body.find_all('p')
     content = "\n".join(p.get_text(strip=True) for p in paragraphs if p.get_text(strip=True))
     return content.strip()
+
 
 def deduplicate_hits(hits):
     combined_hits = {}
@@ -99,6 +88,7 @@ def deduplicate_hits(hits):
             combined_hits[key]["keywords"].add(hit["keyword"])
     return list(combined_hits.values())
 
+
 def save_hits_to_csv(hits, path, overwrite=False):
     mode = 'w' if overwrite else 'a'
     write_header = overwrite or not os.path.exists(path)
@@ -115,71 +105,52 @@ def save_hits_to_csv(hits, path, overwrite=False):
                 "內文摘要": hit["snippet"]
             })
 
-def save_summary_to_csv(summary_restaurant, summary_keywords, path):
-    with open(path, mode='w', newline='', encoding='utf-8') as f:
-        writer = csv.writer(f)
-        writer.writerow(["分類", "名稱", "命中篇數"])
-        for restaurant, count in summary_restaurant.items():
-            writer.writerow(["餐廳", restaurant, count])
-        for keyword, count in summary_keywords.items():
-            writer.writerow(["關鍵字", keyword, count])
 
-def print_summary_stats(hits):
-    unique_by_restaurant = {(hit["restaurant"], hit["url"]): hit for hit in hits}
-    keyword_url_set = set()
-    for hit in hits:
-        for kw in hit["keywords"]:
-            keyword_url_set.add((kw, hit["url"]))
+def log_message(message):
+    print(message)
+    with open(LOG_PATH, 'a', encoding='utf-8') as log_file:
+        log_file.write(message + '\n')
 
-    summary_restaurant = defaultdict(int)
-    summary_keywords = defaultdict(int)
-
-    for (restaurant, _), _hit in unique_by_restaurant.items():
-        summary_restaurant[restaurant] += 1
-    for (keyword, _url) in keyword_url_set:
-        summary_keywords[keyword] += 1
-
-    print("\n=== 命中文章統計摘要（餐廳） ===")
-    for restaurant, count in summary_restaurant.items():
-        print(f"{restaurant} 命中 {count} 篇文章")
-
-    print("\n=== 命中文章統計摘要（關鍵字） ===")
-    for keyword, count in summary_keywords.items():
-        print(f"關鍵字「{keyword}」命中 {count} 篇文章")
-
-    save_summary_to_csv(summary_restaurant, summary_keywords, PIXNET_SUMMARY_PATH)
 
 if __name__ == "__main__":
-    targets = [
-        "Allez Bistro",
-        "Dancing Pig",
-        "VG Seafood Bar",
-        "花滔廚房",
-        "Big Pancia"
-    ]
+    targets = read_seed_list(SEED_LIST_PATH)
 
     all_hits_total = []
+    keyword_counter = Counter()
+    with open(LOG_PATH, 'w', encoding='utf-8') as f:
+        f.write("Pixnet 命中紀錄\n\n")
 
-    for target_name in targets:
-        print(f"\n=== 搜尋：{target_name} ===")
-        all_hits = []
+    for target_name in tqdm(targets, desc="查詢進度"):
+        log_message(f"\n🔍 餐廳：{target_name}")
+        phase1_hits = []
+        final_hits = []
+
         for broad_query in QUERIES:
-            print(f"→ 嘗試關鍵字：{broad_query}")
-            results = search_pixnet(broad_query, target_name, in_content=True)
-            if not results:
-                continue
-            all_hits.extend(results)
-            for result in results:
-                print("[文章標題]", result['title'])
-                print("[連結]", result['url'])
-                print("[內文摘要]", result['snippet'], "...\n")
-                time.sleep(2)
-        if all_hits:
-            deduped_hits = deduplicate_hits(all_hits)
+            log_message(f"→ 嘗試關鍵字：{broad_query}")
+            meta_hits = search_pixnet(broad_query, target_name, in_content=False)
+            filtered = [hit for hit in meta_hits if hit["meta_match"] and "pixnet.net" in hit["url"]]
+            phase1_hits.extend(filtered)
+            time.sleep(1)
+
+        for hit in phase1_hits:
+            content = fetch_pixnet_article(hit["url"]) if not FAST_MODE else ""
+            if FAST_MODE or target_name in content:
+                hit["snippet"] = content[:300] if content else hit["snippet"]
+                final_hits.append(hit)
+                keyword_counter[hit["keyword"]] += 1
+                log_message(f"✅ 命中：{hit['title']} → {hit['url']}")
+
+        if final_hits:
+            deduped_hits = deduplicate_hits(final_hits)
             all_hits_total.extend(deduped_hits)
         else:
-            print("[無搜尋結果]")
+            log_message("❌ 無命中")
 
     if all_hits_total:
         save_hits_to_csv(all_hits_total, PIXNET_HITS_PATH, overwrite=True)
-        print_summary_stats(all_hits_total)
+        print("\n✅ 完成輸出，共 {} 筆命中結果。".format(len(all_hits_total)))
+        print("📊 命中關鍵字統計：")
+        for kw, count in keyword_counter.items():
+            print(f"{kw}：{count} 筆")
+    else:
+        print("❌ 無命中結果。")
