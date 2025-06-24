@@ -1,0 +1,26 @@
+列出磁碟區 Acer 的資料夾 PATH
+磁碟區序號為 A4E9-3314
+C:.
+│  .env
+│  Byob Form Draft.md
+│  BYOB 主資料庫欄位範本（鎖定格式）.md
+│  ChatGPT Image 2025年6月22日 下午07_31_29.png
+│  output.txt
+│  
+├─crawler
+│      byob_scraper.py
+│      
+├─data
+│      BYOB 台北餐廳資料庫.csv
+│      pixnet_hits.csv
+│      pixnet_summary.csv
+│      seed_list_raw.txt
+│      
+├─doc
+│      ai_progress_byob.md
+│      Next Task Prompt Byob.md
+│      README.md
+│      
+└─supplement
+        pixnet_scraper.py
+        
