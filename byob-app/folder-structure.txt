@@ -1,0 +1,4 @@
+﻿public
+src
+  assets
+  components
