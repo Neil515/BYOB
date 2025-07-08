@@ -1,0 +1,19 @@
+﻿.git
+byob-app    # Frontend React App
+crawler    # Web crawler scripts
+data    # Data processing
+doc    # Project documentation
+supplement    # Supplementary resources
+  .git\hooks
+  .git\info
+  .git\logs
+  .git\refs
+    .git\logs\refs
+    .git\refs\heads
+    .git\refs\remotes
+    .git\refs\tags
+  byob-app\public
+  byob-app\src
+    byob-app\src\assets
+    byob-app\src\components
+  doc\message_and_form
