@@ -1,36 +1,34 @@
-## BYOB 進度紀錄｜2025-07-08
+## BYOB 進度紀錄｜2025-07-12
 
 ### ✅ 今日完成事項
 
-1. **初始 JSON 模擬資料製作與輸出**：
+1. **Vite + Tailwind 安裝錯誤修復與環境建置完成**：
 
-   * 根據主資料庫欄位格式，自動產出 20 筆完整且結構一致的虛擬餐廳資料（含開瓶費、酒器、地區等資訊）。
-   * 匯出為 JSON 檔案，供前端測試使用。
+   * 清除 `node_modules`、`package-lock.json` 並重建 npm 環境。
+   * 解決 `npx tailwindcss init -p` 因 global module 損毀與 ES module 衝突導致失敗問題。
+   * 將 `postcss.config.js` 轉為 `.cjs` 格式後成功解決 Vite + Tailwind 啟動錯誤，畫面成功顯示樣式。
 
-2. **前台卡片預覽測試**：
+2. **ByobCardPreview 元件修正與初步美化**：
 
-   * 使用 React + Vite 建立初步 Web App 專案結構（byob-app/）。
-   * 建立 ByobCardPreview\.jsx 並嘗試導入虛擬資料。
-   * 解決顯示空白問題並成功看到卡片出現。
+   * 將卡片左右內距調整為 `px-[45px] py-[15px]`，卡片與畫面邊緣間距調整為 `pl-6 pr-4`。
+   * 成功隱藏原本卡片下方顯示來源與更新日期欄位。
+   * 開始測試將文字欄位（如「是否收開瓶費」、「餐廳類型」）改為 badge 呈現，並測試視覺樣式強化（不同底色與文字色）。
+   * 初版 badge 使用 `inline-block bg-色系 text-色系 text-xs font-semibold px-2 py-1 rounded` 呈現。
 
-3. **Tailwind CSS 安裝與診斷排錯**：
+3. **RWD 排版未生效問題調查中**：
 
-   * 多次嘗試 tailwindcss 套件安裝與執行初始化（遇到 `npx tailwindcss init -p` 錯誤）。
-   * 成功移除衝突套件 `@tailwindcss/postcss`，改以正確方式安裝 tailwindcss、postcss、autoprefixer。
-   * 最終完成 tailwind 啟用並正常渲染樣式。
+   * 使用 `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3` 作為響應式設定。
+   * 實測桌機寬度已大於 1500px，但畫面仍僅顯示單欄。
+   * 初步推論可能為 React 元件未成功掛載或外層樣式設定錯誤（目前 `<div id="root">` 為空）。
+   * 待明日確認 `main.jsx` 是否正確引入 `ByobCardPreview.jsx`。
 
-4. **資料夾結構輸出優化**：
+4. **UI 調整建議與測試方向討論**：
 
-   * 為避免 5000 行結構過長問題，自行建立 `gen-folder-structure.ps1` 腳本：限制輸出層級並自動加註說明。
-   * 解決亂碼問題並統一輸出為 UTF-8 格式。
-
-5. **版本管理與結構清理**：
-
-   * 初步檢查哪些檔案與資料夾可移除（如 .git/logs、node\_modules、未使用 public 靜態資源等）。
-   * 提出加入 .gitignore 的最佳實務清單。
+   * 討論 badge 視覺優劣：與純文字相比更便於分類與快速識別，並方便未來進行篩選功能。
+   * 提出未來可優化方向：將 badge 抽成元件、使用 hover 顯示欄位解釋、加入 icon clickable 功能。
 
 ---
 
-### 🔜 明日建議工作（已獨立建檔）
+### 🔜 明日建議工作（已詳列於 Next Task Prompt Byob）
 
-請參考文件：《Next Tasks 2025 0709》
+請參考 canvas 檔案《Next Tasks Byob》。
