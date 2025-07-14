@@ -1,34 +1,28 @@
-## BYOB 進度紀錄｜2025-07-12
+## BYOB 進度紀錄｜2025-07-15
 
 ### ✅ 今日完成事項
 
-1. **Vite + Tailwind 安裝錯誤修復與環境建置完成**：
+1. **Tailwind RWD 排版與樣式問題徹底解決**：
+   * 發現 Tailwind 樣式未生效主因為 postcss.config.cjs 設定錯誤（誤用 @tailwindcss/postcss）。
+   * 修正 postcss.config.cjs，正確引用 require('tailwindcss') 與 require('autoprefixer')。
+   * 移除多餘套件，重啟開發伺服器後，Tailwind 樣式與 RWD 排版（grid-cols-1/2/3）皆正常顯示。
+   * 成功驗證 bg-red-200、卡片三欄排版與 hover 效果。
 
-   * 清除 `node_modules`、`package-lock.json` 並重建 npm 環境。
-   * 解決 `npx tailwindcss init -p` 因 global module 損毀與 ES module 衝突導致失敗問題。
-   * 將 `postcss.config.js` 轉為 `.cjs` 格式後成功解決 Vite + Tailwind 啟動錯誤，畫面成功顯示樣式。
+2. **ByobCardPreview 卡片設計優化**：
+   * 卡片加上 max-w-xs、mx-auto，確保多欄排版時每張卡片寬度適中且置中。
+   * 測試不同欄位內容長度，確保排版穩定。
+   * 卡片樣式與間距更美觀，RWD 響應式效果佳。
 
-2. **ByobCardPreview 元件修正與初步美化**：
+3. **前端美化與體驗優化建議彙整**：
+   * 詳細列出標題區塊、卡片設計、badge 標籤、RWD、互動、搜尋、主題切換等多項美化與功能建議。
+   * 依照 Next Task Prompt Byob.md 格式，整理成明日工作，並生成新檔案《Next Task Prompt Byob (美化建議).md》供後續開發參考。
 
-   * 將卡片左右內距調整為 `px-[45px] py-[15px]`，卡片與畫面邊緣間距調整為 `pl-6 pr-4`。
-   * 成功隱藏原本卡片下方顯示來源與更新日期欄位。
-   * 開始測試將文字欄位（如「是否收開瓶費」、「餐廳類型」）改為 badge 呈現，並測試視覺樣式強化（不同底色與文字色）。
-   * 初版 badge 使用 `inline-block bg-色系 text-色系 text-xs font-semibold px-2 py-1 rounded` 呈現。
-
-3. **RWD 排版未生效問題調查中**：
-
-   * 使用 `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3` 作為響應式設定。
-   * 實測桌機寬度已大於 1500px，但畫面仍僅顯示單欄。
-   * 初步推論可能為 React 元件未成功掛載或外層樣式設定錯誤（目前 `<div id="root">` 為空）。
-   * 待明日確認 `main.jsx` 是否正確引入 `ByobCardPreview.jsx`。
-
-4. **UI 調整建議與測試方向討論**：
-
-   * 討論 badge 視覺優劣：與純文字相比更便於分類與快速識別，並方便未來進行篩選功能。
-   * 提出未來可優化方向：將 badge 抽成元件、使用 hover 顯示欄位解釋、加入 icon clickable 功能。
+4. **進度紀錄與文件同步**：
+   * 今日所有討論與修正步驟均已記錄於本進度檔案。
+   * 明日工作請詳見《Next Task Prompt Byob (美化建議).md》。
 
 ---
 
-### 🔜 明日建議工作（已詳列於 Next Task Prompt Byob）
+### 🔜 明日建議工作（已詳列於 Next Task Prompt Byob (美化建議)）
 
-請參考 canvas 檔案《Next Tasks Byob》。
+請參考 canvas 檔案《Next Task Prompt Byob (美化建議)》。
