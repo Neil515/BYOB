@@ -1,25 +1,26 @@
-## BYOB 進度紀錄｜2025-07-15
+## BYOB 進度紀錄｜2025-07-18
 
 ### ✅ 今日完成事項
 
-1. **Tailwind RWD 排版與樣式問題徹底解決**：
-   * 發現 Tailwind 樣式未生效主因為 postcss.config.cjs 設定錯誤（誤用 @tailwindcss/postcss）。
-   * 修正 postcss.config.cjs，正確引用 require('tailwindcss') 與 require('autoprefixer')。
-   * 移除多餘套件，重啟開發伺服器後，Tailwind 樣式與 RWD 排版（grid-cols-1/2/3）皆正常顯示。
-   * 成功驗證 bg-red-200、卡片三欄排版與 hover 效果。
+1. **技術選型與需求分析**：
+   * 詳細討論 WordPress + Flatsome 與 React 前端的優缺點，根據團隊無技術背景、維護需求、美觀標準、功能需求（搜尋、篩選、會員、評論、收藏、通知）、資料量、SEO、預算等條件，最終決定採用 WordPress + Flatsome 架構。
+   * 分析 WordPress 作為網站與未來 App 轉換（WebView、PWA、API 串接）之可行性。
 
-2. **ByobCardPreview 卡片設計優化**：
-   * 卡片加上 max-w-xs、mx-auto，確保多欄排版時每張卡片寬度適中且置中。
-   * 測試不同欄位內容長度，確保排版穩定。
-   * 卡片樣式與間距更美觀，RWD 響應式效果佳。
+2. **ACF（Advanced Custom Fields）白話說明**：
+   * 解釋 ACF 是什麼、為何需要、能做什麼、如何讓餐廳資料結構化，並方便前台卡片顯示與後台管理。
 
-3. **前端美化與體驗優化建議彙整**：
-   * 詳細列出標題區塊、卡片設計、badge 標籤、RWD、互動、搜尋、主題切換等多項美化與功能建議。
-   * 依照 Next Task Prompt Byob.md 格式，整理成明日工作，並生成新檔案《Next Task Prompt Byob (美化建議).md》供後續開發參考。
+3. **自訂文章類型（CPT）與資料上架規劃**：
+   * 建議用 Custom Post Type UI 建立「餐廳」CPT，搭配 ACF 設計所有必要欄位。
+   * 說明如何用 WP All Import 外掛，將 Excel/CSV 批次匯入 100 筆餐廳資料，快速大量上架。
+   * 強調卡片可直接顯示所有重點資訊，支援搜尋、篩選、連結點擊。
 
-4. **進度紀錄與文件同步**：
-   * 今日所有討論與修正步驟均已記錄於本進度檔案。
-   * 明日工作請詳見《Next Task Prompt Byob (美化建議).md》。
+4. **前台卡片設計與功能規劃**：
+   * 規劃卡片直接顯示餐廳名稱、地址、電話、開瓶費、地圖/社群連結等，並可加上 icon、badge。
+   * 說明如何用 FacetWP 或 Search & Filter Pro 實現多條件即時篩選與搜尋。
+
+5. **明日工作規劃**：
+   * 已將「WordPress 環境建置與專案規劃」詳細步驟寫入 Next Task Prompt Byob.md，並生成新檔案。
+   * 明天將依規劃開始建置 WordPress 架構、安裝主題與外掛、設計欄位、測試批次匯入與前台卡片。
 
 ---
 
