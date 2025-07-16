@@ -1,59 +1,27 @@
-# 台北 BYOB 餐廳資料庫專案說明（2025-07-15 更新）
+# 台北 BYOB 餐廳資料庫專案說明（2025-07-18 更新）
 
-本專案旨在建立一套讓民眾能快速查詢「台北市可自帶酒水（BYOB）」的餐廳 App 系統，並協助餐廳主動登錄資訊。資料來源以「餐廳主動申報制」為核心，由餐廳透過 Google 表單提交資訊，經由 App Script 自動轉換為標準格式，供主資料庫與 App 使用。
-
----
-
-## 📌 最新進度概要（2025-07-15）
-
-### ✅ 前端 RWD 與樣式問題徹底解決
-
-* 修正 postcss.config.cjs 設定錯誤（誤用 @tailwindcss/postcss），改為正確引用 require('tailwindcss') 與 require('autoprefixer')。
-* 移除多餘套件，重啟開發伺服器後，Tailwind 樣式與 RWD 排版（grid-cols-1/2/3）皆正常顯示。
-* 成功驗證 bg-red-200、卡片三欄排版與 hover 效果。
-
-### ✅ ByobCardPreview 卡片設計優化
-
-* 卡片加上 max-w-xs、mx-auto，確保多欄排版時每張卡片寬度適中且置中。
-* 測試不同欄位內容長度，確保排版穩定。
-* 卡片樣式與間距更美觀，RWD 響應式效果佳。
-
-### ✅ 前端美化與體驗優化建議彙整
-
-* 詳細列出標題區塊、卡片設計、badge 標籤、RWD、互動、搜尋、主題切換等多項美化與功能建議。
-* 依照 Next Task Prompt Byob.md 格式，整理成明日工作，並生成新檔案《Next Task Prompt Byob (美化建議).md》供後續開發參考。
+本專案致力於打造一個讓民眾能快速查詢「台北市可自帶酒水（BYOB）」餐廳的資訊平台，並協助餐廳主動登錄資料。2025-07-18 起，專案正式採用 WordPress + Flatsome 主題，搭配自訂文章類型（CPT）與進階自訂欄位（ACF），以利大量資料快速上架、彈性搜尋篩選、資料完整呈現與未來擴充。
 
 ---
 
-## 🔄 使用說明與注意事項（前台）
+## 📌 最新進度概要（2025-07-18）
 
-* 開發環境建議使用 VS Code + Git Bash + Powershell + npm 10 以上
-* 初次開啟請依序執行：
+### ✅ 技術選型與規劃
+* 經需求分析，決定採用 WordPress + Flatsome 架構，適合無技術背景團隊維護，並能快速打造美觀、RWD 的前台。
+* 以 Custom Post Type UI 建立「餐廳」自訂文章類型（CPT），每間餐廳為獨立資料。
+* 以 Advanced Custom Fields（ACF）設計餐廳專屬欄位（如地址、電話、開瓶費、地圖連結、社群等），確保資料結構化。
+* 使用 WP All Import 外掛，支援 Excel/CSV 批次匯入，快速大量上架餐廳資料。
+* 搭配 FacetWP 或 Search & Filter Pro，實現前台多條件搜尋、篩選、分頁。
 
-  1. `npm install`
-  2. `npm run dev`
-* 若啟動失敗請確認：
+### ✅ 前台卡片設計與功能
+* 卡片可直接顯示餐廳名稱、地址、電話、開瓶費、餐廳類型、是否收開瓶費、Google Maps 連結、社群連結、備註等重點資訊。
+* 支援 icon、badge、地圖/社群連結點擊，提升用戶體驗。
+* 前台可依多條件即時搜尋與篩選。
 
-  * `postcss.config.js` 是否改為 `.cjs`
-  * Tailwind 套件安裝正確，無 global 衝突
-
----
-
-## 🧪 測試與常見錯誤排查
-
-* ❗ `npx tailwindcss init -p` 無法執行：請重新安裝 tailwind 並排除 global 安裝遺留檔案
-* ❗ `vite` 無法啟動：請確認 `postcss.config.js` 格式與 `vite` 版本
-* ❗ 畫面顯示為單欄：請檢查 `main.jsx` 是否正確渲染元件、是否套用 `lg:grid-cols-3`
+### ✅ 明日工作規劃
+* 依據《WordPress 環境建置與專案規劃》步驟，開始建置 WordPress 架構、安裝主題與外掛、設計欄位、測試批次匯入與前台卡片。
 
 ---
 
-## 🔧 下一步任務（2025-07-16）
-
-1. 依據《Next Task Prompt Byob (美化建議).md》進行前端美化與體驗優化
-2. 強化 badge 顏色邏輯與元件化封裝設計
-3. 搜尋、篩選、分頁等互動功能預研與設計
-4. 深色模式與細節優化
-
----
-
-若需參與開發、審核、設計或資料串接合作，請聯繫：[hello@byob.taipei](mailto:hello@byob.taipei)
+# （以下為歷史紀錄與原專案說明）
+// ... existing code ...
