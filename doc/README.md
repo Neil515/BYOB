@@ -1,4 +1,4 @@
-# 台北 BYOB 餐廳資料庫專案說明（2025-07-18 更新）
+# 台北 BYOB 餐廳資料庫專案說明（2025-07-18 更新第二版）
 
 本專案致力於打造一個讓民眾能快速查詢「台北市可自帶酒水（BYOB）」餐廳的資訊平台，並協助餐廳主動登錄資料。2025-07-18 起，專案正式採用 WordPress + Flatsome 主題，搭配自訂文章類型（CPT）與進階自訂欄位（ACF），以利大量資料快速上架、彈性搜尋篩選、資料完整呈現與未來擴充。
 
@@ -6,22 +6,41 @@
 
 ## 📌 最新進度概要（2025-07-18）
 
-### ✅ 技術選型與規劃
-* 經需求分析，決定採用 WordPress + Flatsome 架構，適合無技術背景團隊維護，並能快速打造美觀、RWD 的前台。
-* 以 Custom Post Type UI 建立「餐廳」自訂文章類型（CPT），每間餐廳為獨立資料。
-* 以 Advanced Custom Fields（ACF）設計餐廳專屬欄位（如地址、電話、開瓶費、地圖連結、社群等），確保資料結構化。
-* 使用 WP All Import 外掛，支援 Excel/CSV 批次匯入，快速大量上架餐廳資料。
-* 搭配 FacetWP 或 Search & Filter Pro，實現前台多條件搜尋、篩選、分頁。
+### ✅ 架構選型與功能實作啟動
 
-### ✅ 前台卡片設計與功能
-* 卡片可直接顯示餐廳名稱、地址、電話、開瓶費、餐廳類型、是否收開瓶費、Google Maps 連結、社群連結、備註等重點資訊。
-* 支援 icon、badge、地圖/社群連結點擊，提升用戶體驗。
-* 前台可依多條件即時搜尋與篩選。
+* 採用 WordPress + Flatsome 架構，支援 RWD、搜尋篩選與可視化建構。
+* 安裝並啟用核心外掛：
 
-### ✅ 明日工作規劃
-* 依據《WordPress 環境建置與專案規劃》步驟，開始建置 WordPress 架構、安裝主題與外掛、設計欄位、測試批次匯入與前台卡片。
+  * Custom Post Type UI ✅（建立餐廳文章類型）
+  * Advanced Custom Fields ✅（設計餐廳欄位）
+* 未安裝但未來考慮：
+
+  * WP All Import ⏸（CSV 批次匯入工具）
+  * FacetWP / Search & Filter Pro ⏸（前台多條件篩選）
+  * Custom Post Type Permalinks ⏸（自訂網址結構）
+
+### ✅ 網址結構與搜尋邏輯可行性確認
+
+* 確認可實作 `/city/taipei/餐廳名稱` 或 `/taipei/餐廳名稱` 格式的網址結構。
+* 探討用 ACF 搭配篩選外掛實現「不需點進文章就可即時搜尋與條件篩選」的功能。
+
+### ✅ 明日工作任務（2025-07-19）
+
+* 建立「餐廳」文章類型（slug: `restaurant`）
+* 用 ACF 設計以下欄位：
+
+  * 地址（address）
+  * 電話（phone）
+  * 開瓶費（corkage\_fee）
+  * 是否收費（is\_charged）
+  * 餐廳類型（restaurant\_type）
+  * Google Maps 連結（map\_link）
+  * 社群連結（social\_links）
+  * 備註（notes）
+* 新增一筆測試餐廳資料，準備前台卡片設計與篩選模組實作。
 
 ---
 
 # （以下為歷史紀錄與原專案說明）
+
 // ... existing code ...
