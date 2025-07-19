@@ -1,39 +1,40 @@
-## BYOB 進度紀錄｜2025-07-18（第二版）
+## BYOB 進度紀錄｜2025-07-19（第三版）
 
-### ✅ 今日完成事項（補充）
+### ✅ 今日完成事項
 
-1. **開始實作 WordPress 架構：**
+1. **完成餐廳文章類型與 ACF 欄位建置：**
 
-   * 完成外掛安裝與初步架構準備，為建立前台餐廳卡片奠定基礎。
-   * 安裝並啟用：
+   * 成功使用 CPT UI 建立自訂文章類型 `restaurant`，並設定網址結構為 `/taipei/slug`
+   * 完成 12 個 ACF 欄位設定（包含地址、電話、開瓶費、餐廳類型等）
+   * 正確設置 Location Rule 讓欄位在後台出現
+   * 成功新增第一筆模擬餐廳「小酒窩私廚」，後台顯示正常
 
-     * Custom Post Type UI ✅（建立餐廳文章類型）
-     * Advanced Custom Fields ✅（建立餐廳欄位）
-   * 未安裝但後續考慮：
+2. **確認 ACF 資料儲存與呈現機制：**
 
-     * WP All Import（CSV 批次匯入）⏸（搜尋不到，日後 ZIP 安裝）
-     * FacetWP / Search & Filter Pro（前台篩選功能）⏸（為付費外掛）
-     * Custom Post Type Permalinks ⏸（網址優化用途，更新較舊）
+   * 瞭解 WordPress 預設不會在前台自動顯示 ACF 資料
+   * 測試 `[acf]` shortcode 可讀出資料，但非理想作法
+   * 決定改為撰寫 `single-restaurant.php` 自訂模板以實現前台卡片顯示
 
-2. **規劃網址結構與篩選功能可行性：**
+3. **架構策略與 App 上架規劃討論：**
 
-   * 確認 WordPress 可配合 ACF 欄位與 CPT URL 重寫，製作 `/city/taipei/餐廳名稱` 這類網址。
-   * 探討使用 FacetWP 搭配 ACF 實現前台即時篩選（如餐廳類型、是否收費、地區等）。
-   * 結論：未來可建立搜尋介面讓使用者在不點進文章的情況下就能完成瀏覽與篩選。
-
-3. **確認後台已準備好建立第一筆測試餐廳資料：**
-
-   * 計畫使用 CPT + ACF 建立一筆模擬餐廳卡片。
-   * 前台卡片設計與篩選功能預計在資料建置完成後進行。
+   * 確認目標為：網站先行成熟 → 確保餐廳數與搜尋體驗 → 再進入 App 上架階段
+   * React App 將串接 WordPress REST API，資料與網站共用
+   * 評估 WordPress + React 架構不影響 Google Play 上架，僅需注意隱私政策、資料授權與 API 安全
 
 ---
 
-### 🔜 明日工作任務（2025-07-19）
+### 🔭 未來里程碑規劃（Milestone）
 
-請參考 canvas 檔案《Next Task Byob 0719》。
-
-* 任務主軸：建立餐廳文章類型與欄位，新增一筆測試餐廳卡片，為卡片前台展示做準備。
+| 階段                       | 目標                               | 工具或產出                 |
+| ------------------------ | -------------------------------- | --------------------- |
+| ✅ Phase 1：網站基礎建置         | 後台資料架構、CPT、ACF 完成                | WordPress + ACF       |
+| ✅ Phase 2：資料輸入與初始顯示      | 測試餐廳資料輸入 + 顯示卡片模板                | single-restaurant.php |
+| ⏳ Phase 3：篩選與搜尋功能        | 加入 FacetWP / Search & Filter Pro | 實現條件搜尋                |
+| ⏳ Phase 4：網站 MVP 上線      | 至少 100 間餐廳、SEO 基本設定              | GA4 + sitemap         |
+| 🔜 Phase 5：使用者行為收集與調整    | 根據篩選條件、瀏覽時間優化欄位                  | GA4 / Hotjar          |
+| 🔜 Phase 6：App 設計與串接 API | 設計 React App、串接 REST API         | Expo / React Native   |
+| 🔜 Phase 7：App 上架流程      | 撰寫隱私聲明、提交 Google Play            | Android Console       |
 
 ---
 
-此紀錄為 7/18 第二階段補充，建議合併於 ai\_progress\_byob.md 總進度紀錄中，以利後續整體追蹤。
+此紀錄建議合併入總進度文件，並與每日任務進度同步。
