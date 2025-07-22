@@ -1,36 +1,37 @@
-## BYOB 進度紀錄｜2025-07-21
+## BYOB 進度紀錄｜2025-07-22
 
 ### ✅ 今日重點進度
 
-1. **完成餐廳卡片前台顯示（自訂文章類型 restaurant）**
-   - 成功建立並上傳 archive-restaurant.php，顯示所有餐廳卡片於 /taipei/ 頁面。
-   - 依據 ACF 實際欄位，完整顯示 12 欄餐廳資訊。
-   - 確認自訂文章類型 restaurant 設定 has_archive 為 true，Custom Rewrite Slug 設為 taipei。
-   - 透過「永久連結」設定儲存，網址 /taipei/ 正常顯示所有餐廳卡片。
-   - 測試多筆餐廳資料，前台顯示正確。
+1. **主入口方案決定**
+   - 決定前台主入口採用靜態頁面 `/taipei`，以 Shortcode 或外掛插入餐廳卡片與篩選功能，確保網址乾淨、UX 佳。
+   - 不採用 taxonomy 歸檔頁 `/city/taipei`，避免多一層網址結構。
 
-2. **釐清 Flatsome 主題與 UX Builder 限制**
-   - Blog Posts 元件無法顯示自訂文章類型（restaurant）。
-   - /taipei/ 歸檔頁內容只能用 PHP 編輯，無法用 UX Builder 拖拉設計。
-   - 若需自由設計頁面，建議用「自訂頁面＋Shortcode」方式，搭配篩選外掛。
+2. **CPT Slug 命名調整**
+   - Custom Post Type Slug 維持 `restaurant`，Custom Rewrite Slug 改為 `byob-restaurant`，避免與城市頁面衝突，結構更清晰。
+   - Plural Label 設為「餐廳清單」，Singular Label 設為「餐廳」。
 
-3. **安裝並初步設定 Filter Everything 篩選外掛**
-   - 成功安裝 Filter Everything，建立 Filter Set，選擇 restaurant 為篩選對象。
-   - 新增多個篩選條件，支援 ACF 欄位。
-   - 篩選器可自動顯示於 /taipei/ 頁面上方。
-   - 確認 Filter Everything 僅提供篩選功能，卡片顯示仍由 archive-restaurant.php 控制。
+3. **篩選外掛比較與選擇**
+   - 詳細比較 Filter Everything Pro、FacetWP、WP Grid Builder、Search & Filter Pro 四款外掛的功能、費用、彈性、退款條款。
+   - 整理成 Markdown 文件，方便團隊評估與選購。
+   - 確認所有外掛皆支援多城市分頁、ACF 欄位篩選，且有 14~30 天退款保障。
 
-4. **討論前台主入口方案**
-   - 比較「自訂頁面＋Shortcode」與「/taipei/ 歸檔頁」兩種做法的優缺點。
-   - 確認自訂頁面可用 UX Builder 自由設計，並插入篩選器與卡片列表（需 Shortcode 或外掛支援）。
-   - 歸檔頁彈性較低，但設定簡單。
-   - 明日將決定主入口方案，並規劃後續實作細節。
+4. **Filter Everything 免費/付費版差異**
+   - 免費版無法在靜態頁面插入篩選器，只能在歸檔頁自動顯示。
+   - Pro 版可在任意頁面用 Shortcode 插入篩選器與文章列表，並可設定預設查詢條件（如城市）。
+   - 若需多城市分頁與自訂查詢，建議升級 Pro 版或考慮其他外掛。
 
----
+5. **卡片美化規劃**
+   - 美化餐廳卡片需修改 `archive-restaurant.php`（餐廳列表）與 `single_restaurant.php`（單一餐廳頁）。
+   - 可先行設計與調整 HTML/CSS，無需等外掛購買。
+   - 若未來用外掛自訂模板，再將設計搬移即可。
 
-### 📝 明日工作預告
-- 決定前台主入口採用「自訂頁面＋Shortcode」或「/taipei/ 歸檔頁」方案
-- 詳細規劃所需 Shortcode、外掛查詢方式或 archive-restaurant.php 美化內容
+6. **Google 表單與 ACF 欄位對應**
+   - 建議 Google 表單主要資料欄位與 ACF 欄位一一對應，方便自動化匯入與維護。
+   - 非必要欄位可選擇性對應，並建立欄位對照表。
+
+7. **明日工作任務規劃**
+   - 1. 美化餐廳卡片（優化 HTML/CSS，確保 RWD）
+   - 2. 核對 Google 表單與 ACF 欄位是否完整對應，補齊缺漏或調整命名。
 
 ---
 
