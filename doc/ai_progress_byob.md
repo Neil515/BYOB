@@ -1,98 +1,51 @@
-## BYOB 進度紀錄｜2025-07-23
+## BYOB 進度紀錄｜2025-07-24
 
 ### ✅ 今日重點進度
 
-1. **餐廳卡片美化完成**
-   - 成功優化 `archive-restaurant.php` 的 HTML 結構，將每個欄位用 `<div class="field">` 包裹
-   - 移除所有 inline style，改用 class 控制，便於 CSS 管理
-   - 實作欄位分組：基本資料、酒水相關、連結資訊、其他資訊
-   - 加入欄位顯示邏輯，無資料時顯示「暫無資料」
-   - 外部連結加上 `target="_blank"` 及 `rel="noopener"`，確保新分頁開啟
+1. **單一餐廳頁面美化與一致性處理**
 
-2. **CSS 樣式設計與實作**
-   - 採用「外觀 → 自訂 → 額外 CSS」方式，避免修改 Flatsome 主題原始檔案
-   - 實作卡片並列顯示：桌機一列三個、平板一列兩個、手機一列一個
-   - 加入卡片樣式：邊框、陰影、圓角、間距
-   - 設定字距：餐廳名稱 2px、內容標題 1px
-   - 右上角預留 80px × 80px 空白區塊，供未來放置餐廳照片或 logo
-   - 調整內容右邊距，避免被預留區塊遮擋
+   * 完成 `single_restaurant.php` 結構優化，使其符合列表頁邏輯
+   * 保留餐廳名稱右側類型顯示（括號形式）
+   * 設定 `<div class="restaurant-title-line">` 並調整 CSS，讓類型自動避開圖片區塊、不被遮擋
+   * 修正類型與名稱間距、垂直對齊問題，讓類型置於名稱下緣對齊
 
-3. **RWD 響應式設計**
-   - 桌機版（>1024px）：一列三個卡片
-   - 平板版（769px-1024px）：一列兩個卡片
-   - 手機版（≤768px）：一列一個卡片，預留區塊縮小為 60px × 60px
+2. **CSS 整合與統一設計**
 
-4. **技術問題解決**
-   - 解決 CSS 選擇器優先級問題，使用 `!important` 確保覆蓋 Flatsome 主題樣式
-   - 解決卡片靠右排列問題，加入 `margin: 0 auto` 實現水平置中
-   - 解決預留區塊遮擋內容問題，調整區塊大小與內容邊距
+   * 所有與卡片右上角預留區塊（圖片/Logo 區）的樣式邏輯集中於 CSS 一處管理
+   * 調整不同裝置的圖片區塊尺寸（桌機、平板、手機）
+   * 加入 `.restaurant-type` 與 `.restaurant-title-line` 的字體與排版控制
 
-5. **未來規劃討論**
-   - 討論餐廳照片上傳機制：建議用 ACF 新增圖片欄位
-   - 討論卡片排序機制：建議用 ACF 自訂排序欄位 + PHP 排序，最靈活
-   - 討論篩選外掛整合：建議用短代碼插入餐廳卡片到自訂頁面，版面設計更自由
+3. **Google Maps 連結機制**
 
-### 📋 完成的技術實作
+   * 設計雙欄位邏輯：`address` 顯示純地址；`map_link` 儲存 Google Maps 網址
+   * 若 `map_link` 空白，系統會 fallback 產生搜尋連結 `https://www.google.com/maps/search/?api=1&query=地址`
+   * 地址欄位自動嵌入 Google Maps 連結，並在文字後加上 🌐 icon
 
-#### HTML 結構優化
-```php
-<div class="restaurant-archive-list">
-  <div class="restaurant-card">
-    <h2><a href="<?php the_permalink(); ?>"><?php the_title(); ?></a></h2>
-    <div class="acf-fields">
-      <div class="info-group basic-info">
-        <?php if(get_field('address')): ?>
-          <div class="field"><strong>地址：</strong><?php the_field('address'); ?></div>
-        <?php else: ?>
-          <div class="field"><strong>地址：</strong>暫無資料</div>
-        <?php endif; ?>
-        <!-- 其他欄位... -->
-      </div>
-    </div>
-  </div>
-</div>
-```
+4. **程式碼註解與精簡處理**
 
-#### CSS 樣式實作
-```css
-.restaurant-archive-list {
-  display: grid !important;
-  grid-template-columns: repeat(3, 1fr) !important;
-  gap: 24px !important;
-  max-width: 1200px !important;
-  margin: 0 auto !important;
-  padding: 0 20px !important;
-}
+   * 在 `archive-restaurant.php` 中註解掉重複資訊欄位（如餐廳類型、社群連結、是否提供開酒服務）
+   * 保留餐廳名稱旁括號資訊不影響讀者辨識
+   * 所有欄位無資料時使用「暫無資料」統一提示語
 
-.restaurant-card {
-  border: 1px solid #e0e0e0 !important;
-  border-radius: 8px !important;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
-  padding: 20px !important;
-  background: #fff !important;
-  position: relative !important;
-}
+5. **明日工作排程準備**
 
-.restaurant-card::before {
-  content: '' !important;
-  position: absolute !important;
-  top: 15px !important;
-  right: 15px !important;
-  width: 80px !important;
-  height: 80px !important;
-  background: #f8f8f8 !important;
-  border: 1px dashed #ddd !important;
-  border-radius: 4px !important;
-  z-index: 1 !important;
-}
-```
-
-### 🎯 明日工作重點
-
-1. **美化單一餐廳頁面**：修改 `single_restaurant.php`，確保與列表頁面視覺一致性
-2. **建立 Google 表單匯入機制**：建立自動化資料匯入流程
-3. **測試與優化**：確保所有功能正常運作
+   * 將下階段工作新增至 `Next Task Prompt Byob.md` 檔案中
+   * 明日預計進行電話連結、插入餐廳圖片、網站首頁草圖設計
 
 ---
 
-**本日進度已同步至進度文件，餐廳卡片美化工作圓滿完成，為明日工作奠定良好基礎。**
+### 📥 相關實作檔案已更新：
+
+* `archive-restaurant.php`：加入自動 Google Maps fallback
+* `single_restaurant.php`：完成類型樣式、地圖連結與 HTML 結構優化
+* CSS：新增 `.restaurant-title-line`, `.restaurant-type` 等樣式
+
+### 🗓 明日預定任務（已同步於 Next Task Prompt Byob）
+
+1. 加入電話的連結
+2. 插入店家圖片
+3. 設計網站主頁
+
+---
+
+**今日所有邏輯與實作進度，皆已整合並記錄完畢。**
