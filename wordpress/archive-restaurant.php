@@ -19,7 +19,12 @@
         <?php
           $types = get_field('restaurant_type');
           if ($types):
-            $type_output = is_array($types) ? implode(' / ', $types) : $types;
+            // 處理複選情況
+            if (is_array($types)) {
+              $type_output = implode(' / ', $types);
+            } else {
+              $type_output = $types;
+            }
             echo '<span class="restaurant-type">（' . esc_html($type_output) . '）</span>';
           endif;
         ?>
