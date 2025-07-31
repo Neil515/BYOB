@@ -1,5 +1,6 @@
 #.\tree_exclude.ps1 -Path "C:\GitHubProjects\BYOB" -Exclude "Mid" -OutputFile ".\output.txt"
 
+
 param(
     [string]$Path = ".",                # 預設為目前資料夾
     [string[]]$Exclude = @(),           # 可接受多個要排除的資料夾名稱
@@ -28,18 +29,35 @@ Function Show-Tree {
     }
 }
 
-# 產生結果
+# 產生樹狀結構結果
 $result = Show-Tree -CurrentPath $Path
 
-# 用 UTF-8 無 BOM 寫檔（保留中文 + 無亂碼）
+# 輸出到檔案（UTF-8 無 BOM）
 if ($OutputFile -ne "") {
+    # 轉換為絕對路徑
+    if ([System.IO.Path]::IsPathRooted($OutputFile)) {
+        $fullOutputPath = $OutputFile
+    }
+    else {
+        $fullOutputPath = Join-Path (Get-Location) $OutputFile
+    }
+
+    # 確保輸出資料夾存在
+    $outputDir = Split-Path $fullOutputPath
+    if (-not (Test-Path $outputDir)) {
+        New-Item -ItemType Directory -Path $outputDir | Out-Null
+    }
+
+    # 寫入檔案（UTF-8 無 BOM）
     $utf8NoBOM = New-Object System.Text.UTF8Encoding($false)
-    [System.IO.File]::WriteAllLines((Resolve-Path $OutputFile), $result, $utf8NoBOM)
-    Write-Host "✅ Tree structure saved to $OutputFile"
+    [System.IO.File]::WriteAllLines($fullOutputPath, $result, $utf8NoBOM)
+    Write-Host "✅ Tree structure saved to $fullOutputPath"
 }
 else {
     $result
 }
+
+
 
 
 
