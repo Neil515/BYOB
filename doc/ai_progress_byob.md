@@ -1,78 +1,110 @@
-## BYOB 進度紀錄｜2025-07-30
+## BYOB 進度紀錄｜2025-07-31
 
 ### ✅ 今日重點進度
 
-1. **精選餐廳手機版 Slider 完成**
+1. **餐廳類型欄位改為複選功能**
 
-   * 成功實作手機版精選餐廳區塊的 Slider 功能
-   * 使用 Flatsome 的 Slider 元件，設定 80% Slide Width + Center Align
-   * 實現 1.2 卡片顯示效果，每張 Slide 顯示 1 張完整卡片 + 0.2 張下一張卡片
-   * 設定 Dots 導覽（Bullets: On），移除箭頭（Arrows: Off）
-   * 加入 class: `featured-restaurant-mobile` 用於樣式控制
+   * 成功將 ACF 欄位「餐廳類型」改為 Checkbox 複選類型
+   * 設定選項：台式、法式、義式、日式、美式、小酒館、咖啡廳、私廚、異國料理、燒烤、火鍋、牛排、Lounge Bar、Buffet
+   * 修改 `archive-restaurant.php` 和 `single_restaurant.php` 支援複選顯示
+   * 使用 `is_array()` 檢查複選資料，`implode(' / ', $types)` 合併多個類型
+   * 顯示格式：單一類型「（中式）」，複選類型「（中式 / 火鍋 / 燒肉）」
 
-2. **Slider 導覽樣式優化**
+2. **Apps Script 開瓶費欄位邏輯修正**
 
-   * 發現 Flatsome 使用 Flickity 滑動庫，active 狀態 class 為 `is-selected`
-   * 成功設定圓點導覽樣式：inactive 為空心圓圈，active 為實心圓圈
-   * 使用深酒紅色 `#8b2635` 作為品牌色彩
-   * CSS 選擇器：`.featured-restaurant-mobile .dot.is-selected`
+   * 修正開瓶費欄位顯示問題，移除括號內的說明文字
+   * 新增 `cleanCorkageOption()` 函式處理選項名稱清理
+   * 修正後顯示格式：
+     - 不收費
+     - 酌收
+     - 其他
+   * 詳細資訊分別顯示在「開瓶費金額」和「其他：請說明」欄位
 
-3. **桌機版精選餐廳 Image Box hover 效果設定**
+3. **酒器設備欄位複選規劃**
 
-   * 設定 Hover 效果：`Zoom`（圖片輕微放大）
-   * 設定 Hover Alt 效果：`Remove Overlay`（移除遮罩）
-   * 使用深灰黑色 `#1a1a1a` 作為 Overlay 顏色
-   * 創造兩階段互動效果：放大 + 遮罩 → 放大 + 清晰圖片
+   * 規劃將「提供酒器設備」欄位改為 Checkbox 複選類型
+   * 建議選項：酒杯、開瓶器、冰桶、醒酒器、無提供
+   * 設計顯示格式使用中文頓號「、」分隔
+   * 準備修改兩個 PHP 檔案支援複選功能
 
-4. **手機版熱門餐廳類型標題設計規劃**
+4. **PHP 檔案複選處理邏輯建立**
 
-   * 建議使用圖片背景而非純色背景
-   * 推薦使用抽象餐酒氛圍圖或插畫向量風
-   * 使用白色文字確保在圖片上的可讀性
-   * 與桌機版形成視覺區別：桌機版用純色，手機版用圖片
+   * 建立統一的複選資料處理模式：
+     ```php
+     $types = get_field('restaurant_type');
+     if ($types): 
+       if (is_array($types)) {
+         $type_output = implode(' / ', $types);
+       } else {
+         $type_output = $types;
+       }
+       echo esc_html($type_output);
+     endif;
+     ```
+   * 加入 `esc_html()` 安全性處理
+   * 統一顯示格式規範
 
-5. **底部 CTA 設計規劃**
+5. **Google 表單快速匯入 WordPress 方案討論**
 
-   * 建議使用餐酒氛圍圖作為背景
-   * 推薦深色調的餐酒氛圍圖，搭配深色遮罩
-   * 使用白色文字和深酒紅色按鈕
-   * 提供兩個 Midjourney prompt 選項：
-     - 溫馨餐廳用餐場景（含人物）
-     - 抽象餐酒藝術風格
+   * 評估三種實作方案：
+     - 方案 A：WordPress REST API 自動化
+     - 方案 B：CSV 匯出 + WordPress 匯入外掛
+     - 方案 C：Google Sheets 外掛 + WordPress 整合
+   * 討論各方案優缺點和適用場景
+   * 準備明日進行方案選擇和實作
 
-6. **餐廳類型圖片生成規劃**
+6. **完整測試流程規劃**
 
-   * 開始規劃各類型餐廳的專屬圖片生成
-   * 優先處理牛排類，設計 Rib Eye 牛排的 Midjourney prompt
-   * 強調自然形狀、部分切開展示內部
-   * 使用 4:3 比例，深酒紅色調，專業攝影風格
-
-7. **技術問題解決**
-
-   * 解決 Flatsome Slider 圓點導覽樣式問題
-   * 確認 Flickity 庫的 class 命名規則
-   * 優化 CSS 選擇器，確保樣式正確應用
-   * 建立圖片生成的最佳實踐規範
+   * 建立 Google 表單到餐廳卡片的完整測試流程
+   * 包含：表單填寫 → Google Sheet → Apps Script 轉換 → WordPress 後台 → 前端顯示
+   * 設計測試資料和驗證步驟
+   * 準備故障排除指南
 
 ---
 
 ### 📥 已更新與規劃項目：
 
-* 精選餐廳：手機版 Slider 完成，桌機版 hover 效果設定完成
-* 熱門餐廳類型：手機版標題設計規劃完成
-* 底部 CTA：設計規劃和 Midjourney prompt 完成
-* 餐廳類型圖片：牛排類 prompt 設計完成
-* 技術優化：Slider 導覽樣式和 CSS 選擇器問題解決
+* **ACF 欄位設定**：餐廳類型改為複選完成，酒器設備和開瓶費規劃中
+* **PHP 檔案修改**：兩個檔案都支援複選顯示，建立統一處理邏輯
+* **Apps Script 優化**：開瓶費欄位邏輯修正完成
+* **資料流程規劃**：Google 表單匯入 WordPress 方案討論完成
+* **測試流程**：完整測試流程規劃完成
 
 ---
 
 ### 🗓 明日預定任務（同步於 Next Task Prompt Byob）
 
-1. 完成各類型餐廳圖片生成（優先牛排類）
-2. 測試 Google 表單到餐廳卡片的完整流程
-3. 建立圖片使用規範和流程文件
-4. 確保新餐廳類型在整個系統中正常運作
+1. 完成酒器設備和開瓶費欄位的 ACF 調整
+2. 修改對應的 PHP 檔案
+3. 實作 Google 表單快速匯入 WordPress 功能
+4. 建立完整的資料流程文件
+5. 確保所有複選欄位正確處理和顯示
 
 ---
 
-**今日進度重點：完成精選餐廳區塊的手機版 Slider 和桌機版 hover 效果，解決技術問題，並開始規劃餐廳類型圖片生成工作。整體設計風格統一，技術實現穩定。**
+### 🔧 技術重點記錄：
+
+**複選欄位處理模式：**
+```php
+// 檢查是否為陣列（複選）
+if (is_array($field_data)) {
+  $output = implode('分隔符號', $field_data);
+} else {
+  $output = $field_data;
+}
+echo esc_html($output);
+```
+
+**顯示格式規範：**
+- 餐廳類型：使用「 / 」分隔
+- 酒器設備：使用「、」分隔
+- 開瓶費：單選，但需要處理子層級資訊
+
+**Apps Script 修正重點：**
+- 新增 `cleanCorkageOption()` 函式
+- 移除括號內的說明文字
+- 保持選項名稱簡潔
+
+---
+
+**今日進度重點：完成餐廳類型複選功能，修正 Apps Script 開瓶費邏輯，規劃酒器設備複選功能，討論 Google 表單匯入 WordPress 方案。整體技術架構趨於完善，為明日工作奠定良好基礎。**
