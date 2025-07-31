@@ -66,8 +66,17 @@
         <div class="field"><strong>餐廳聯絡電話：</strong>暫無資料</div>
       <?php endif; ?>
 
-      <?php if(get_field('restaurant_type')): ?>
-        <div class="field"><strong>餐廳類型：</strong><?php the_field('restaurant_type'); ?></div>
+      <?php 
+      $types = get_field('restaurant_type');
+      if ($types): 
+        // 處理複選情況
+        if (is_array($types)) {
+          $type_output = implode(' / ', $types);
+        } else {
+          $type_output = $types;
+        }
+      ?>
+        <div class="field"><strong>餐廳類型：</strong><?php echo esc_html($type_output); ?></div>
       <?php else: ?>
         <div class="field"><strong>餐廳類型：</strong>暫無資料</div>
       <?php endif; ?>
