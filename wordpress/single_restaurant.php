@@ -31,7 +31,7 @@
           <strong>地址：</strong>
           <?php if($map_link): ?>
             <a href="<?php echo esc_url($map_link); ?>" target="_blank" rel="noopener">
-              <?php echo esc_html($address); ?> 📍
+              <?php echo esc_html($address); ?> &#128205;
             </a>
           <?php else: ?>
             <?php echo esc_html($address); ?>
@@ -60,7 +60,7 @@
       ?>
         <div class="field">
           <strong>餐廳聯絡電話：</strong>
-          <a href="tel:<?php echo esc_attr($tel_link); ?>"><?php echo esc_html($phone); ?> 📞</a>
+          <a href="tel:<?php echo esc_attr($tel_link); ?>"><?php echo esc_html($phone); ?> &#128222;</a>
         </div>
       <?php else: ?>
         <div class="field"><strong>餐廳聯絡電話：</strong>暫無資料</div>
@@ -84,26 +84,68 @@
 
     <!-- 酒水相關 -->
     <div class="info-group wine-info">
-      <?php if(get_field('is_charged')): ?>
-        <div class="field"><strong>是否收開瓶費：</strong><?php the_field('is_charged'); ?> 🥂</div>
+      <?php 
+      $is_charged = get_field('is_charged');
+      if ($is_charged): 
+        if (is_array($is_charged)) {
+          $charged_output = implode(' / ', $is_charged);
+        } else {
+          $charged_output = $is_charged;
+        }
+      ?>
+        <div class="field"><strong>是否收開瓶費：</strong><?php echo esc_html($charged_output); ?> &#127864;</div>
       <?php else: ?>
         <div class="field"><strong>是否收開瓶費：</strong>暫無資料</div>
       <?php endif; ?>
 
-      <?php if(get_field('corkage_fee')): ?>
-        <div class="field"><strong>開瓶費說明：</strong><?php the_field('corkage_fee'); ?> 🪙</div>
+      <?php 
+      $corkage_fee = get_field('corkage_fee');
+      $corkage_fee_other = get_field('corkage_fee_other');
+      
+      if ($corkage_fee): 
+        if ($corkage_fee === '酌收' && $corkage_fee_other) {
+          $fee_output = $corkage_fee_other;
+        } elseif ($corkage_fee === '其他' && $corkage_fee_other) {
+          $fee_output = $corkage_fee_other;
+        } else {
+          $fee_output = $corkage_fee;
+        }
+      ?>
+        <div class="field"><strong>開瓶費說明：</strong><?php echo esc_html($fee_output); ?> &#127881;</div>
       <?php else: ?>
         <div class="field"><strong>開瓶費說明：</strong>暫無資料</div>
       <?php endif; ?>
 
-      <?php if(get_field('equipment')): ?>
-        <div class="field"><strong>提供酒器設備：</strong><?php the_field('equipment'); ?></div>
+      <?php 
+      $equipment = get_field('equipment');
+      if ($equipment): 
+        if (is_array($equipment)) {
+          $equipment_output = implode(' | ', $equipment);
+        } else {
+          $equipment_output = $equipment;
+        }
+      ?>
+        <div class="field"><strong>提供酒器設備：</strong><?php echo esc_html($equipment_output); ?></div>
       <?php else: ?>
         <div class="field"><strong>提供酒器設備：</strong>暫無資料</div>
       <?php endif; ?>
 
-      <?php if(get_field('open_bottle_service')): ?>
-        <div class="field"><strong>是否提供開酒服務：</strong><?php the_field('open_bottle_service'); ?></div>
+      <?php 
+      $open_bottle_service = get_field('open_bottle_service');
+      $open_bottle_service_other_note = get_field('open_bottle_service_other_note');
+
+      if ($open_bottle_service): 
+        if ($open_bottle_service === 'yes') {
+          $service_output = '是';
+        } elseif ($open_bottle_service === 'no') {
+          $service_output = '否';
+        } elseif ($open_bottle_service === 'other') {
+          $service_output = '其他：' . ($open_bottle_service_other_note ?: '無說明');
+        } else {
+          $service_output = $open_bottle_service;
+        }
+      ?>
+        <div class="field"><strong>是否提供開酒服務：</strong><?php echo esc_html($service_output); ?></div>
       <?php else: ?>
         <div class="field"><strong>是否提供開酒服務：</strong>暫無資料</div>
       <?php endif; ?>
@@ -125,7 +167,7 @@
     <!-- 其他資訊 -->
     <div class="info-group other-info">
       <?php if(get_field('notes')): ?>
-        <div class="field"><strong>備註說明：</strong><?php the_field('notes'); ?> 📝</div>
+        <div class="field"><strong>備註說明：</strong><?php the_field('notes'); ?> &#128221;</div>
       <?php else: ?>
         <div class="field"><strong>備註說明：</strong>暫無資料</div>
       <?php endif; ?>
@@ -159,7 +201,7 @@
         }
       ?>
         <a href="tel:<?php echo esc_attr($tel_link); ?>" class="contact-link">
-        撥打電話 📞
+        撥打電話 &#128222;
         </a>
       <?php endif; ?>
     </div>
