@@ -48,7 +48,7 @@
 			<strong>地址：</strong>
 			<?php if($map_link): ?>
 			  <a href="<?php echo esc_url($map_link); ?>" target="_blank" rel="noopener">
-				<?php echo esc_html($address); ?> 📍
+				<?php echo esc_html($address); ?> &#128205;
 			  </a>
 			<?php else: ?>
 			  <?php echo esc_html($address); ?>
@@ -78,7 +78,7 @@
           ?>
             <div class="field">
               <strong>餐廳聯絡電話：</strong>
-              <a href="tel:<?php echo esc_attr($tel_link); ?>"><?php echo esc_html($phone); ?> 📞</a>
+              <a href="tel:<?php echo esc_attr($tel_link); ?>"><?php echo esc_html($phone); ?> &#128222;</a>
             </div>
           <?php else: ?>
             <div class="field"><strong>餐廳聯絡電話：</strong>暫無資料</div>
@@ -94,18 +94,34 @@
         </div>
 
         <div class="info-group wine-info">
-          <?php if(get_field('is_charged')): ?>
-            <div class="field"><strong>是否收開瓶費：</strong><?php the_field('is_charged'); ?> 🥂</div>
+          <?php 
+          $is_charged = get_field('is_charged');
+          if ($is_charged): 
+            if (is_array($is_charged)) {
+              $charged_output = implode(' / ', $is_charged);
+            } else {
+              $charged_output = $is_charged;
+            }
+          ?>
+            <div class="field"><strong>是否收開瓶費：</strong><?php echo esc_html($charged_output); ?> &#127864;</div>
           <?php else: ?>
             <div class="field"><strong>是否收開瓶費：</strong>暫無資料</div>
           <?php endif; ?>
           <?php if(get_field('corkage_fee')): ?>
-            <div class="field"><strong>開瓶費說明：</strong><?php the_field('corkage_fee'); ?> 🪙</div>
+            <div class="field"><strong>開瓶費說明：</strong><?php the_field('corkage_fee'); ?> &#127881;</div>
           <?php else: ?>
             <div class="field"><strong>開瓶費說明：</strong>暫無資料</div>
           <?php endif; ?>
-          <?php if(get_field('equipment')): ?>
-            <div class="field"><strong>提供酒器設備：</strong><?php the_field('equipment'); ?></div>
+          <?php 
+          $equipment = get_field('equipment');
+          if ($equipment): 
+            if (is_array($equipment)) {
+              $equipment_output = implode(' | ', $equipment);
+            } else {
+              $equipment_output = $equipment;
+            }
+          ?>
+            <div class="field"><strong>提供酒器設備：</strong><?php echo esc_html($equipment_output); ?></div>
           <?php else: ?>
             <div class="field"><strong>提供酒器設備：</strong>暫無資料</div>
           <?php endif; ?>
@@ -131,7 +147,7 @@
 
         <div class="info-group other-info">
           <?php if(get_field('notes')): ?>
-            <div class="field"><strong>備註說明：</strong><?php the_field('notes'); ?> 📝</div>
+            <div class="field"><strong>備註說明：</strong><?php the_field('notes'); ?> &#128221;</div>
           <?php else: ?>
             <div class="field"><strong>備註說明：</strong>暫無資料</div>
           <?php endif; ?>
