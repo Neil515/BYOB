@@ -151,18 +151,31 @@
       <?php endif; ?>
     </div>
 
-    <!-- 連結資訊 -->
-    <div class="info-group link-info">
-      <?php if(get_field('social_links')): ?>
-        <div class="field"><strong>官方網站/社群連結：</strong>
-          <a href="<?php the_field('social_links'); ?>" target="_blank" rel="noopener">
-            <?php the_field('social_links'); ?>
-          </a>
-        </div>
-      <?php else: ?>
-        <div class="field"><strong>官方網站/社群連結：</strong>暫無資料</div>
-      <?php endif; ?>
-    </div>
+	<!-- 連結資訊（合併官網與社群連結） -->
+	<div class="info-group link-info">
+		<?php 
+		  $website = get_field('website');
+		  $social_links = get_field('social_links');
+		  $links = [];
+
+		  if ($website) {
+			$links[] = '<a href="'.esc_url($website).'" target="_blank" rel="noopener">官網</a>';
+		  }
+		  if ($social_links) {
+			$links[] = '<a href="'.esc_url($social_links).'" target="_blank" rel="noopener">社群</a>';
+		  }
+		?>
+
+		<?php if (!empty($links)): ?>
+		  <div class="field">
+			<strong>官方網站/社群連結：</strong>
+			<?php echo implode('、', $links); ?>
+		  </div>
+		<?php else: ?>
+		  <div class="field"><strong>官方網站/社群連結：</strong>暫無資料</div>
+		<?php endif; ?>
+	</div>
+
 
     <!-- 其他資訊 -->
     <div class="info-group other-info">
