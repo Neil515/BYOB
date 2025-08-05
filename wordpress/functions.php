@@ -3,8 +3,6 @@
 
 // BYOB Google Form 自動導入 WordPress 功能
 // 建立自訂 REST API 端點
-
-// 註冊自訂 REST API 端點
 add_action('rest_api_init', function () {
     register_rest_route('byob/v1', '/restaurant', array(
         'methods' => 'POST',
@@ -51,6 +49,10 @@ add_action('rest_api_init', function () {
                 'required' => false,
                 'sanitize_callback' => 'sanitize_text_field',
             ),
+            'open_bottle_service_other_note' => array(
+                'required' => false,
+                'sanitize_callback' => 'sanitize_text_field',
+            ),
             'phone' => array(
                 'required' => true,
                 'sanitize_callback' => 'sanitize_text_field',
@@ -61,7 +63,7 @@ add_action('rest_api_init', function () {
             ),
             'social_media' => array(
                 'required' => false,
-                'sanitize_callback' => 'esc_url_raw',
+                'sanitize_callback' => 'sanitize_text_field', // 允許多網址，用逗號分隔
             ),
             'notes' => array(
                 'required' => false,
@@ -83,7 +85,6 @@ function byob_verify_api_key($request) {
     if (!$api_key || $api_key !== $valid_key) {
         return new WP_Error('invalid_api_key', 'Invalid API key', array('status' => 401));
     }
-    
     return true;
 }
 
@@ -94,32 +95,78 @@ function byob_create_restaurant_post($request) {
         $post_data = array(
             'post_title' => $request->get_param('restaurant_name'),
             'post_content' => $request->get_param('notes') ?: '',
-            'post_status' => 'draft', // 設為草稿，需要人工審核
+            'post_status' => 'publish', // 修正：改為已發布狀態
             'post_type' => 'restaurant',
-            'post_author' => 1, // 管理員 ID
+            'post_author' => 1,
         );
         
         $post_id = wp_insert_post($post_data);
-        
         if (is_wp_error($post_id)) {
             throw new Exception('Failed to create post: ' . $post_id->get_error_message());
         }
-        
-        // 更新 ACF 欄位
-        if (function_exists('update_field')) {
-            update_field('contact_person', $request->get_param('contact_person'), $post_id);
-            update_field('email', $request->get_param('email'), $post_id);
-            update_field('restaurant_type', $request->get_param('restaurant_type'), $post_id);
-            update_field('address', $request->get_param('address'), $post_id);
-            update_field('is_charged', $request->get_param('is_charged'), $post_id);
-            update_field('corkage_fee', $request->get_param('corkage_fee'), $post_id);
-            update_field('equipment', $request->get_param('equipment'), $post_id);
-            update_field('open_bottle_service', $request->get_param('open_bottle_service'), $post_id);
-            update_field('phone', $request->get_param('phone'), $post_id);
-            update_field('social_links', $request->get_param('website'), $post_id);
-            update_field('notes', $request->get_param('notes'), $post_id);
+
+        // ====== 轉換欄位格式 ======
+        // 餐廳類型 (checkbox 陣列)
+        $types = $request->get_param('restaurant_type');
+        if (!empty($types) && !is_array($types)) {
+            $types = array_map('trim', explode(',', $types));
         }
-        
+
+        // 是否收開瓶費 (中英 mapping)
+        $is_charged_map = ['酌收' => 'yes', '不收費' => 'no', '其他' => 'other'];
+        $is_charged_value = $request->get_param('is_charged');
+        if (isset($is_charged_map[$is_charged_value])) {
+            $is_charged_value = $is_charged_map[$is_charged_value];
+        }
+
+        // 提供酒器設備 (checkbox 陣列)
+        $equipment = $request->get_param('equipment');
+        if (!empty($equipment) && !is_array($equipment)) {
+            $equipment = array_map('trim', explode(',', $equipment));
+        }
+
+        // 是否提供開酒服務 (中英 mapping)
+        $open_bottle_service_map = ['有' => 'yes', '無' => 'no', '其他' => 'other'];
+        $service_value = $request->get_param('open_bottle_service');
+        if (isset($open_bottle_service_map[$service_value])) {
+            $service_value = $open_bottle_service_map[$service_value];
+        }
+
+        // 社群連結（允許多網址）
+        $social_media = $request->get_param('social_media');
+        if (!empty($social_media)) {
+            $social_links_array = array_map('trim', explode(',', $social_media));
+            // 只存第一個網址進 ACF（前台顯示多個時可自行合併）
+            $social_media_primary = $social_links_array[0];
+        } else {
+            $social_media_primary = '';
+        }
+
+        // ====== 更新 ACF 欄位 ======
+        if (function_exists('update_field')) {
+            $acf_updates = array(
+                'contact_person' => $request->get_param('contact_person'),
+                'email' => $request->get_param('email'),
+                'restaurant_type' => $types,
+                'address' => $request->get_param('address'),
+                'is_charged' => $is_charged_value,
+                'corkage_fee' => $request->get_param('corkage_fee'),
+                'equipment' => $equipment,
+                'open_bottle_service' => $service_value,
+                'open_bottle_service_other_note' => $request->get_param('open_bottle_service_other_note'),
+                'phone' => $request->get_param('phone'),
+                'website' => $request->get_param('website'),
+                'social_links' => $social_media_primary,
+                'notes' => $request->get_param('notes'),
+                'last_updated' => current_time('Y-m-d'),
+                'source' => $request->get_param('is_owner') === '是' ? '店主' : '表單填寫者'
+            );
+            
+            foreach ($acf_updates as $field_name => $field_value) {
+                update_field($field_name, $field_value, $post_id);
+            }
+        }
+
         // 設定地區分類
         $district = $request->get_param('district');
         if ($district) {
@@ -132,12 +179,11 @@ function byob_create_restaurant_post($request) {
         return array(
             'success' => true,
             'post_id' => $post_id,
-            'message' => 'Restaurant post created successfully'
+            'message' => 'Restaurant post created successfully',
+            'post_url' => get_permalink($post_id)
         );
-        
     } catch (Exception $e) {
         byob_log_api_call(0, $request->get_params(), 'error: ' . $e->getMessage());
-        
         return new WP_Error(
             'creation_failed',
             'Failed to create restaurant post: ' . $e->getMessage(),
@@ -158,16 +204,13 @@ function byob_log_api_call($post_id, $params, $status) {
     
     $logs = get_option('byob_api_logs', array());
     $logs[] = $log_entry;
-    
-    // 只保留最近 50 筆記錄
     if (count($logs) > 50) {
         $logs = array_slice($logs, -50);
     }
-    
     update_option('byob_api_logs', $logs);
 }
 
-// 註冊餐廳自訂文章類型
+// 註冊餐廳自訂文章類型與地區分類
 add_action('init', function() {
     register_post_type('restaurant', array(
         'labels' => array(
@@ -189,7 +232,6 @@ add_action('init', function() {
         'rewrite' => array('slug' => 'restaurant')
     ));
     
-    // 註冊地區分類
     register_taxonomy('district', 'restaurant', array(
         'labels' => array(
             'name' => '地區',
@@ -197,12 +239,8 @@ add_action('init', function() {
             'search_items' => '搜尋地區',
             'all_items' => '所有地區',
             'parent_item' => '父地區',
-            'parent_item_colon' => '父地區:',
             'edit_item' => '編輯地區',
-            'update_item' => '更新地區',
             'add_new_item' => '新增地區',
-            'new_item_name' => '新地區名稱',
-            'menu_name' => '地區'
         ),
         'hierarchical' => true,
         'show_ui' => true,
@@ -227,7 +265,6 @@ add_action('admin_menu', function() {
 
 // API 設定頁面
 function byob_api_settings_page() {
-    // 處理表單提交
     if (isset($_POST['submit'])) {
         if (isset($_POST['byob_api_key'])) {
             update_option('byob_api_key', sanitize_text_field($_POST['byob_api_key']));
@@ -237,7 +274,6 @@ function byob_api_settings_page() {
     
     $current_key = get_option('byob_api_key', 'byob-secret-key-2025');
     $logs = get_option('byob_api_logs', array());
-    
     ?>
     <div class="wrap">
         <h1>BYOB API 設定</h1>
@@ -280,7 +316,76 @@ function byob_api_settings_page() {
         
         <h2>測試 API 連接</h2>
         <p>API 端點：<code><?php echo esc_url(rest_url('byob/v1/restaurant')); ?></code></p>
-        <p>請在 Google Apps Script 中使用此端點進行測試。</p>
     </div>
     <?php
+}
+
+// 新增：檢查現有餐廳文章狀態
+function byob_check_existing_restaurants() {
+    $args = array(
+        'post_type' => 'restaurant',
+        'post_status' => array('publish', 'draft', 'pending'),
+        'posts_per_page' => -1,
+        'orderby' => 'date',
+        'order' => 'DESC'
+    );
+    
+    $restaurants = get_posts($args);
+    $results = array();
+    
+    foreach ($restaurants as $restaurant) {
+        $acf_fields = array();
+        
+        if (function_exists('get_fields')) {
+            $acf_fields = get_fields($restaurant->ID);
+        }
+        
+        $results[] = array(
+            'post_id' => $restaurant->ID,
+            'title' => $restaurant->post_title,
+            'status' => $restaurant->post_status,
+            'date' => $restaurant->post_date,
+            'url' => get_permalink($restaurant->ID),
+            'acf_fields' => $acf_fields
+        );
+    }
+    
+    return $results;
+}
+
+// 新增：測試 ACF 欄位更新
+function byob_test_acf_update($post_id) {
+    if (!function_exists('update_field')) {
+        return array('error' => 'ACF 函數不存在');
+    }
+    
+    $test_fields = array(
+        'contact_person' => '測試聯絡人',
+        'email' => 'test@example.com',
+        'restaurant_type' => array('中式', '台式'),
+        'address' => '測試地址',
+        'is_charged' => 'yes',
+        'corkage_fee' => '測試開瓶費說明',
+        'equipment' => array('酒杯', '開瓶器'),
+        'open_bottle_service' => 'yes',
+        'phone' => '02-12345678',
+        'website' => 'https://test.com',
+        'social_links' => 'https://instagram.com/test',
+        'notes' => '測試備註',
+        'last_updated' => current_time('Y-m-d'),
+        'source' => '測試來源'
+    );
+    
+    $results = array();
+    
+    foreach ($test_fields as $field_name => $field_value) {
+        $result = update_field($field_name, $field_value, $post_id);
+        $results[$field_name] = array(
+            'value' => $field_value,
+            'update_result' => $result,
+            'get_result' => get_field($field_name, $post_id)
+        );
+    }
+    
+    return $results;
 }
