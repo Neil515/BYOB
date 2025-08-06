@@ -86,6 +86,11 @@
     <div class="info-group wine-info">
       <?php 
       $is_charged = get_field('is_charged');
+      // 除錯：顯示原始值和類型
+      if (current_user_can('administrator')) {
+        echo '<!-- DEBUG: is_charged = ' . var_export($is_charged, true) . ' -->';
+      }
+      
       if ($is_charged): 
         if (is_array($is_charged)) {
           $charged_output = implode(' / ', $is_charged);
@@ -133,13 +138,19 @@
       <?php 
       $open_bottle_service = get_field('open_bottle_service');
       $open_bottle_service_other_note = get_field('open_bottle_service_other_note');
+      
+      // 除錯：顯示原始值和類型
+      if (current_user_can('administrator')) {
+        echo '<!-- DEBUG: open_bottle_service = ' . var_export($open_bottle_service, true) . ' -->';
+        echo '<!-- DEBUG: open_bottle_service_other_note = ' . var_export($open_bottle_service_other_note, true) . ' -->';
+      }
 
       if ($open_bottle_service): 
-        if ($open_bottle_service === 'yes') {
+        if ($open_bottle_service === '是') {
           $service_output = '是';
-        } elseif ($open_bottle_service === 'no') {
+        } elseif ($open_bottle_service === '否') {
           $service_output = '否';
-        } elseif ($open_bottle_service === 'other') {
+        } elseif ($open_bottle_service === '其他') {
           $service_output = '其他：' . ($open_bottle_service_other_note ?: '無說明');
         } else {
           $service_output = $open_bottle_service;
