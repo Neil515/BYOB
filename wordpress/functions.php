@@ -1,6 +1,8 @@
 <?php
 // Add custom Theme Functions here
 
+// BYOB 功能開關設定 - 已移至檔案結尾的 byob_get_feature_settings() 函數
+
 // BYOB Google Form 自動導入 WordPress 功能
 // 建立自訂 REST API 端點
 add_action('rest_api_init', function () {
@@ -63,7 +65,7 @@ add_action('rest_api_init', function () {
             ),
             'social_media' => array(
                 'required' => false,
-                'sanitize_callback' => 'sanitize_text_field', // 允許多網址，用逗號分隔
+                'sanitize_callback' => 'sanitize_text_field',
             ),
             'notes' => array(
                 'required' => false,
@@ -81,12 +83,18 @@ add_action('rest_api_init', function () {
         'methods' => 'GET',
         'callback' => 'byob_debug_page',
         'permission_callback' => function() {
-            // 允許管理員直接訪問，或者通過 API 金鑰驗證
             if (current_user_can('administrator')) {
                 return true;
             }
             return byob_verify_api_key(new WP_REST_Request());
         },
+    ));
+    
+    // 新增測試端點
+    register_rest_route('byob/v1', '/test', array(
+        'methods' => 'POST',
+        'callback' => 'byob_test_endpoint',
+        'permission_callback' => '__return_true',
     ));
 });
 
@@ -104,11 +112,64 @@ function byob_verify_api_key($request) {
 // 建立餐廳文章
 function byob_create_restaurant_post($request) {
     try {
-        // 建立新文章
+        // 除錯：記錄接收到的所有參數
+        $received_params = $request->get_params();
+        error_log('BYOB API: 接收到的參數: ' . print_r($received_params, true));
+        
+        // 支援多種參數名稱的映射
+        $param_mapping = array(
+            'restaurant_name' => array('restaurant_name', 'name', 'restaurant_name'),
+            'contact_person' => array('contact_person', 'contact', 'contact_name'),
+            'email' => array('email', 'contact_email', 'email_address'),
+            'restaurant_type' => array('restaurant_type', 'type', 'category'),
+            'district' => array('district', 'area', 'region'),
+            'address' => array('address', 'restaurant_address', 'location'),
+            'is_charged' => array('is_charged', 'charged', 'corkage_charged'),
+            'phone' => array('phone', 'contact_phone', 'phone_number'),
+            'corkage_fee' => array('corkage_fee', 'fee', 'corkage_fee_amount'),
+            'equipment' => array('equipment', 'equipment_list', 'available_equipment'),
+            'open_bottle_service' => array('open_bottle_service', 'bottle_service', 'service_type'),
+            'open_bottle_service_other_note' => array('open_bottle_service_other_note', 'service_note', 'other_service'),
+            'website' => array('website', 'website_url', 'url'),
+            'social_media' => array('social_media', 'social', 'social_links'),
+            'notes' => array('notes', 'additional_notes', 'comments'),
+            'is_owner' => array('is_owner', 'owner', 'is_restaurant_owner')
+        );
+        
+        // 獲取參數值（支援多種名稱）
+        function get_param_value($request, $param_names) {
+            foreach ($param_names as $name) {
+                $value = $request->get_param($name);
+                if (!empty($value)) {
+                    return $value;
+                }
+            }
+            return '';
+        }
+        
+        // 檢查必填參數
+        $required_params = array(
+            'restaurant_name', 'contact_person', 'email', 'restaurant_type', 
+            'district', 'address', 'is_charged', 'phone'
+        );
+        
+        $missing_params = array();
+        foreach ($required_params as $param) {
+            if (empty(get_param_value($request, $param_mapping[$param]))) {
+                $missing_params[] = $param;
+            }
+        }
+        
+        if (!empty($missing_params)) {
+            error_log('BYOB API: 缺少必填參數: ' . implode(', ', $missing_params));
+            return new WP_Error('missing_required_params', '缺少必填參數: ' . implode(', ', $missing_params), array('status' => 400));
+        }
+        
+        // 建立新文章 - 改為草稿狀態
         $post_data = array(
-            'post_title' => $request->get_param('restaurant_name'),
-            'post_content' => $request->get_param('notes') ?: '',
-            'post_status' => 'publish', // 修正：改為已發布狀態
+            'post_title' => get_param_value($request, $param_mapping['restaurant_name']),
+            'post_content' => get_param_value($request, $param_mapping['notes']) ?: '',
+            'post_status' => 'draft', // 改為草稿狀態，等待審核
             'post_type' => 'restaurant',
             'post_author' => 1,
         );
@@ -118,229 +179,70 @@ function byob_create_restaurant_post($request) {
             throw new Exception('Failed to create post: ' . $post_id->get_error_message());
         }
 
-        // ====== 轉換欄位格式 ======
-        // 餐廳類型 (checkbox 陣列)
-        $types = $request->get_param('restaurant_type');
+        // 處理餐廳類型
+        $types = get_param_value($request, $param_mapping['restaurant_type']);
         if (!empty($types) && !is_array($types)) {
             $types = array_map('trim', explode(',', $types));
         }
 
-        // 聯絡人
-        $contact_person = $request->get_param('contact_person');
-        error_log("BYOB: contact_person from request: " . var_export($contact_person, true));
-
-        // 是否收開瓶費 (轉換為 ACF 期望的值)
-        $is_charged_value = $request->get_param('is_charged');
-        error_log("BYOB: Raw is_charged_value from request: " . var_export($is_charged_value, true));
-        
-        // 檢查所有可能的參數名稱
-        $possible_is_charged_params = ['is_charged', '是否收開瓶費', '是否收開瓶費？'];
-        foreach ($possible_is_charged_params as $param_name) {
-            $value = $request->get_param($param_name);
-            if (!empty($value)) {
-                $is_charged_value = $value;
-                error_log("BYOB: Found is_charged_value in param '{$param_name}': " . var_export($value, true));
-                break;
-            }
-        }
-        
-        // 轉換中文值為 ACF 期望的值
-        $is_charged_map = [
-            '酌收' => 'yes',
-            '不收費' => 'no', 
-            '其他' => 'other',
-            '是' => 'yes',
-            '否' => 'no'
-        ];
-        
-        // 檢查是否為中文值
-        if (isset($is_charged_map[$is_charged_value])) {
-            $is_charged_value = $is_charged_map[$is_charged_value];
-            error_log("BYOB: is_charged_value mapped from '{$request->get_param('is_charged')}' to: " . $is_charged_value);
-        } else {
-            // 如果沒有匹配的值，記錄除錯資訊
-            error_log("BYOB: is_charged_value not found in map: " . var_export($is_charged_value, true));
-            // 如果值為空，設定預設值
-            if (empty($is_charged_value)) {
-                $is_charged_value = '';
-                error_log("BYOB: is_charged_value is empty, setting to empty string");
-            }
-        }
-
-        // 開瓶費說明
-        $corkage_fee = $request->get_param('corkage_fee');
-        error_log("BYOB: corkage_fee from request: " . var_export($corkage_fee, true));
-
-        // 提供酒器設備 (checkbox 陣列)
-        $equipment = $request->get_param('equipment');
+        // 處理設備
+        $equipment = get_param_value($request, $param_mapping['equipment']);
         if (!empty($equipment) && !is_array($equipment)) {
-            // 如果是字符串，先分割成陣列
             $equipment = array_map('trim', explode(',', $equipment));
         }
         
-        // 確保 equipment 是陣列格式
-        if (!is_array($equipment)) {
-            $equipment = array();
-        }
-        
-        error_log("BYOB: equipment from request: " . var_export($equipment, true));
-
-        // 是否提供開酒服務 (轉換為 ACF 期望的值)
-        $service_value = $request->get_param('open_bottle_service');
-        error_log("BYOB: Raw service_value from request: " . var_export($service_value, true));
-        
-        // 檢查所有可能的參數名稱
-        $possible_service_params = ['open_bottle_service', '是否提供開酒服務', '是否提供開酒服務？'];
-        foreach ($possible_service_params as $param_name) {
-            $value = $request->get_param($param_name);
-            if (!empty($value)) {
-                $service_value = $value;
-                error_log("BYOB: Found service_value in param '{$param_name}': " . var_export($value, true));
-                break;
-            }
-        }
-        
-        // 轉換中文值為 ACF 期望的值
-        $service_map = [
-            '有' => 'yes',
-            '無' => 'no',
-            '其他' => 'other',
-            '是' => 'yes',
-            '否' => 'no'
-        ];
-        
-        // 檢查是否為中文值
-        if (isset($service_map[$service_value])) {
-            $service_value = $service_map[$service_value];
-            error_log("BYOB: service_value mapped from '{$request->get_param('open_bottle_service')}' to: " . $service_value);
-        } else {
-            // 如果沒有匹配的值，記錄除錯資訊
-            error_log("BYOB: service_value not found in map: " . var_export($service_value, true));
-            // 如果值為空，設定預設值
-            if (empty($service_value)) {
-                $service_value = '';
-                error_log("BYOB: service_value is empty, setting to empty string");
-            }
-        }
-
-        // 行政區
-        $district = $request->get_param('district');
-        error_log("BYOB: district from request: " . var_export($district, true));
-
-        // 是否為店主
-        $is_owner = $request->get_param('is_owner');
-        error_log("BYOB: is_owner from request: " . var_export($is_owner, true));
-
-        // 社群連結（允許多網址）
-        $social_media = $request->get_param('social_media');
+        // 處理社群連結
+        $social_media = get_param_value($request, $param_mapping['social_media']);
         if (!empty($social_media)) {
             $social_links_array = array_map('trim', explode(',', $social_media));
-            // 只存第一個網址進 ACF（前台顯示多個時可自行合併）
             $social_media_primary = $social_links_array[0];
         } else {
             $social_media_primary = '';
         }
 
-        // ====== 更新 ACF 欄位 ======
+        // 更新 ACF 欄位
         if (function_exists('update_field')) {
-            // 除錯：檢查轉換後的值
-            error_log("BYOB: Final is_charged_value before ACF update: " . var_export($is_charged_value, true));
-            error_log("BYOB: Final service_value before ACF update: " . var_export($service_value, true));
-            
-            // 修正：確保所有欄位都正確對應
             $acf_updates = array(
-                'contact_person' => $contact_person ?: '',
-                'email' => $request->get_param('email') ?: '',
+                'contact_person' => get_param_value($request, $param_mapping['contact_person']) ?: '',
+                'email' => get_param_value($request, $param_mapping['email']) ?: '',
                 'restaurant_type' => $types ?: array(),
-                'address' => $request->get_param('address') ?: '',
-                'is_charged' => $is_charged_value ?: '',
-                'corkage_fee' => $corkage_fee ?: '',
+                'address' => get_param_value($request, $param_mapping['address']) ?: '',
+                'is_charged' => get_param_value($request, $param_mapping['is_charged']) ?: '',
+                'corkage_fee' => get_param_value($request, $param_mapping['corkage_fee']) ?: '',
                 'equipment' => $equipment ?: array(),
-                'open_bottle_service' => $service_value ?: '',
-                'open_bottle_service_other_note' => $request->get_param('open_bottle_service_other_note') ?: '',
-                'phone' => $request->get_param('phone') ?: '',
-                'website' => $request->get_param('website') ?: '',
-                'social_links' => $social_media_primary ?: '',
-                'notes' => $request->get_param('notes') ?: '',
+                'open_bottle_service' => get_param_value($request, $param_mapping['open_bottle_service']) ?: '',
+                'open_bottle_service_other_note' => get_param_value($request, $param_mapping['open_bottle_service_other_note']) ?: '',
+                'phone' => get_param_value($request, $param_mapping['phone']) ?: '',
+                'website' => get_param_value($request, $param_mapping['website']) ?: '',
+                'social_media' => $social_media_primary ?: '', // 修正欄位名稱
+                'notes' => get_param_value($request, $param_mapping['notes']) ?: '',
                 'last_updated' => current_time('Y-m-d'),
-                'source' => $is_owner === '是' ? '店主' : '表單填寫者',
-                'is_owner' => $is_owner ?: ''
+                'source' => get_param_value($request, $param_mapping['is_owner']) === '是' ? '店主' : '表單填寫者',
+                'is_owner' => get_param_value($request, $param_mapping['is_owner']) ?: '',
+                'review_status' => 'pending', // 新增審核狀態
+                'submitted_date' => current_time('mysql'), // 新增提交日期
+                'review_date' => '', // 新增審核日期（初始為空）
+                'review_notes' => '' // 新增審核備註（初始為空）
             );
             
-            // 除錯：記錄 ACF 更新資料
-            error_log('BYOB ACF Updates: ' . print_r($acf_updates, true));
-            
-            // 修正：逐個更新 ACF 欄位並記錄結果
             foreach ($acf_updates as $field_name => $field_value) {
-                error_log("BYOB: Attempting to update field '{$field_name}' with value: " . var_export($field_value, true));
-                
-                // 直接嘗試更新，不檢查欄位是否存在（因為可能導致問題）
-                $update_result = update_field($field_name, $field_value, $post_id);
-                error_log("BYOB ACF Update: {$field_name} = " . var_export($field_value, true) . " (result: " . var_export($update_result, true) . ")");
-                
-                // 驗證更新是否成功
-                if (function_exists('get_field')) {
-                    $stored_value = get_field($field_name, $post_id);
-                    error_log("BYOB ACF Verification - {$field_name}: " . var_export($stored_value, true));
-                    
-                    // 如果更新失敗，嘗試使用 set_field
-                    if ($update_result === false && $stored_value !== $field_value) {
-                        error_log("BYOB: update_field failed for {$field_name}, trying set_field...");
-                        $set_result = set_field($field_name, $field_value, $post_id);
-                        error_log("BYOB set_field result for {$field_name}: " . var_export($set_result, true));
-                        
-                        // 再次檢查是否成功
-                        $final_value = get_field($field_name, $post_id);
-                        error_log("BYOB Final check - {$field_name}: " . var_export($final_value, true));
-                    }
-                }
+                update_field($field_name, $field_value, $post_id);
             }
-            
-            // 額外除錯：檢查 ACF 欄位是否真的被儲存
-            if (function_exists('get_field')) {
-                $stored_is_charged = get_field('is_charged', $post_id);
-                $stored_open_bottle_service = get_field('open_bottle_service', $post_id);
-                $stored_contact_person = get_field('contact_person', $post_id);
-                $stored_equipment = get_field('equipment', $post_id);
-                $stored_corkage_fee = get_field('corkage_fee', $post_id);
-                $stored_district = get_field('district', $post_id);
-                $stored_is_owner = get_field('is_owner', $post_id);
-                
-                error_log("BYOB ACF Verification - is_charged: " . var_export($stored_is_charged, true));
-                error_log("BYOB ACF Verification - open_bottle_service: " . var_export($stored_open_bottle_service, true));
-                error_log("BYOB ACF Verification - contact_person: " . var_export($stored_contact_person, true));
-                error_log("BYOB ACF Verification - equipment: " . var_export($stored_equipment, true));
-                error_log("BYOB ACF Verification - corkage_fee: " . var_export($stored_corkage_fee, true));
-                error_log("BYOB ACF Verification - district: " . var_export($stored_district, true));
-                error_log("BYOB ACF Verification - is_owner: " . var_export($stored_is_owner, true));
-            }
-        } else {
-            error_log("BYOB ERROR: ACF plugin not loaded - update_field function does not exist");
-        }
-
-        // 設定地區分類
-        $district = $request->get_param('district');
-        if ($district) {
-            wp_set_object_terms($post_id, $district, 'district');
-            error_log("BYOB: Set district taxonomy: {$district}");
         }
         
         // 記錄 API 呼叫
-        byob_log_api_call($post_id, $request->get_params(), 'success');
+        byob_log_api_call($post_id, $request->get_params(), 'draft_created');
         
         return array(
             'success' => true,
             'post_id' => $post_id,
-            'message' => 'Restaurant post created successfully',
-            'post_url' => get_permalink($post_id)
+            'post_url' => get_edit_post_link($post_id, ''),
+            'message' => '餐廳資料已建立為草稿，等待審核'
         );
+
     } catch (Exception $e) {
-        byob_log_api_call(0, $request->get_params(), 'error: ' . $e->getMessage());
-        return new WP_Error(
-            'creation_failed',
-            'Failed to create restaurant post: ' . $e->getMessage(),
-            array('status' => 500)
-        );
+        byob_log_api_call($post_id ?? 0, $request->get_params(), 'error: ' . $e->getMessage());
+        return new WP_Error('restaurant_creation_failed', $e->getMessage(), array('status' => 500));
     }
 }
 
@@ -350,685 +252,567 @@ function byob_log_api_call($post_id, $params, $status) {
         'timestamp' => current_time('mysql'),
         'post_id' => $post_id,
         'params' => $params,
-        'status' => $status,
-        'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown'
+        'status' => $status
     );
     
     $logs = get_option('byob_api_logs', array());
     $logs[] = $log_entry;
-    if (count($logs) > 50) {
-        $logs = array_slice($logs, -50);
+    
+    // 只保留最近100筆記錄
+    if (count($logs) > 100) {
+        $logs = array_slice($logs, -100);
     }
+    
     update_option('byob_api_logs', $logs);
 }
 
-// 註冊餐廳自訂文章類型與地區分類
-add_action('init', function() {
-    register_post_type('restaurant', array(
-        'labels' => array(
-            'name' => '餐廳清單',
-            'singular_name' => '餐廳',
-            'add_new' => '新增餐廳',
-            'add_new_item' => '新增餐廳',
-            'edit_item' => '編輯餐廳',
-            'new_item' => '新餐廳',
-            'view_item' => '查看餐廳',
-            'search_items' => '搜尋餐廳',
-            'not_found' => '找不到餐廳',
-            'not_found_in_trash' => '垃圾桶中找不到餐廳'
-        ),
-        'public' => true,
-        'has_archive' => true,
-        'supports' => array('title', 'editor', 'thumbnail'),
-        'menu_icon' => 'dashicons-food',
-        'rewrite' => array('slug' => 'restaurant')
-    ));
+// 會員系統初始化
+function byob_init_membership_systems() {
+    $features = byob_get_feature_settings();
     
-    register_taxonomy('district', 'restaurant', array(
-        'labels' => array(
-            'name' => '地區',
-            'singular_name' => '地區',
-            'search_items' => '搜尋地區',
-            'all_items' => '所有地區',
-            'parent_item' => '父地區',
-            'edit_item' => '編輯地區',
-            'add_new_item' => '新增地區',
-        ),
-        'hierarchical' => true,
-        'show_ui' => true,
-        'show_admin_column' => true,
-        'query_var' => true,
-        'rewrite' => array('slug' => 'district')
-    ));
-});
+    // 檢查檔案是否存在再載入 - 使用多個可能的路徑
+    // 優先檢查子主題目錄，然後是父主題目錄
+    $possible_paths = array(
+        get_stylesheet_directory(), // 樣式表目錄（子主題）- 優先
+        get_template_directory(), // 當前主題目錄（可能是子主題）
+        dirname(__FILE__), // 當前檔案目錄
+        ABSPATH . 'wp-content/themes/flatsome-child', // 子主題目錄
+        ABSPATH . 'wp-content/themes/flatsome' // 父主題目錄
+    );
+    
+    $restaurant_member_file = null;
+    $customer_member_file = null;
+    
+    // 尋找檔案
+    foreach ($possible_paths as $path) {
+        $restaurant_path = $path . '/restaurant-member-functions.php';
+        $customer_path = $path . '/customer-member-functions.php';
+        
+        if (!$restaurant_member_file && file_exists($restaurant_path)) {
+            $restaurant_member_file = $restaurant_path;
+        }
+        if (!$customer_member_file && file_exists($customer_path)) {
+            $customer_member_file = $customer_path;
+        }
+    }
+    
+    // 新增除錯資訊
+    error_log('BYOB: 主題目錄: ' . get_template_directory());
+    error_log('BYOB: 當前檔案目錄: ' . dirname(__FILE__));
+    error_log('BYOB: 餐廳會員檔案路徑: ' . ($restaurant_member_file ?: '未找到'));
+    error_log('BYOB: 客人會員檔案路徑: ' . ($customer_member_file ?: '未找到'));
+    
+    // 載入餐廳業者會員系統（如果啟用）
+    if ($features['restaurant_member_system'] && $restaurant_member_file) {
+        require_once $restaurant_member_file;
+        if (function_exists('byob_init_restaurant_member_system')) {
+            byob_init_restaurant_member_system();
+        }
+    } else {
+        if (!$features['restaurant_member_system']) {
+            error_log('BYOB: 餐廳業者會員系統已停用');
+        } else {
+            error_log('BYOB: restaurant-member-functions.php 檔案不存在');
+        }
+    }
+    
+    // 載入一般客人會員系統（如果啟用）
+    if ($features['customer_member_system'] && $customer_member_file) {
+        require_once $customer_member_file;
+        if (function_exists('byob_init_customer_member_system')) {
+            byob_init_customer_member_system();
+        }
+    } else {
+        if (!$features['customer_member_system']) {
+            error_log('BYOB: 一般客人會員系統已停用');
+        } else {
+            error_log('BYOB: customer-member-functions.php 檔案不存在');
+        }
+    }
+}
 
-// 加入管理選單
+// 在 WordPress 初始化時載入會員系統
+add_action('init', 'byob_init_membership_systems');
+
+// 確保選單在正確時機註冊
 add_action('admin_menu', function() {
-    add_menu_page(
-        'BYOB API 設定',
-        'BYOB API',
-        'manage_options',
-        'byob-api-settings',
-        'byob_api_settings_page',
-        'dashicons-rest-api',
-        30
+    // 使用與初始化相同的邏輯尋找檔案
+    // 優先檢查子主題目錄，然後是父主題目錄
+    $possible_paths = array(
+        get_stylesheet_directory(), // 樣式表目錄（子主題）- 優先
+        get_template_directory(), // 當前主題目錄（可能是子主題）
+        dirname(__FILE__), // 當前檔案目錄
+        ABSPATH . 'wp-content/themes/flatsome-child', // 子主題目錄
+        ABSPATH . 'wp-content/themes/flatsome' // 父主題目錄
     );
     
-    // 新增除錯子頁面
-    add_submenu_page(
-        'byob-api-settings',
-        'BYOB 除錯',
-        '除錯',
-        'manage_options',
-        'byob-debug',
-        'byob_debug_admin_page'
-    );
+    $restaurant_member_file = null;
+    foreach ($possible_paths as $path) {
+        $restaurant_path = $path . '/restaurant-member-functions.php';
+        if (file_exists($restaurant_path)) {
+            $restaurant_member_file = $restaurant_path;
+            break;
+        }
+    }
+    
+    if ($restaurant_member_file) {
+        require_once $restaurant_member_file;
+        
+        // 註冊審核管理選單
+        if (function_exists('byob_add_review_management_menu')) {
+            byob_add_review_management_menu();
+        }
+        
+        // 註冊會員管理選單
+        if (function_exists('byob_add_member_management_menu')) {
+            byob_add_member_management_menu();
+        }
+        
+        // 註冊餐廳業者選單
+        if (function_exists('byob_add_restaurant_owner_menu')) {
+            byob_add_restaurant_owner_menu();
+        }
+    }
+}, 20);
+
+// 統一權限檢查功能
+function byob_check_user_permissions($user_id, $restaurant_id, $permission_type) {
+    $user = get_user_by('id', $user_id);
+    if (!$user) {
+        return false;
+    }
+    
+    switch ($permission_type) {
+        case 'edit_restaurant':
+            // 檢查是否為餐廳業者且擁有該餐廳
+            if (in_array('restaurant_owner', $user->roles)) {
+                $owner_restaurant_id = get_post_meta($restaurant_id, '_restaurant_owner_id', true);
+                return $owner_restaurant_id == $user_id;
+            }
+            break;
+            
+        case 'view_restaurant_stats':
+            // 檢查是否為餐廳業者
+            return in_array('restaurant_owner', $user->roles);
+            
+        default:
+            return false;
+    }
+}
+
+// 新增會員系統相關 REST API 端點
+add_action('rest_api_init', function () {
+    $features = byob_get_feature_settings();
+    
+    // 邀請碼系統 API（如果啟用）
+    if ($features['invitation_system']) {
+        register_rest_route('byob/v1', '/restaurant/(?P<id>\d+)/invitation', array(
+            'methods' => 'POST',
+            'callback' => 'byob_generate_restaurant_invitation',
+            'permission_callback' => function() {
+                return current_user_can('administrator');
+            },
+        ));
+    }
+
+    register_rest_route('byob/v1', '/restaurant/(?P<id>\d+)/owner', array(
+        'methods' => 'GET',
+        'callback' => 'byob_get_restaurant_owner',
+        'permission_callback' => '__return_true',
+    ));
 });
 
-// API 設定頁面
-function byob_api_settings_page() {
-    if (isset($_POST['submit'])) {
-        if (isset($_POST['byob_api_key'])) {
-            update_option('byob_api_key', sanitize_text_field($_POST['byob_api_key']));
-        }
-        echo '<div class="notice notice-success"><p>設定已儲存！</p></div>';
+// 生成餐廳邀請
+function byob_generate_restaurant_invitation($request) {
+    $restaurant_id = $request->get_param('id');
+    $restaurant = get_post($restaurant_id);
+    
+    if (!$restaurant || $restaurant->post_type !== 'restaurant') {
+        return new WP_Error('restaurant_not_found', '餐廳不存在', array('status' => 404));
     }
     
-    $current_key = get_option('byob_api_key', 'byob-secret-key-2025');
-    $logs = get_option('byob_api_logs', array());
-    ?>
-    <div class="wrap">
-        <h1>BYOB API 設定</h1>
-        
-        <h2>API 金鑰設定</h2>
-        <form method="post">
-            <table class="form-table">
-                <tr>
-                    <th scope="row">API 金鑰</th>
-                    <td>
-                        <input type="text" name="byob_api_key" value="<?php echo esc_attr($current_key); ?>" class="regular-text" />
-                        <p class="description">此金鑰用於驗證 Google Apps Script 的 API 呼叫</p>
-                    </td>
-                </tr>
-            </table>
-            <?php submit_button(); ?>
-        </form>
-        
-        <h2>API 呼叫日誌</h2>
-        <table class="wp-list-table widefat fixed striped">
-            <thead>
-                <tr>
-                    <th>時間</th>
-                    <th>文章 ID</th>
-                    <th>狀態</th>
-                    <th>IP 位址</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach (array_reverse($logs) as $log): ?>
-                <tr>
-                    <td><?php echo esc_html($log['timestamp']); ?></td>
-                    <td><?php echo esc_html($log['post_id']); ?></td>
-                    <td><?php echo esc_html($log['status']); ?></td>
-                    <td><?php echo esc_html($log['ip']); ?></td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-        
-        <h2>測試 API 連接</h2>
-        <p>API 端點：<code><?php echo esc_url(rest_url('byob/v1/restaurant')); ?></code></p>
-    </div>
-    <?php
-}
-
-// 新增：檢查現有餐廳文章狀態
-function byob_check_existing_restaurants() {
-    $args = array(
-        'post_type' => 'restaurant',
-        'post_status' => array('publish', 'draft', 'pending'),
-        'posts_per_page' => -1,
-        'orderby' => 'date',
-        'order' => 'DESC'
+    // 生成邀請碼
+    $invitation_code = wp_generate_password(12, false);
+    $expires = date('Y-m-d H:i:s', strtotime('+7 days'));
+    
+    // 儲存邀請碼到資料庫
+    $invitation_data = array(
+        'code' => $invitation_code,
+        'restaurant_id' => $restaurant_id,
+        'expires' => $expires,
+        'used' => false,
+        'created' => current_time('mysql')
     );
     
-    $restaurants = get_posts($args);
-    $results = array();
+    update_post_meta($restaurant_id, '_byob_invitation_code', $invitation_data);
     
-    foreach ($restaurants as $restaurant) {
-        $acf_fields = array();
-        
-        if (function_exists('get_fields')) {
-            $acf_fields = get_fields($restaurant->ID);
-        }
-        
-        $results[] = array(
-            'post_id' => $restaurant->ID,
-            'title' => $restaurant->post_title,
-            'status' => $restaurant->post_status,
-            'date' => $restaurant->post_date,
-            'url' => get_permalink($restaurant->ID),
-            'acf_fields' => $acf_fields
-        );
-    }
-    
-    return $results;
+    return array(
+        'success' => true,
+        'invitation_code' => $invitation_code,
+        'restaurant_name' => $restaurant->post_title
+    );
 }
 
-// 新增：除錯頁面函數
-function byob_debug_page() {
-    if (!current_user_can('administrator')) {
+// 獲取餐廳業者資訊
+function byob_get_restaurant_owner($request) {
+    $restaurant_id = $request->get_param('id');
+    $owner_id = get_post_meta($restaurant_id, '_restaurant_owner_id', true);
+    
+    if (!$owner_id) {
+        return array('has_owner' => false);
+    }
+    
+    $owner = get_user_by('id', $owner_id);
+    if (!$owner) {
+        return array('has_owner' => false);
+    }
+    
+    return array(
+        'has_owner' => true,
+        'owner_id' => $owner_id,
+        'owner_name' => $owner->display_name,
+        'owner_email' => $owner->user_email
+    );
+}
+
+// 管理員設定頁面
+function byob_api_settings_page() {
+    if (!current_user_can('manage_options')) {
         wp_die('權限不足');
     }
     
-    echo '<h1>BYOB 除錯頁面</h1>';
-    
-    // 檢查最新的餐廳文章
-    $args = array(
-        'post_type' => 'restaurant',
-        'post_status' => array('publish', 'draft', 'pending'),
-        'posts_per_page' => 5,
-        'orderby' => 'date',
-        'order' => 'DESC'
-    );
-    
-    $restaurants = get_posts($args);
-    
-    foreach ($restaurants as $restaurant) {
-        echo '<h2>餐廳：' . esc_html($restaurant->post_title) . ' (ID: ' . $restaurant->ID . ')</h2>';
-        
-        if (function_exists('get_fields')) {
-            $acf_fields = get_fields($restaurant->ID);
-            echo '<h3>ACF 欄位：</h3>';
-            echo '<pre>' . print_r($acf_fields, true) . '</pre>';
-        }
-        
-        echo '<hr>';
+    if (isset($_POST['submit'])) {
+        update_option('byob_api_key', sanitize_text_field($_POST['api_key']));
+        echo '<div class="notice notice-success"><p>設定已儲存！</p></div>';
     }
-}
-
-// 新增：管理員專用的除錯頁面
-function byob_debug_admin_page() {
-    if (!current_user_can('administrator')) {
-        wp_die('Access denied');
-    }
+    
+    $api_key = get_option('byob_api_key', 'byob-secret-key-2025');
     
     echo '<div class="wrap">';
-    echo '<h1>BYOB ACF 欄位除錯</h1>';
+    echo '<h1>BYOB API 設定</h1>';
+    echo '<form method="post">';
+    echo '<table class="form-table">';
+    echo '<tr><th scope="row">API 金鑰</th><td><input type="text" name="api_key" value="' . esc_attr($api_key) . '" class="regular-text" /></td></tr>';
+    echo '</table>';
+    echo '<p class="submit"><input type="submit" name="submit" class="button-primary" value="儲存設定" /></p>';
+    echo '</form>';
+    echo '</div>';
+}
+
+// 新增管理員選單
+add_action('admin_menu', function() {
+    add_options_page('BYOB API 設定', 'BYOB API', 'manage_options', 'byob-api-settings', 'byob_api_settings_page');
     
-    // 取得最新的餐廳文章
-    $latest_restaurant = get_posts(array(
-        'post_type' => 'restaurant',
-        'numberposts' => 1,
-        'post_status' => 'publish',
-        'orderby' => 'date',
-        'order' => 'DESC'
-    ));
-    
-    if (empty($latest_restaurant)) {
-        echo '<p>沒有找到餐廳文章</p>';
-        return;
-    }
-    
-    $post_id = $latest_restaurant[0]->ID;
-    echo '<p><strong>檢查的文章 ID:</strong> ' . $post_id . '</p>';
-    echo '<p><strong>文章標題:</strong> ' . $latest_restaurant[0]->post_title . '</p>';
-    
-    // 檢查 ACF 插件是否載入
-    if (!function_exists('get_field')) {
-        echo '<p style="color: red;"><strong>錯誤:</strong> ACF 插件未載入</p>';
-        return;
-    }
-    
-    echo '<p style="color: green;"><strong>ACF 插件已載入：是</strong></p>';
-    
-    // 檢查所有相關的 ACF 欄位
-    $fields_to_check = array(
-        'contact_person' => '聯絡人',
-        'is_charged' => '是否收開瓶費',
-        'corkage_fee' => '開瓶費說明',
-        'equipment' => '提供酒器設備',
-        'open_bottle_service' => '是否提供開酒服務',
-        'email' => '電子郵件',
-        'restaurant_type' => '餐廳類型',
-        'district' => '行政區',
-        'address' => '地址',
-        'phone' => '聯絡電話',
-        'website' => '網站',
-        'social_links' => '社群連結',
-        'notes' => '備註',
-        'is_owner' => '是否為店主'
+    // 新增功能開關管理頁面
+    add_submenu_page(
+        'tools.php',
+        'BYOB 功能開關',
+        'BYOB 功能開關',
+        'manage_options',
+        'byob-feature-toggle',
+        'byob_feature_toggle_page'
     );
     
-    echo '<table class="wp-list-table widefat fixed striped">';
-    echo '<thead><tr><th>欄位名稱</th><th>顯示名稱</th><th>值</th><th>類型</th></tr></thead>';
-    echo '<tbody>';
+    // 新增簡化的會員系統狀態檢查選單
+    add_submenu_page(
+        'tools.php',
+        'BYOB 系統狀態',
+        'BYOB 系統狀態',
+        'manage_options',
+        'byob-system-status',
+        'byob_system_status_page'
+    );
     
-    foreach ($fields_to_check as $field_name => $display_name) {
-        $value = get_field($field_name, $post_id);
-        $type = gettype($value);
+    // 移除檔案上傳工具選單 - 不再需要
+});
+
+// 除錯頁面
+function byob_debug_page() {
+    if (!current_user_can('administrator')) {
+        return new WP_Error('permission_denied', '權限不足', array('status' => 403));
+    }
+    
+    // 檢查會員系統檔案 - 使用與初始化相同的邏輯
+    $possible_paths = array(
+        get_template_directory(), // 當前主題目錄（可能是子主題）
+        get_stylesheet_directory(), // 樣式表目錄（子主題）
+        get_template_directory(), // 父主題目錄
+        dirname(__FILE__), // 當前檔案目錄
+        ABSPATH . 'wp-content/themes/flatsome',
+        ABSPATH . 'wp-content/themes/flatsome-child'
+    );
+    
+    $restaurant_member_file = null;
+    $customer_member_file = null;
+    
+    // 尋找檔案
+    foreach ($possible_paths as $path) {
+        $restaurant_path = $path . '/restaurant-member-functions.php';
+        $customer_path = $path . '/customer-member-functions.php';
         
-        echo '<tr>';
-        echo '<td>' . esc_html($field_name) . '</td>';
-        echo '<td>' . esc_html($display_name) . '</td>';
-        echo '<td>' . esc_html(var_export($value, true)) . '</td>';
-        echo '<td>' . esc_html($type) . '</td>';
-        echo '</tr>';
+        if (!$restaurant_member_file && file_exists($restaurant_path)) {
+            $restaurant_member_file = $restaurant_path;
+        }
+        if (!$customer_member_file && file_exists($customer_path)) {
+            $customer_member_file = $customer_path;
+        }
     }
     
-    echo '</tbody></table>';
+    $debug_info = array(
+        'wordpress_version' => get_bloginfo('version'),
+        'php_version' => PHP_VERSION,
+        'acf_loaded' => function_exists('get_field'),
+        'restaurant_posts_count' => wp_count_posts('restaurant')->publish,
+        'api_key' => get_option('byob_api_key', 'byob-secret-key-2025'),
+        'template_directory' => get_template_directory(),
+        'stylesheet_directory' => get_stylesheet_directory(),
+        'membership_system' => array(
+            'restaurant_member_file_exists' => $restaurant_member_file !== null,
+            'customer_member_file_exists' => $customer_member_file !== null,
+            'restaurant_member_file_path' => $restaurant_member_file,
+            'customer_member_file_path' => $customer_member_file,
+            'restaurant_owner_role_exists' => get_role('restaurant_owner') !== null,
+            'customer_role_exists' => get_role('customer') !== null,
+            'restaurant_owner_users_count' => count(get_users(array('role' => 'restaurant_owner'))),
+            'customer_users_count' => count(get_users(array('role' => 'customer')))
+        )
+    );
     
-    // 檢查所有 ACF 欄位
-    echo '<h2>所有 ACF 欄位</h2>';
-    if (function_exists('get_fields')) {
-        $all_fields = get_fields($post_id);
-        echo '<pre>' . print_r($all_fields, true) . '</pre>';
+    return $debug_info;
+}
+
+// 測試端點
+function byob_test_endpoint($request) {
+    $received_params = $request->get_params();
+    $headers = $request->get_headers();
+    
+    return array(
+        'success' => true,
+        'message' => '測試端點正常運作',
+        'received_params' => $received_params,
+        'headers' => $headers,
+        'timestamp' => current_time('mysql'),
+        'server_info' => array(
+            'php_version' => PHP_VERSION,
+            'wordpress_version' => get_bloginfo('version'),
+            'rest_api_url' => rest_url('byob/v1/')
+        )
+    );
+}
+
+// 簡化的系統狀態檢查頁面
+function byob_system_status_page() {
+    if (!current_user_can('manage_options')) {
+        wp_die('權限不足');
     }
     
-    // 檢查 ACF 欄位配置
-    echo '<h2>ACF 欄位配置</h2>';
-    if (function_exists('get_field_objects')) {
-        $field_objects = get_field_objects($post_id);
-        echo '<pre>' . print_r($field_objects, true) . '</pre>';
+    // 檢查會員系統檔案 - 使用與初始化相同的邏輯
+    $possible_paths = array(
+        get_template_directory(), // 當前主題目錄（可能是子主題）
+        get_stylesheet_directory(), // 樣式表目錄（子主題）
+        get_template_directory(), // 父主題目錄
+        dirname(__FILE__), // 當前檔案目錄
+        ABSPATH . 'wp-content/themes/flatsome',
+        ABSPATH . 'wp-content/themes/flatsome-child'
+    );
+    
+    $restaurant_member_file = null;
+    $customer_member_file = null;
+    
+    // 尋找檔案
+    foreach ($possible_paths as $path) {
+        $restaurant_path = $path . '/restaurant-member-functions.php';
+        $customer_path = $path . '/customer-member-functions.php';
+        
+        if (!$restaurant_member_file && file_exists($restaurant_path)) {
+            $restaurant_member_file = $restaurant_path;
+        }
+        if (!$customer_member_file && file_exists($customer_path)) {
+            $customer_member_file = $customer_path;
+        }
     }
     
-    // 測試更新功能
-    echo '<h2>測試 ACF 欄位更新</h2>';
-    if (isset($_POST['test_update'])) {
-        $test_result = byob_test_acf_update($post_id);
-        echo '<pre>' . print_r($test_result, true) . '</pre>';
-    }
+    // 檢查角色
+    $restaurant_owner_role = get_role('restaurant_owner');
+    $customer_role = get_role('customer');
     
-    // 測試 ACF 配置
-    echo '<h2>測試 ACF 配置</h2>';
-    if (isset($_POST['test_config'])) {
-        $config_result = byob_test_acf_configuration($post_id);
-        echo '<pre>' . print_r($config_result, true) . '</pre>';
-    }
+    // 統計使用者
+    $restaurant_owners = get_users(array('role' => 'restaurant_owner'));
+    $customers = get_users(array('role' => 'customer'));
     
-    echo '<form method="post">';
-    echo '<input type="submit" name="test_update" value="測試更新 ACF 欄位" class="button button-primary">';
-    echo '<input type="submit" name="test_config" value="測試 ACF 配置" class="button button-secondary">';
-    echo '</form>';
+    echo '<div class="wrap">';
+    echo '<h1>BYOB 系統狀態檢查</h1>';
+    
+    echo '<h2>📁 檔案狀態</h2>';
+    echo '<table class="widefat">';
+    echo '<tr><th>檔案</th><th>狀態</th><th>路徑</th></tr>';
+    echo '<tr><td>餐廳業者會員系統</td><td>' . ($restaurant_member_file ? '✅ 存在' : '❌ 不存在') . '</td><td>' . ($restaurant_member_file ?: '未找到') . '</td></tr>';
+    echo '<tr><td>一般客人會員系統</td><td>' . ($customer_member_file ? '✅ 存在' : '❌ 不存在') . '</td><td>' . ($customer_member_file ?: '未找到') . '</td></tr>';
+    echo '</table>';
+    
+    echo '<h2>👥 角色狀態</h2>';
+    echo '<table class="widefat">';
+    echo '<tr><th>角色</th><th>狀態</th><th>使用者數量</th></tr>';
+    echo '<tr><td>餐廳業者 (restaurant_owner)</td><td>' . ($restaurant_owner_role ? '✅ 已建立' : '❌ 未建立') . '</td><td>' . count($restaurant_owners) . '</td></tr>';
+    echo '<tr><td>一般客人 (customer)</td><td>' . ($customer_role ? '✅ 已建立' : '❌ 未建立') . '</td><td>' . count($customers) . '</td></tr>';
+    echo '</table>';
+    
+    echo '<h2>🔧 功能狀態</h2>';
+    echo '<table class="widefat">';
+    echo '<tr><th>功能</th><th>設定狀態</th><th>實際狀態</th></tr>';
+    
+    $features = byob_get_feature_settings();
+    
+    echo '<tr><td>餐廳業者會員系統</td><td>' . ($features['restaurant_member_system'] ? '✅ 啟用' : '❌ 停用') . '</td><td>' . (function_exists('byob_init_restaurant_member_system') ? '✅ 已載入' : '❌ 未載入') . '</td></tr>';
+    echo '<tr><td>一般客人會員系統</td><td>' . ($features['customer_member_system'] ? '✅ 啟用' : '❌ 停用') . '</td><td>' . (function_exists('byob_init_customer_member_system') ? '✅ 已載入' : '❌ 未載入') . '</td></tr>';
+    echo '<tr><td>邀請碼系統</td><td>' . ($features['invitation_system'] ? '✅ 啟用' : '❌ 停用') . '</td><td>' . (function_exists('byob_generate_restaurant_invitation') ? '✅ 可用' : '❌ 不可用') . '</td></tr>';
+    echo '<tr><td>收藏系統</td><td>' . ($features['favorite_system'] ? '✅ 啟用' : '❌ 停用') . '</td><td>' . (function_exists('byob_toggle_favorite') ? '✅ 可用' : '❌ 不可用') . '</td></tr>';
+    echo '<tr><td>評論系統</td><td>' . ($features['review_system'] ? '✅ 啟用' : '❌ 停用') . '</td><td>' . (function_exists('byob_add_review') ? '✅ 可用' : '❌ 不可用') . '</td></tr>';
+    echo '<tr><td>積分系統</td><td>' . ($features['points_system'] ? '✅ 啟用' : '❌ 停用') . '</td><td>' . (function_exists('byob_add_points') ? '✅ 可用' : '❌ 不可用') . '</td></tr>';
+    echo '<tr><td>REST API 端點</td><td>' . ($features['api_endpoints'] ? '✅ 啟用' : '❌ 停用') . '</td><td>✅ 已註冊</td></tr>';
+    echo '</table>';
+    
+    echo '<h2>📊 統計資訊</h2>';
+    echo '<table class="widefat">';
+    echo '<tr><th>項目</th><th>數量</th></tr>';
+    echo '<tr><td>餐廳文章總數</td><td>' . wp_count_posts('restaurant')->publish . '</td></tr>';
+    echo '<tr><td>待審核餐廳</td><td>' . wp_count_posts('restaurant')->draft . '</td></tr>';
+    echo '<tr><td>餐廳業者會員</td><td>' . count($restaurant_owners) . '</td></tr>';
+    echo '<tr><td>一般客人會員</td><td>' . count($customers) . '</td></tr>';
+    echo '</table>';
+    
+    echo '<h2>📋 手動部署說明</h2>';
+    echo '<div class="notice notice-info">';
+    echo '<p><strong>如果檔案狀態顯示「不存在」，請手動上傳以下檔案到主題目錄：</strong></p>';
+    echo '<ul>';
+    echo '<li><code>restaurant-member-functions.php</code></li>';
+    echo '<li><code>customer-member-functions.php</code></li>';
+    echo '</ul>';
+    echo '<p><strong>上傳路徑：</strong> <code>' . get_template_directory() . '/</code></p>';
+    echo '<p><strong>當前檢查路徑：</strong></p>';
+    echo '<ul>';
+    echo '<li>餐廳業者檔案：<code>' . ($restaurant_member_file ?: '未找到') . '</code></li>';
+    echo '<li>一般客人檔案：<code>' . ($customer_member_file ?: '未找到') . '</code></li>';
+    echo '</ul>';
+    echo '<p><strong>系統會檢查以下路徑：</strong></p>';
+    echo '<ul>';
+    foreach ($possible_paths as $path) {
+        echo '<li><code>' . $path . '/</code></li>';
+    }
+    echo '</ul>';
+    echo '<p><strong>主題目錄資訊：</strong></p>';
+    echo '<ul>';
+    echo '<li>當前主題目錄：<code>' . get_template_directory() . '</code></li>';
+    echo '<li>樣式表目錄（子主題）：<code>' . get_stylesheet_directory() . '</code></li>';
+    echo '</ul>';
+    echo '</div>';
+    
+    echo '<h2>🧪 快速連結</h2>';
+    echo '<p><a href="' . admin_url('admin.php?page=byob-api-settings') . '" class="button">API 設定</a> ';
+    echo '<a href="' . admin_url('edit.php?post_type=restaurant&page=byob-review-management') . '" class="button">審核管理</a> ';
+    echo '<a href="' . admin_url('edit.php?post_type=restaurant&page=byob-member-management') . '" class="button">會員管理</a> ';
+    echo '<a href="' . admin_url('tools.php?page=byob-feature-toggle') . '" class="button">功能開關</a></p>';
     
     echo '</div>';
 }
 
-// 新增：註冊管理員頁面
-add_action('admin_menu', function() {
-    add_submenu_page(
-        'tools.php',
-        'BYOB ACF 除錯',
-        'BYOB ACF 除錯',
-        'administrator',
-        'byob-acf-debug',
-        'byob_debug_admin_page'
-    );
-});
-
-// 新增：檢查 ACF 欄位狀態的測試函數
-function byob_check_acf_fields($post_id = null) {
-    if (!$post_id) {
-        // 如果沒有指定 post_id，取得最新的餐廳文章
-        $latest_restaurant = get_posts(array(
-            'post_type' => 'restaurant',
-            'numberposts' => 1,
-            'post_status' => 'publish',
-            'orderby' => 'date',
-            'order' => 'DESC'
-        ));
-        
-        if (empty($latest_restaurant)) {
-            error_log('BYOB: No restaurant posts found');
-            return false;
-        }
-        
-        $post_id = $latest_restaurant[0]->ID;
+// 功能開關管理頁面
+function byob_feature_toggle_page() {
+    if (!current_user_can('manage_options')) {
+        wp_die('權限不足');
     }
     
-    error_log("BYOB: Checking ACF fields for post ID: {$post_id}");
-    
-    // 檢查所有相關的 ACF 欄位
-    $fields_to_check = array(
-        'contact_person',
-        'is_charged',
-        'corkage_fee',
-        'equipment',
-        'open_bottle_service',
-        'email',
-        'restaurant_type',
-        'district',
-        'address',
-        'phone',
-        'website',
-        'social_links',
-        'notes',
-        'is_owner'
-    );
-    
-    $results = array();
-    foreach ($fields_to_check as $field_name) {
-        $value = get_field($field_name, $post_id);
-        $results[$field_name] = $value;
-        error_log("BYOB ACF Check - {$field_name}: " . var_export($value, true));
-    }
-    
-    return $results;
-}
-
-// 新增：手動測試 ACF 欄位更新
-function byob_test_acf_update($post_id = null) {
-    if (!$post_id) {
-        $latest_restaurant = get_posts(array(
-            'post_type' => 'restaurant',
-            'numberposts' => 1,
-            'post_status' => 'publish',
-            'orderby' => 'date',
-            'order' => 'DESC'
-        ));
-        
-        if (empty($latest_restaurant)) {
-            error_log('BYOB: No restaurant posts found for testing');
-            return false;
-        }
-        
-        $post_id = $latest_restaurant[0]->ID;
-    }
-    
-    error_log("BYOB: Testing ACF update for post ID: {$post_id}");
-    
-    // 測試更新關鍵欄位
-    $test_data = array(
-        'contact_person' => '測試聯絡人',
-        'is_charged' => 'yes',
-        'corkage_fee' => '測試開瓶費說明',
-        'equipment' => array('酒杯', '開瓶器'),
-        'open_bottle_service' => 'yes'
-    );
-    
-    $results = array();
-    foreach ($test_data as $field_name => $field_value) {
-        $update_result = update_field($field_name, $field_value, $post_id);
-        $stored_value = get_field($field_name, $post_id);
-        
-        $results[$field_name] = array(
-            'update_result' => $update_result,
-            'stored_value' => $stored_value,
-            'expected_value' => $field_value
+    if (isset($_POST['submit'])) {
+        $features = array(
+            'restaurant_member_system' => isset($_POST['restaurant_member_system']),
+            'customer_member_system' => isset($_POST['customer_member_system']),
+            'invitation_system' => isset($_POST['invitation_system']),
+            'favorite_system' => isset($_POST['favorite_system']),
+            'review_system' => isset($_POST['review_system']),
+            'points_system' => isset($_POST['points_system']),
+            'api_endpoints' => isset($_POST['api_endpoints'])
         );
         
-        error_log("BYOB Test Update - {$field_name}: update_result=" . var_export($update_result, true) . ", stored_value=" . var_export($stored_value, true));
+        update_option('byob_feature_settings', $features);
+        echo '<div class="notice notice-success"><p>功能設定已儲存！</p></div>';
     }
     
-    return $results;
+    $current_features = get_option('byob_feature_settings', byob_get_feature_settings());
+    
+    echo '<div class="wrap">';
+    echo '<h1>BYOB 功能開關管理</h1>';
+    echo '<p>在此頁面可以控制 BYOB 系統的各項功能啟用狀態。</p>';
+    
+    echo '<form method="post">';
+    echo '<table class="form-table">';
+    
+    echo '<tr><th scope="row">餐廳業者會員系統</th><td>';
+    echo '<label><input type="checkbox" name="restaurant_member_system" ' . ($current_features['restaurant_member_system'] ? 'checked' : '') . ' /> 啟用餐廳業者會員系統</label>';
+    echo '<p class="description">允許餐廳業者註冊、登入和管理餐廳資料</p>';
+    echo '</td></tr>';
+    
+    echo '<tr><th scope="row">一般客人會員系統</th><td>';
+    echo '<label><input type="checkbox" name="customer_member_system" ' . ($current_features['customer_member_system'] ? 'checked' : '') . ' /> 啟用一般客人會員系統</label>';
+    echo '<p class="description">允許一般客人註冊、登入和使用收藏功能</p>';
+    echo '</td></tr>';
+    
+    echo '<tr><th scope="row">邀請碼系統</th><td>';
+    echo '<label><input type="checkbox" name="invitation_system" ' . ($current_features['invitation_system'] ? 'checked' : '') . ' /> 啟用邀請碼系統</label>';
+    echo '<p class="description">允許管理員為餐廳生成邀請碼</p>';
+    echo '</td></tr>';
+    
+    echo '<tr><th scope="row">收藏系統</th><td>';
+    echo '<label><input type="checkbox" name="favorite_system" ' . ($current_features['favorite_system'] ? 'checked' : '') . ' /> 啟用收藏系統</label>';
+    echo '<p class="description">允許客人收藏喜歡的餐廳</p>';
+    echo '</td></tr>';
+    
+    echo '<tr><th scope="row">評論系統</th><td>';
+    echo '<label><input type="checkbox" name="review_system" ' . ($current_features['review_system'] ? 'checked' : '') . ' /> 啟用評論系統</label>';
+    echo '<p class="description">允許客人對餐廳進行評論和評分</p>';
+    echo '</td></tr>';
+    
+    echo '<tr><th scope="row">積分系統</th><td>';
+    echo '<label><input type="checkbox" name="points_system" ' . ($current_features['points_system'] ? 'checked' : '') . ' /> 啟用積分系統</label>';
+    echo '<p class="description">允許客人透過各種活動賺取積分</p>';
+    echo '</td></tr>';
+    
+    echo '<tr><th scope="row">REST API 端點</th><td>';
+    echo '<label><input type="checkbox" name="api_endpoints" ' . ($current_features['api_endpoints'] ? 'checked' : '') . ' /> 啟用 REST API 端點</label>';
+    echo '<p class="description">提供外部系統整合的 API 介面</p>';
+    echo '</td></tr>';
+    
+    echo '</table>';
+    echo '<p class="submit"><input type="submit" name="submit" class="button-primary" value="儲存設定" /></p>';
+    echo '</form>';
+    
+    echo '<h2>📋 功能說明</h2>';
+    echo '<div class="notice notice-info">';
+    echo '<p><strong>注意事項：</strong></p>';
+    echo '<ul>';
+    echo '<li>修改功能設定後，建議重新載入系統狀態檢查頁面確認變更</li>';
+    echo '<li>停用功能後，相關的 API 端點和前端功能將無法使用</li>';
+    echo '<li>評論系統和積分系統建議在系統穩定後再啟用</li>';
+    echo '</ul>';
+    echo '</div>';
+    
+    echo '</div>';
 }
 
-// 新增：手動測試 ACF 欄位更新
-function byob_manual_test_acf() {
-    if (!current_user_can('manage_options')) {
-        wp_die('權限不足');
+// 更新功能設定函數，支援資料庫儲存
+function byob_get_feature_settings() {
+    $db_features = get_option('byob_feature_settings');
+    if ($db_features) {
+        return $db_features;
     }
     
-    // 取得最新的餐廳文章
-    $args = array(
-        'post_type' => 'restaurant',
-        'post_status' => array('publish', 'draft', 'pending'),
-        'posts_per_page' => 1,
-        'orderby' => 'date',
-        'order' => 'DESC'
-    );
-    
-    $restaurants = get_posts($args);
-    
-    if (empty($restaurants)) {
-        echo '<p>沒有找到餐廳文章。</p>';
-        return;
-    }
-    
-    $restaurant = $restaurants[0];
-    echo '<h2>測試餐廳：' . esc_html($restaurant->post_title) . ' (ID: ' . $restaurant->ID . ')</h2>';
-    
-    // 測試更新 ACF 欄位
-    $test_result = byob_test_acf_update($restaurant->ID);
-    
-    echo '<h3>測試結果：</h3>';
-    echo '<pre>' . print_r($test_result, true) . '</pre>';
-    
-    // 檢查更新後的欄位
-    if (function_exists('get_fields')) {
-        $acf_fields = get_fields($restaurant->ID);
-        echo '<h3>更新後的 ACF 欄位：</h3>';
-        echo '<pre>' . print_r($acf_fields, true) . '</pre>';
-    }
-}
-
-// 新增：測試 WordPress API 連接
-function byob_test_api_connection() {
-    if (!current_user_can('manage_options')) {
-        wp_die('權限不足');
-    }
-    
-    echo '<h2>測試 WordPress API 連接</h2>';
-    
-    // 測試資料
-    $test_data = array(
-        'restaurant_name' => 'API 測試餐廳 - ' . date('Y-m-d H:i:s'),
-        'contact_person' => '測試聯絡人',
-        'email' => 'test@example.com',
-        'restaurant_type' => '中式',
-        'district' => '台北市',
-        'address' => '測試地址',
-        'is_charged' => '酌收',
-        'corkage_fee' => '測試開瓶費',
-        'equipment' => '酒杯, 開瓶器',
-        'open_bottle_service' => '有',
-        'phone' => '02-12345678',
-        'website' => 'https://test.com',
-        'social_media' => 'https://instagram.com/test',
-        'notes' => 'API 測試備註',
-        'is_owner' => '是'
-    );
-    
-    echo '<h3>測試資料：</h3>';
-    echo '<pre>' . print_r($test_data, true) . '</pre>';
-    
-    // 模擬 API 請求
-    $request = new WP_REST_Request('POST', '/byob/v1/restaurant');
-    foreach ($test_data as $key => $value) {
-        $request->set_param($key, $value);
-    }
-    
-    // 設定 API 金鑰
-    $request->add_header('X-API-Key', 'byob-secret-key-2025');
-    
-    // 執行請求
-    $response = byob_create_restaurant_post($request);
-    
-    echo '<h3>API 回應：</h3>';
-    echo '<pre>' . print_r($response, true) . '</pre>';
-    
-    if (is_wp_error($response)) {
-        echo '<p style="color: red;">❌ API 測試失敗：' . $response->get_error_message() . '</p>';
-    } else {
-        echo '<p style="color: green;">✅ API 測試成功！</p>';
-        echo '<p>建立的文章 ID：' . $response['post_id'] . '</p>';
-        echo '<p>文章網址：<a href="' . $response['post_url'] . '" target="_blank">' . $response['post_url'] . '</a></p>';
-    }
-}
-
-// 新增：檢查 Google 表單資料
-function byob_check_google_form_data() {
-    if (!current_user_can('manage_options')) {
-        wp_die('權限不足');
-    }
-    
-    echo '<h2>檢查 Google 表單資料</h2>';
-    
-    // 取得最新的餐廳文章
-    $args = array(
-        'post_type' => 'restaurant',
-        'post_status' => array('publish', 'draft', 'pending'),
-        'posts_per_page' => 3,
-        'orderby' => 'date',
-        'order' => 'DESC'
-    );
-    
-    $restaurants = get_posts($args);
-    
-    if (empty($restaurants)) {
-        echo '<p>沒有找到餐廳文章。</p>';
-        return;
-    }
-    
-    foreach ($restaurants as $restaurant) {
-        echo '<div style="background: #fff; padding: 20px; margin: 20px 0; border: 1px solid #ccc;">';
-        echo '<h3>餐廳：' . esc_html($restaurant->post_title) . ' (ID: ' . $restaurant->ID . ')</h3>';
-        echo '<p><strong>建立時間：</strong>' . esc_html($restaurant->post_date) . '</p>';
-        
-        // 檢查 ACF 欄位
-        if (function_exists('get_fields')) {
-            $acf_fields = get_fields($restaurant->ID);
-            echo '<h4>ACF 欄位：</h4>';
-            echo '<div style="background: #f9f9f9; padding: 10px; border: 1px solid #ddd;">';
-            echo '<pre style="white-space: pre-wrap;">' . esc_html(print_r($acf_fields, true)) . '</pre>';
-            echo '</div>';
-            
-            // 特別檢查問題欄位
-            echo '<h4>問題欄位檢查：</h4>';
-            echo '<ul>';
-            echo '<li><strong>is_charged:</strong> ' . (isset($acf_fields['is_charged']) ? var_export($acf_fields['is_charged'], true) : '未設定') . '</li>';
-            echo '<li><strong>open_bottle_service:</strong> ' . (isset($acf_fields['open_bottle_service']) ? var_export($acf_fields['open_bottle_service'], true) : '未設定') . '</li>';
-            echo '</ul>';
-        }
-        
-        echo '</div>';
-    }
-}
-
-// 新增：檢查所有可用的 ACF 欄位
-function byob_check_all_acf_fields($post_id = null) {
-    if (!$post_id) {
-        $latest_restaurant = get_posts(array(
-            'post_type' => 'restaurant',
-            'numberposts' => 1,
-            'post_status' => 'publish',
-            'orderby' => 'date',
-            'order' => 'DESC'
-        ));
-        
-        if (empty($latest_restaurant)) {
-            error_log('BYOB: No restaurant posts found');
-            return false;
-        }
-        
-        $post_id = $latest_restaurant[0]->ID;
-    }
-    
-    error_log("BYOB: Checking all ACF fields for post ID: {$post_id}");
-    
-    if (!function_exists('get_fields')) {
-        error_log('BYOB ERROR: ACF plugin not loaded - get_fields function does not exist');
-        return false;
-    }
-    
-    // 取得所有 ACF 欄位
-    $all_fields = get_fields($post_id);
-    error_log("BYOB All ACF fields: " . print_r($all_fields, true));
-    
-    return $all_fields;
-}
-
-// 新增：檢查 ACF 欄位的實際名稱和狀態
-function byob_debug_acf_field_names($post_id = null) {
-    if (!$post_id) {
-        $latest_restaurant = get_posts(array(
-            'post_type' => 'restaurant',
-            'numberposts' => 1,
-            'post_status' => 'publish',
-            'orderby' => 'date',
-            'order' => 'DESC'
-        ));
-        
-        if (empty($latest_restaurant)) {
-            error_log('BYOB: No restaurant posts found');
-            return false;
-        }
-        
-        $post_id = $latest_restaurant[0]->ID;
-    }
-    
-    error_log("BYOB: Debugging ACF field names for post ID: {$post_id}");
-    
-    if (!function_exists('get_fields')) {
-        error_log('BYOB ERROR: ACF plugin not loaded - get_fields function does not exist');
-        return false;
-    }
-    
-    // 取得所有 ACF 欄位
-    $all_fields = get_fields($post_id);
-    error_log("BYOB All ACF fields: " . print_r($all_fields, true));
-    
-    // 檢查每個欄位的詳細資訊
-    if (function_exists('get_field_objects')) {
-        $field_objects = get_field_objects($post_id);
-        error_log("BYOB Field objects: " . print_r($field_objects, true));
-    }
-    
-    return $all_fields;
-}
-
-// 新增：測試 ACF 欄位配置
-function byob_test_acf_configuration($post_id = null) {
-    if (!$post_id) {
-        $latest_restaurant = get_posts(array(
-            'post_type' => 'restaurant',
-            'numberposts' => 1,
-            'post_status' => 'publish',
-            'orderby' => 'date',
-            'order' => 'DESC'
-        ));
-        
-        if (empty($latest_restaurant)) {
-            error_log('BYOB: No restaurant posts found');
-            return false;
-        }
-        
-        $post_id = $latest_restaurant[0]->ID;
-    }
-    
-    error_log("BYOB: Testing ACF configuration for post ID: {$post_id}");
-    
-    if (!function_exists('get_fields')) {
-        error_log('BYOB ERROR: ACF plugin not loaded - get_fields function does not exist');
-        return false;
-    }
-    
-    // 檢查所有 ACF 欄位
-    $all_fields = get_fields($post_id);
-    error_log("BYOB All ACF fields: " . print_r($all_fields, true));
-    
-    // 檢查 ACF 欄位配置
-    if (function_exists('get_field_objects')) {
-        $field_objects = get_field_objects($post_id);
-        error_log("BYOB Field objects: " . print_r($field_objects, true));
-    }
-    
-    // 測試更新一個簡單的欄位
-    $test_field = 'contact_person';
-    $test_value = '測試聯絡人_' . time();
-    
-    error_log("BYOB: Testing update_field for '{$test_field}' with value '{$test_value}'");
-    $update_result = update_field($test_field, $test_value, $post_id);
-    error_log("BYOB Test update result: " . var_export($update_result, true));
-    
-    // 檢查更新後的結果
-    $stored_value = get_field($test_field, $post_id);
-    error_log("BYOB Test stored value: " . var_export($stored_value, true));
-    
+    // 預設設定
     return array(
-        'all_fields' => $all_fields,
-        'field_objects' => isset($field_objects) ? $field_objects : null,
-        'test_update_result' => $update_result,
-        'test_stored_value' => $stored_value
+        'restaurant_member_system' => true,    // 餐廳業者會員系統
+        'customer_member_system' => true,      // 一般客人會員系統
+        'invitation_system' => true,           // 邀請碼系統
+        'favorite_system' => true,             // 收藏系統
+        'review_system' => false,              // 評論系統 - 初期關閉
+        'points_system' => false,              // 積分系統 - 初期關閉
+        'api_endpoints' => true,               // REST API 端點
     );
 }
