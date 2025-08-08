@@ -322,7 +322,7 @@ function parseLatestSpreadsheetData() {
     
     Logger.log('完整的表頭對應:', headerMap);
     
-    // 根據「欄位設定表」提取資料
+    // 根據「欄位設定表」提取資料 - 修正版
     // 餐廳名稱
     var restaurantNameIndex = headerMap['餐廳名稱'];
     if (restaurantNameIndex !== undefined) {
@@ -334,12 +334,13 @@ function parseLatestSpreadsheetData() {
     }
     
     // 聯絡人
-    var contactPersonIndex = headerMap['您的稱呼是?'];
+    var contactPersonIndex = headerMap['您的稱呼是?'] || headerMap['您的稱呼是？'];
     if (contactPersonIndex !== undefined) {
       data.contact_person = values[contactPersonIndex] || '';
       Logger.log('聯絡人資料:', data.contact_person);
     } else {
       Logger.log('⚠️ 找不到聯絡人欄位');
+      Logger.log('⚠️ 可用的欄位:', Object.keys(headerMap));
       data.contact_person = '';
     }
     
@@ -350,6 +351,7 @@ function parseLatestSpreadsheetData() {
       Logger.log('電子郵件:', data.email);
     } else {
       Logger.log('⚠️ 找不到電子郵件欄位');
+      Logger.log('⚠️ 可用的欄位:', Object.keys(headerMap));
       data.email = '';
     }
     
@@ -360,6 +362,7 @@ function parseLatestSpreadsheetData() {
       Logger.log('餐廳類型:', data.restaurant_type);
     } else {
       Logger.log('⚠️ 找不到餐廳類型欄位');
+      Logger.log('⚠️ 可用的欄位:', Object.keys(headerMap));
       data.restaurant_type = '';
     }
     
@@ -370,6 +373,7 @@ function parseLatestSpreadsheetData() {
       Logger.log('行政區:', data.district);
     } else {
       Logger.log('⚠️ 找不到行政區欄位');
+      Logger.log('⚠️ 可用的欄位:', Object.keys(headerMap));
       data.district = '';
     }
     
@@ -380,13 +384,14 @@ function parseLatestSpreadsheetData() {
       Logger.log('地址:', data.address);
     } else {
       Logger.log('⚠️ 找不到地址欄位');
+      Logger.log('⚠️ 可用的欄位:', Object.keys(headerMap));
       data.address = '';
     }
     
     // 處理開瓶費相關欄位
-    var corkageOptionIndex = headerMap['是否收開瓶費?'];
+    var corkageOptionIndex = headerMap['是否收開瓶費?'] || headerMap['是否收開瓶費？'];
     var corkageAmountIndex = headerMap['開瓶費金額'];
-    var corkageOtherIndex = headerMap['其他:請說明'];
+    var corkageOtherIndex = headerMap['其他:請說明'] || headerMap['其他：請說明'];
     
     if (corkageOptionIndex !== undefined) {
       var corkageOption = values[corkageOptionIndex] || '';
@@ -413,12 +418,13 @@ function parseLatestSpreadsheetData() {
       }
     } else {
       Logger.log('⚠️ 找不到開瓶費欄位');
+      Logger.log('⚠️ 可用的欄位:', Object.keys(headerMap));
       data.is_charged = '';
       data.corkage_fee = '';
     }
     
     // 處理酒器設備欄位
-    var equipmentIndex = headerMap['是否提供酒器設備?'];
+    var equipmentIndex = headerMap['是否提供酒器設備?'] || headerMap['是否提供酒器設備？'];
     if (equipmentIndex !== undefined) {
       data.equipment = values[equipmentIndex] || '';
       Logger.log('酒器設備資料:', data.equipment);
@@ -428,7 +434,7 @@ function parseLatestSpreadsheetData() {
     }
     
     // 處理開酒服務欄位
-    var serviceIndex = headerMap['是否提供開酒服務?'];
+    var serviceIndex = headerMap['是否提供開酒服務?'] || headerMap['是否提供開酒服務？'];
     if (serviceIndex !== undefined) {
       data.open_bottle_service = values[serviceIndex] || '';
       Logger.log('開酒服務資料:', data.open_bottle_service);
@@ -444,6 +450,7 @@ function parseLatestSpreadsheetData() {
       Logger.log('聯絡電話:', data.phone);
     } else {
       Logger.log('⚠️ 找不到聯絡電話欄位');
+      Logger.log('⚠️ 可用的欄位:', Object.keys(headerMap));
       data.phone = '';
     }
     
@@ -478,7 +485,7 @@ function parseLatestSpreadsheetData() {
     }
     
     // 處理餐廳負責人欄位
-    var ownerIndex = headerMap['您是餐廳負責人嗎?'];
+    var ownerIndex = headerMap['您是餐廳負責人嗎?'] || headerMap['您是餐廳負責人嗎？'];
     if (ownerIndex !== undefined) {
       data.is_owner = values[ownerIndex] || '';
       Logger.log('餐廳負責人資料:', data.is_owner);
@@ -489,6 +496,31 @@ function parseLatestSpreadsheetData() {
     
     Logger.log('最終解析的資料:', data);
     
+    // 檢查必填欄位
+    var requiredFields = ['restaurant_name', 'contact_person', 'email', 'restaurant_type', 'district', 'address', 'is_charged', 'phone'];
+    var missingFields = [];
+    
+    requiredFields.forEach(function(field) {
+      if (!data[field] || data[field] === '') {
+        missingFields.push(field);
+        Logger.log('❌ 缺少必填欄位: ' + field);
+      } else {
+        Logger.log('✅ 有資料: ' + field + ' = ' + data[field]);
+      }
+    });
+    
+    if (missingFields.length > 0) {
+      Logger.log('❌ 缺少的必填欄位:', missingFields);
+      Logger.log('❌ 這將導致 WordPress API 拒絕請求');
+    } else {
+      Logger.log('✅ 所有必填欄位都有資料！');
+    }
+    
+    // 新增：檢查資料是否為空物件
+    if (Object.keys(data).length === 0) {
+      Logger.log('❌ 警告：解析的資料為空物件！');
+    }
+    
   } catch (error) {
     Logger.log('解析試算表資料時發生錯誤:', error);
   }
@@ -496,111 +528,62 @@ function parseLatestSpreadsheetData() {
   return data;
 }
 
-// 修正版：解析試算表資料
-function parseSpreadsheetData(e) {
+// 簡化版：解析試算表資料
+function parseSpreadsheetData(values, headerMap) {
   var data = {};
   
   try {
-    // 取得試算表資料
-    var sheet = e.range.getSheet();
-    var lastRow = sheet.getLastRow();
-    var values = sheet.getRange(lastRow, 1, 1, sheet.getLastColumn()).getValues()[0];
-    
-    // 取得標題列
-    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-    
-    // 建立標題對應 - 修正版
-    var headerMap = {};
-    headers.forEach(function(header, index) {
-      if (header) {
-        var processedHeader = toHalfWidth(String(header).trim());
-        headerMap[processedHeader] = index;
-        Logger.log('欄位對應: "' + header + '" -> "' + processedHeader + '" -> 索引 ' + index);
-      }
-    });
-    
-    Logger.log('標題對應:', headerMap);
-    Logger.log('最新資料:', values);
-    
-    // 修正：使用正確的 Google 表單欄位名稱，並加入除錯資訊
+    // 基本資料
     data.restaurant_name = values[headerMap['餐廳名稱']] || '';
-    Logger.log('餐廳名稱:', data.restaurant_name);
-    
     data.contact_person = values[headerMap['您的稱呼是？']] || '';
-    Logger.log('聯絡人:', data.contact_person);
-    
     data.email = values[headerMap['電子郵件地址']] || '';
-    Logger.log('電子郵件:', data.email);
-    
-    data.restaurant_type = processRestaurantType(values[headerMap['餐廳類型']] || '');
-    Logger.log('餐廳類型:', data.restaurant_type);
-    
+    data.restaurant_type = values[headerMap['餐廳類型']] || '';
     data.district = values[headerMap['行政區']] || '';
-    Logger.log('行政區:', data.district);
-    
     data.address = values[headerMap['地址']] || '';
-    Logger.log('地址:', data.address);
     
-    // 修正開瓶費邏輯處理
+    // 開瓶費相關 - 簡化處理
     var corkageOption = values[headerMap['是否收開瓶費？']] || '';
     var corkageAmount = values[headerMap['開瓶費金額']] || '';
     var corkageOther = values[headerMap['其他：請說明']] || '';
     
-    Logger.log('開瓶費處理:', {
-      option: corkageOption,
-      amount: corkageAmount,
-      other: corkageOther
-    });
+    data.is_charged = corkageOption || '';
+    data.corkage_fee = corkageAmount || '';
     
-    // 根據選項設定對應的詳細資訊
-    if (corkageOption && corkageOption.includes('酌收')) {
-      data.is_charged = '酌收';
-      data.corkage_fee = corkageAmount || '';
-    } else if (corkageOption && corkageOption.includes('其他')) {
-      data.is_charged = '其他';
-      data.corkage_fee = corkageOther || '';
-    } else if (corkageOption && corkageOption.includes('不收費')) {
-      data.is_charged = '不收費';
-      data.corkage_fee = '';
-    } else {
-      data.is_charged = corkageOption || '';
-      data.corkage_fee = '';
+    // 如果開瓶費選項包含"酌收"且有金額，則使用金額
+    if (corkageOption && corkageOption.includes('酌收') && corkageAmount) {
+      data.corkage_fee = corkageAmount;
+    }
+    // 如果開瓶費選項包含"其他"且有說明，則使用說明
+    else if (corkageOption && corkageOption.includes('其他') && corkageOther) {
+      data.corkage_fee = corkageOther;
     }
     
-    Logger.log('開瓶費結果:', { is_charged: data.is_charged, corkage_fee: data.corkage_fee });
+    // 酒器設備
+    data.equipment = values[headerMap['是否提供酒器設備？']] || '';
     
-    data.equipment = processWineEquipment(values[headerMap['是否提供酒器設備？']] || '');
-    Logger.log('酒器設備:', data.equipment);
-    
+    // 開酒服務
     data.open_bottle_service = values[headerMap['是否提供開酒服務？']] || '';
-    Logger.log('開酒服務:', data.open_bottle_service);
+    data.open_bottle_service_other_note = values[headerMap['其他：請說明']] || '';
     
-    data.phone = processPhone(values[headerMap['聯絡電話']] || '');
-    Logger.log('電話:', data.phone);
+    // 聯絡資訊
+    data.phone = values[headerMap['聯絡電話']] || '';
+    data.website = values[headerMap['餐廳網站或訂位連結']] || '';
+    data.social_media = values[headerMap['餐廳 Instagram 或 Facebook']] || '';
     
-    data.website = processWebsite(values[headerMap['餐廳網站或訂位連結']] || '');
-    Logger.log('網站:', data.website);
-    
-    data.social_media = processWebsite(values[headerMap['餐廳 Instagram 或 Facebook']] || '');
-    Logger.log('社群媒體:', data.social_media);
-    
+    // 其他資訊
     data.notes = values[headerMap['備註']] || '';
-    Logger.log('備註:', data.notes);
-    
     data.is_owner = values[headerMap['您是餐廳負責人嗎？']] || '';
-    Logger.log('是否為店主:', data.is_owner);
     
-    Logger.log('最終處理的資料:', data);
+    Logger.log('解析的資料:', data);
     
   } catch (error) {
     Logger.log('解析試算表資料時發生錯誤:', error);
-    throw error;
   }
   
   return data;
 }
 
-// 修正版：解析表單回應
+// 簡化版：解析表單回應
 function parseFormResponses(itemResponses) {
   var data = {};
   
@@ -613,79 +596,51 @@ function parseFormResponses(itemResponses) {
       return item ? item.getResponse() : '';
     }
     
-    // 修正：使用正確的 Google 表單欄位名稱，並加入除錯資訊
+    // 基本資料
     data.restaurant_name = getAnswerByQuestion(itemResponses, '餐廳名稱');
-    Logger.log('餐廳名稱:', data.restaurant_name);
-    
     data.contact_person = getAnswerByQuestion(itemResponses, '您的稱呼是？');
-    Logger.log('聯絡人:', data.contact_person);
-    
     data.email = getAnswerByQuestion(itemResponses, '電子郵件地址');
-    Logger.log('電子郵件:', data.email);
-    
-    data.restaurant_type = processRestaurantType(getAnswerByQuestion(itemResponses, '餐廳類型'));
-    Logger.log('餐廳類型:', data.restaurant_type);
-    
+    data.restaurant_type = getAnswerByQuestion(itemResponses, '餐廳類型');
     data.district = getAnswerByQuestion(itemResponses, '行政區');
-    Logger.log('行政區:', data.district);
-    
     data.address = getAnswerByQuestion(itemResponses, '地址');
-    Logger.log('地址:', data.address);
     
-    // 修正開瓶費邏輯處理
+    // 開瓶費相關 - 簡化處理
     var corkageOption = getAnswerByQuestion(itemResponses, '是否收開瓶費？');
     var corkageAmount = getAnswerByQuestion(itemResponses, '開瓶費金額');
     var corkageOther = getAnswerByQuestion(itemResponses, '其他：請說明');
     
-    Logger.log('開瓶費處理:', {
-      option: corkageOption,
-      amount: corkageAmount,
-      other: corkageOther
-    });
+    data.is_charged = corkageOption || '';
+    data.corkage_fee = corkageAmount || '';
     
-    // 根據選項設定對應的詳細資訊
-    if (corkageOption && corkageOption.includes('酌收')) {
-      data.is_charged = '酌收';
-      data.corkage_fee = corkageAmount || '';
-    } else if (corkageOption && corkageOption.includes('其他')) {
-      data.is_charged = '其他';
-      data.corkage_fee = corkageOther || '';
-    } else if (corkageOption && corkageOption.includes('不收費')) {
-      data.is_charged = '不收費';
-      data.corkage_fee = '';
-    } else {
-      data.is_charged = corkageOption || '';
-      data.corkage_fee = '';
+    // 如果開瓶費選項包含"酌收"且有金額，則使用金額
+    if (corkageOption && corkageOption.includes('酌收') && corkageAmount) {
+      data.corkage_fee = corkageAmount;
+    }
+    // 如果開瓶費選項包含"其他"且有說明，則使用說明
+    else if (corkageOption && corkageOption.includes('其他') && corkageOther) {
+      data.corkage_fee = corkageOther;
     }
     
-    Logger.log('開瓶費結果:', { is_charged: data.is_charged, corkage_fee: data.corkage_fee });
+    // 酒器設備
+    data.equipment = getAnswerByQuestion(itemResponses, '是否提供酒器設備？');
     
-    data.equipment = processWineEquipment(getAnswerByQuestion(itemResponses, '是否提供酒器設備？'));
-    Logger.log('酒器設備:', data.equipment);
-    
+    // 開酒服務
     data.open_bottle_service = getAnswerByQuestion(itemResponses, '是否提供開酒服務？');
-    Logger.log('開酒服務:', data.open_bottle_service);
+    data.open_bottle_service_other_note = getAnswerByQuestion(itemResponses, '其他：請說明');
     
-    data.phone = processPhone(getAnswerByQuestion(itemResponses, '聯絡電話'));
-    Logger.log('電話:', data.phone);
+    // 聯絡資訊
+    data.phone = getAnswerByQuestion(itemResponses, '聯絡電話');
+    data.website = getAnswerByQuestion(itemResponses, '餐廳網站或訂位連結');
+    data.social_media = getAnswerByQuestion(itemResponses, '餐廳 Instagram 或 Facebook');
     
-    data.website = processWebsite(getAnswerByQuestion(itemResponses, '餐廳網站或訂位連結'));
-    Logger.log('網站:', data.website);
-    
-    data.social_media = processWebsite(getAnswerByQuestion(itemResponses, '餐廳 Instagram 或 Facebook'));
-    Logger.log('社群媒體:', data.social_media);
-    
+    // 其他資訊
     data.notes = getAnswerByQuestion(itemResponses, '備註');
-    Logger.log('備註:', data.notes);
-    
     data.is_owner = getAnswerByQuestion(itemResponses, '您是餐廳負責人嗎？');
-    Logger.log('是否為店主:', data.is_owner);
     
-    Logger.log('最終處理的資料:', data);
+    Logger.log('解析的資料:', data);
     
   } catch (error) {
     Logger.log('解析表單回應時發生錯誤:', error);
-    throw error;
   }
   
   return data;
@@ -748,6 +703,11 @@ function processWebsite(website) {
 
 // 發送到 WordPress
 function sendToWordPress(data) {
+  // 新增除錯資訊
+  Logger.log('準備發送到 WordPress 的資料:', data);
+  Logger.log('資料類型:', typeof data);
+  Logger.log('資料字串化:', JSON.stringify(data));
+  
   var options = {
     'method': 'POST',
     'headers': {
@@ -756,6 +716,8 @@ function sendToWordPress(data) {
     },
     'payload': JSON.stringify(data)
   };
+  
+  Logger.log('API 請求選項:', options);
   
   try {
     var response = UrlFetchApp.fetch(WORDPRESS_API_URL, options);
