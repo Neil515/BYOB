@@ -1,455 +1,214 @@
-### 📌 明日工作任務（2025-08-07）
+### 📌 明日工作任務（2025-08-10）
 
-**目標：完成 Google 表單資料對應問題的最終修正和測試**
+**目標：完成一鍵註冊邀請系統及前端使用者體驗優化**
 
-#### 1. 🚨 優先任務：Google 表單資料對應問題最終解決
+#### 1. 🎉 今日完成成果（2025-08-09）
 
-**1.1 今日進展總結（2025-08-05）**
+**✅ 重大突破：一鍵註冊邀請系統基本建置完成**
 
-**✅ 已完成的重要進展：**
-* 🔧 **語法錯誤修復**：成功修復 Google Apps Script 中的所有 ES6+ 語法錯誤
-  - 轉換箭頭函數為傳統函數
-  - 轉換模板字符串為字符串連接
-  - 轉換 `let`/`const` 為 `var`
-  - 轉換解構賦值為傳統賦值
-* 🔍 **問題根本原因發現**：ACF 欄位期望的值格式與傳入值不匹配
-* 🛠️ **資料轉換邏輯修正**：修正了 `is_charged` 和 `open_bottle_service` 欄位的值映射
-* 📊 **除錯工具建立**：建立了完整的 ACF 欄位除錯頁面和測試函數
+**1.1 今日重大進展**
 
-**1.2 新發現的緊急問題（2025-08-05 晚間）**
+* 🔧 **邀請系統建置完成**：成功建立完整的一鍵註冊邀請功能
+  - 文章發布自動觸發邀請郵件
+  - 精美的 HTML 邀請郵件模板
+  - 安全的 token 驗證機制
+  - 7天有效期限制
+* 🛠️ **註冊流程自動化**：完成無縫的註冊體驗
+  - 自動攔截邀請連結
+  - 註冊頁面顯示歡迎訊息
+  - 自動設定餐廳業者角色
+  - 自動關聯餐廳文章
+* 📊 **後台診斷工具**：建立完整的系統監控機制
+  - WordPress 後台診斷頁面（工具 → BYOB 診斷）
+  - 系統狀態檢查
+  - 邀請功能測試
+  - 邀請統計資訊
+* 🚧 **技術問題解決**：修復伺服器錯誤和相容性問題
+  - 解決檔案路徑問題
+  - 修復 session 處理機制
+  - 優化函數載入邏輯
+  - 成功恢復網站正常運作
 
-**🚨 緊急問題：Google Apps Script 資料解析失敗**
+#### 2. 🚨 優先任務：前端使用者體驗優化及邀請系統完善
 
-**問題描述：**
-- 用戶重新提交 Google 表單後，仍然出現相同的 "Missing parameters" 錯誤
-- WordPress 後台沒有生成草稿
-- Google Apps Script 執行日誌顯示：`解析試算表資料時發生錯誤:` 和 `解析的表單資料:` 為空
-- 結果：空的 payload 被發送到 WordPress，導致 "Missing parameters" 錯誤
+**2.1 明日重點工作項目**
 
-**錯誤詳情：**
-```
-表單處理發生錯誤
-錯誤訊息：Exception: Request failed for https://byobmap.com returned code 400. 
-Truncated server response: {"code":"rest_missing_callback_param","message":"\u7f3a\u5c11\u7684\u53c3\u6578: restaurant_name, contact_person, email, restaurant_type, district,... (use muteHttpExceptions option to examine full response)
+**🔴 最高優先級：前端使用者體驗優化**
 
-錯誤詳情：Exception: Request failed for https://byobmap.com returned code 400. 
-Truncated server response: {"code":"rest_missing_callback_param","message":"\u7f3a\u5c11\u7684\u53c3\u6578: restaurant_name, contact_person, email, restaurant_type, district,... (use muteHttpExceptions option to examine full response) at sendToWordPress (程式碼:703:32) at onFormSubmit (程式碼:253:18) at __GS_INTERNAL_top_function_call__.gs:1:8
-```
+1. **餐廳單頁功能改善**（預計 2 小時）
+   ```php
+   // 需修改的功能：
+   - [ ] 新增「返回上一頁」按鈕
+   - [ ] 官網連結功能檢查和修復  
+   - [ ] 社群連結功能檢查和修復
+   - [ ] 連結開啟方式優化（新分頁）
+   ```
 
-**Google Apps Script 執行日誌分析：**
-- `解析試算表資料時發生錯誤:` - 表示 `parseLatestSpreadsheetData()` 函數執行失敗
-- `解析的表單資料:` 為空 - 表示資料解析結果為空物件
-- 結果：空的資料被發送到 WordPress，導致所有必要參數缺失
+2. **邀請系統優化**（預計 1.5 小時）
+   ```php
+   // 需修改的功能：
+   - [ ] 修改邀請郵件模板和內容
+   - [ ] 優化郵件發送者資訊
+   - [ ] 改善郵件視覺設計
+   - [ ] 測試郵件傳送功能
+   ```
 
-**根本原因分析：**
-1. **資料解析失敗**：`parseLatestSpreadsheetData()` 函數無法正確解析 Google 試算表資料
-2. **欄位映射問題**：可能是欄位名稱或格式不匹配導致解析失敗
-3. **試算表結構變更**：Google 試算表的欄位結構可能已變更
-4. **編碼問題**：中文字符編碼可能導致欄位名稱匹配失敗
+3. **註冊連結修復**（預計 1 小時）
+   ```php
+   // 需檢查和修復：
+   - [ ] 診斷「立即註冊會員」連結失效問題
+   - [ ] 檢查 token 驗證邏輯
+   - [ ] 測試完整註冊流程
+   - [ ] 確認自動角色設定功能
+   ```
 
-**1.3 問題根本原因分析**
+**🟡 中等優先級：資料處理優化**
 
-**🔍 核心問題：ACF 欄位值格式不匹配**
-
-| 問題欄位 | ACF 欄位類型 | ACF 期望值 | 我們傳入的值 | 問題 |
-|----------|-------------|-----------|-------------|------|
-| `is_charged` | radio | `'yes'`, `'no'`, `'other'` | `'是'`, `'否'`, `'其他'` | 值格式不匹配 |
-| `open_bottle_service` | select | `'yes'`, `'no'`, `'other'` | `'是'`, `'否'`, `'其他'` | 值格式不匹配 |
-| `equipment` | checkbox | `array(['酒杯', '開瓶器'])` | `array(['無提供', '醒酒器'])` | 陣列格式正確 |
-| `contact_person` | text | `string` | `string` | 格式正確 |
-| `corkage_fee` | text | `string` | `string` | 格式正確 |
-
-**🔍 新增緊急問題：Google Apps Script 資料解析完全失敗**
-
-| 問題環節 | 預期行為 | 實際行為 | 問題 |
-|----------|---------|---------|------|
-| `parseLatestSpreadsheetData()` | 解析試算表資料 | 解析失敗，返回空物件 | 資料解析邏輯有誤 |
-| `sendToWordPress()` | 發送完整資料 | 發送空 payload | 上游資料解析失敗 |
-| WordPress API | 接收完整參數 | 接收空參數 | 導致 "Missing parameters" 錯誤 |
-
-**1.4 今日修正內容**
-
-**🔧 主要修正項目：**
-
-1. **Google Apps Script 語法修正**：
+4. **Google 表單資料分欄處理**（預計 1.5 小時）
    ```javascript
-   // 修正前（ES6+ 語法）
-   const result = sendToWordPress(formData);
-   Logger.log(`toHalfWidth: "${str}" -> "${result}"`);
-   array.map(item => ...)
-   
-   // 修正後（ES5 語法）
-   var result = sendToWordPress(formData);
-   Logger.log('toHalfWidth: "' + str + '" -> "' + result + '"');
-   array.map(function(item) { ... })
+   // 需修改的 Apps Script 功能：
+   - [ ] 識別官網及社群連結欄位
+   - [ ] 在轉換後資料庫格式中拆分為兩欄
+   - [ ] 更新欄位映射邏輯
+   - [ ] 測試資料轉換功能
    ```
 
-2. **WordPress functions.php 資料轉換修正**：
-   ```php
-   // 修正前
-   $is_charged_map = [
-       '酌收' => '是',
-       '不收費' => '否', 
-       '其他' => '其他'
-   ];
-   
-   // 修正後
-   $is_charged_map = [
-       '酌收' => 'yes',
-       '不收費' => 'no', 
-       '其他' => 'other',
-       '是' => 'yes',
-       '否' => 'no'
-   ];
-   ```
+**2.2 技術細節和實作方向**
 
-3. **新增除錯工具**：
-   - `byob_debug_admin_page()`：ACF 欄位除錯頁面
-   - `byob_test_acf_configuration()`：ACF 配置測試函數
-   - `byob_check_acf_fields()`：ACF 欄位狀態檢查函數
-
-**🔧 新增緊急修正項目（待完成）：**
-
-4. **Google Apps Script 資料解析除錯**：
-   - 在 `parseLatestSpreadsheetData()` 中添加詳細除錯日誌
-   - 檢查試算表欄位名稱和格式
-   - 驗證資料解析邏輯
-   - 建立資料解析失敗的處理機制
-
-**1.5 下一步測試方法**
-
-**🎯 立即測試步驟（預計 30 分鐘）：**
-
-1. **重新提交 Google 表單測試**：
-   ```bash
-   # 步驟 1：提交新的測試表單
-   - 填寫所有欄位，特別是問題欄位
-   - 提交表單並等待處理完成
-   
-   # 步驟 2：檢查 WordPress 除錯頁面
-   - 前往 工具 → BYOB ACF 除錯
-   - 檢查所有欄位的狀態
-   - 確認問題欄位是否已修正
-   ```
-
-2. **驗證修正結果**：
-   ```bash
-   # 檢查項目：
-   - [ ] contact_person 欄位有值
-   - [ ] is_charged 欄位有值（應為 'yes'/'no'/'other'）
-   - [ ] corkage_fee 欄位有值
-   - [ ] equipment 欄位有值（陣列格式）
-   - [ ] open_bottle_service 欄位有值（應為 'yes'/'no'/'other'）
-   - [ ] district 欄位有值
-   - [ ] is_owner 欄位有值
-   ```
-
-3. **前端顯示驗證**：
-   ```bash
-   # 檢查前端頁面：
-   - [ ] 餐廳詳情頁面不再顯示「暫無資料」
-   - [ ] 所有欄位都正確顯示
-   - [ ] 資料格式正確（如開瓶費政策顯示「酌收」而非「yes」）
-   ```
-
-**🎯 緊急測試步驟（新增）：**
-
-4. **Google Apps Script 資料解析測試**：
-   ```bash
-   # 步驟 1：檢查 Google Apps Script 執行日誌
-   - 查看 Apps Script 專案的執行日誌
-   - 確認 `parseLatestSpreadsheetData()` 函數的執行狀態
-   - 檢查是否有詳細的錯誤訊息
-   
-   # 步驟 2：手動測試資料解析
-   - 在 Apps Script 編輯器中手動執行 `parseLatestSpreadsheetData()` 函數
-   - 檢查返回的資料結構
-   - 確認所有必要欄位都有值
-   
-   # 步驟 3：檢查試算表結構
-   - 確認 Google 試算表的欄位名稱和順序
-   - 檢查是否有新增或刪除的欄位
-   - 確認欄位名稱的編碼格式
-   ```
-
-**1.6 如果仍有問題的處理方案**
-
-**🔍 進一步除錯步驟：**
-
-1. **檢查 WordPress 錯誤日誌**：
-   ```bash
-   # 查看錯誤日誌
-   - 檢查 wp-content/debug.log
-   - 尋找 "BYOB" 開頭的錯誤訊息
-   - 檢查 ACF 相關錯誤
-   ```
-
-2. **手動測試 ACF 欄位更新**：
-   ```php
-   // 在 WordPress 管理後台執行
-   - 前往 工具 → BYOB ACF 除錯
-   - 點擊「測試更新 ACF 欄位」按鈕
-   - 檢查測試結果
-   ```
-
-3. **檢查 ACF 欄位配置**：
-   ```php
-   // 確認 ACF 欄位設定
-   - 檢查欄位名稱是否正確
-   - 確認欄位類型設定
-   - 驗證欄位選項配置
-   ```
-
-**🔍 緊急除錯步驟（新增）：**
-
-4. **Google Apps Script 深度除錯**：
-   ```javascript
-   // 在 parseLatestSpreadsheetData() 函數中添加詳細日誌
-   Logger.log('開始解析試算表資料');
-   Logger.log('試算表 ID: ' + spreadsheetId);
-   Logger.log('工作表名稱: ' + sheetName);
-   
-   // 檢查試算表結構
-   var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-   Logger.log('試算表標題行: ' + JSON.stringify(headers));
-   
-   // 檢查資料行
-   var lastRow = sheet.getLastRow();
-   Logger.log('最後一行: ' + lastRow);
-   
-   // 檢查欄位映射
-   for (var i = 0; i < mappingData.length; i++) {
-     var mapping = mappingData[i];
-     Logger.log('欄位映射 ' + i + ': ' + mapping[0] + ' -> ' + mapping[1]);
-   }
-   ```
-
-5. **試算表結構驗證**：
-   ```bash
-   # 檢查 Google 試算表
-   - 確認試算表 ID 是否正確
-   - 確認工作表名稱是否正確
-   - 檢查欄位名稱是否有變更
-   - 確認資料格式是否一致
-   ```
-
-#### 2. 技術細節記錄
-
-**2.1 修正的檔案清單**
-
-1. **`c:\GitHubProjects\BYOB\wordpress\Apps script.md`**：
-   - 修正所有 ES6+ 語法錯誤
-   - 改善欄位映射邏輯
-   - 添加詳細除錯日誌
-   - **新增**：需要添加 `parseLatestSpreadsheetData()` 函數的詳細除錯日誌
-
-2. **`c:\GitHubProjects\BYOB\wordpress\functions.php`**：
-   - 修正 ACF 欄位值映射
-   - 添加除錯工具和測試函數
-   - 改善錯誤處理邏輯
-
-**2.2 關鍵程式碼修正**
-
-**Google Apps Script 語法修正**：
-```javascript
-// 修正前
-const [dbField, formLabelRaw] = mappingData[i];
-Logger.log(`toHalfWidth: "${str}" -> "${result}"`);
-array.forEach(item => ...);
-
-// 修正後
-var rowData = mappingData[i];
-var dbField = rowData[0];
-var formLabelRaw = rowData[1];
-Logger.log('toHalfWidth: "' + str + '" -> "' + result + '"');
-array.forEach(function(item) { ... });
-```
-
-**WordPress ACF 值映射修正**：
+**餐廳單頁功能改善技術細節**：
 ```php
-// 修正前
-$is_charged_map = [
-    '酌收' => '是',
-    '不收費' => '否', 
-    '其他' => '其他'
-];
+// 需檢查的檔案位置：
+- single-restaurant.php 或相關模板檔案
+- functions.php 中的餐廳顯示邏輯
+- ACF 欄位 'website' 和 'social_links' 的顯示邏輯
 
-// 修正後
-$is_charged_map = [
-    '酌收' => 'yes',
-    '不收費' => 'no', 
-    '其他' => 'other',
-    '是' => 'yes',
-    '否' => 'no'
-];
+// 實作重點：
+1. 新增返回按鈕：使用 JavaScript history.back() 或麵包屑導航
+2. 連結檢查：確認 ACF 欄位值是否正確存取
+3. 新分頁開啟：target="_blank" rel="noopener noreferrer"
 ```
 
-**2.3 新增緊急修正需求**
+**邀請郵件優化技術細節**：
+```php
+// 需修改的函數：byob_send_invitation_email()
+// 位置：functions.php 約第 989 行
 
-**Google Apps Script 資料解析除錯**：
+// 修改重點：
+1. 郵件發送者名稱和地址
+2. 郵件主旨和內容文案
+3. CSS 樣式優化
+4. 品牌一致性確保
+```
+
+**註冊連結診斷技術細節**：
+```php
+// 需檢查的功能：
+1. byob_handle_invitation_registration() - 邀請攔截
+2. byob_verify_invitation_token() - token 驗證  
+3. WordPress 註冊頁面 URL 產生邏輯
+4. Session 處理機制
+
+// 檢查工具：使用後台診斷頁面（工具 → BYOB 診斷）
+```
+
+**資料分欄處理技術細節**：
 ```javascript
-// 需要在 parseLatestSpreadsheetData() 函數中添加的除錯日誌
-function parseLatestSpreadsheetData() {
-  Logger.log('=== 開始解析試算表資料 ===');
-  
-  try {
-    // 獲取試算表
-    var spreadsheet = SpreadsheetApp.openById(spreadsheetId);
-    Logger.log('試算表名稱: ' + spreadsheet.getName());
-    
-    var sheet = spreadsheet.getSheetByName(sheetName);
-    Logger.log('工作表名稱: ' + sheetName);
-    Logger.log('工作表存在: ' + (sheet !== null));
-    
-    if (!sheet) {
-      Logger.log('錯誤：找不到工作表 ' + sheetName);
-      return {};
-    }
-    
-    // 獲取標題行
-    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-    Logger.log('標題行: ' + JSON.stringify(headers));
-    
-    // 獲取最後一行資料
-    var lastRow = sheet.getLastRow();
-    Logger.log('最後一行: ' + lastRow);
-    
-    if (lastRow <= 1) {
-      Logger.log('錯誤：沒有資料行');
-      return {};
-    }
-    
-    var rowData = sheet.getRange(lastRow, 1, 1, sheet.getLastColumn()).getValues()[0];
-    Logger.log('最後一行資料: ' + JSON.stringify(rowData));
-    
-    // 解析資料
-    var parsedData = {};
-    for (var i = 0; i < mappingData.length; i++) {
-      var mapping = mappingData[i];
-      var dbField = mapping[0];
-      var formLabel = mapping[1];
-      
-      Logger.log('處理欄位映射: ' + dbField + ' -> ' + formLabel);
-      
-      var headerIndex = headers.indexOf(formLabel);
-      if (headerIndex === -1) {
-        Logger.log('警告：找不到欄位 ' + formLabel);
-        continue;
-      }
-      
-      var value = rowData[headerIndex];
-      Logger.log('欄位值: ' + dbField + ' = ' + value);
-      parsedData[dbField] = value;
-    }
-    
-    Logger.log('解析完成，資料: ' + JSON.stringify(parsedData));
-    return parsedData;
-    
-  } catch (error) {
-    Logger.log('解析試算表資料時發生錯誤: ' + error.toString());
-    return {};
-  }
-}
+// 需修改的 Google Apps Script 檔案：
+// c:\GitHubProjects\BYOB\wordpress\Apps script - 純淨版.js
+
+// 修改重點：
+1. convertFormToBYOBDatabase() 函數
+2. 識別「餐廳網站或訂位連結」和「餐廳 Instagram 或 Facebook」
+3. 拆分邏輯：分別儲存為 'website' 和 'social_links' 欄位
+4. 更新欄位映射表
 ```
 
-#### 3. 明日工作計劃
+#### 3. 📋 明日工作時間分配
 
-**3.1 優先級排序**
+**3.1 建議時間安排**
 
-1. **🔴 最高優先級：解決 Google Apps Script 資料解析失敗問題**
-   - 診斷 `parseLatestSpreadsheetData()` 函數的失敗原因
-   - 修復資料解析邏輯
-   - 添加詳細的除錯日誌
-   - 測試資料解析功能
+- **上午（09:00-12:00）**：前端使用者體驗優化
+  - 餐廳單頁功能改善（2小時）
+  - 邀請郵件優化（1小時）
 
-2. **🔴 高優先級：完成資料對應問題測試**
-   - 重新提交測試表單
-   - 驗證所有欄位修正結果
-   - 確認前端顯示正確
+- **下午（13:00-16:00）**：邀請系統完善  
+  - 註冊連結修復診斷（1小時）
+  - Google 表單資料分欄處理（1.5小時）
+  - 整體測試和驗證（0.5小時）
 
-3. **🟡 中等優先級：建立監控機制**
-   - 建立自動化測試流程
-   - 設定錯誤通知機制
-   - 建立資料驗證規則
+- **晚上（可選）**：文件更新和整理
+  - 更新技術文件
+  - 記錄解決方案
 
-4. **🟢 低優先級：文件更新**
-   - 更新技術文件
-   - 建立操作手冊
-   - 記錄解決方案
+**3.2 成功標準**
 
-**3.2 時間分配建議**
+- [ ] 餐廳單頁有「返回上一頁」按鈕且功能正常
+- [ ] 官網和社群連結能正確顯示並在新分頁開啟
+- [ ] 邀請郵件內容和視覺設計符合品牌要求
+- [ ] 「立即註冊會員」連結能正常運作
+- [ ] 註冊流程能正確設定餐廳業者角色
+- [ ] Google 表單官網和社群連結能正確分欄處理
+- [ ] 所有功能經過完整測試驗證
 
-- **上午（3小時）**：解決 Google Apps Script 資料解析問題
-- **下午（2小時）**：完成測試和驗證
-- **晚上（1小時）**：建立監控機制和文件更新
+**3.3 風險控管**
 
-**3.3 成功標準**
+- 🔴 **高風險**：註冊連結修復可能涉及複雜的 token 驗證邏輯
+- 🟡 **中風險**：郵件模板修改需注意 HTML 相容性
+- 🟢 **低風險**：前端 UI 改善相對簡單安全
 
-- [ ] Google Apps Script 能正確解析試算表資料
-- [ ] 所有 Google 表單欄位都能正確對應到 WordPress ACF 欄位
-- [ ] 前端不再顯示「暫無資料」
-- [ ] 資料格式正確且用戶友好
-- [ ] 建立完整的測試和監控機制
-- [ ] 更新相關技術文件
+#### 4. 📚 歷史進展記錄
+
+**4.1 重要里程碑**
+
+**2025-01-16 完成項目：**
+* ✅ 一鍵註冊邀請系統基本架構建置
+* ✅ 文章發布自動觸發邀請功能
+* ✅ 安全的 token 驗證機制
+* ✅ 後台診斷工具建立
+* ✅ 伺服器錯誤修復和系統穩定化
+* ✅ Google 表單自動生成餐廳草稿功能運作正常
+
+**2025-01-17 待完成項目：**
+* 🔄 餐廳單頁使用者體驗改善  
+* 🔄 邀請郵件內容和視覺優化
+* 🔄 註冊連結功能修復
+* 🔄 Google 表單資料分欄處理
+
+**4.2 過往技術解決記錄**
+
+**已解決的重要技術問題：**
+
+* **Google Apps Script 語法錯誤**：ES6+ 轉 ES5 相容性問題
+* **ACF 欄位值格式不匹配**：中文值轉英文值映射問題  
+* **WordPress REST API 參數缺失**：資料解析失敗導致空 payload
+* **伺服器錯誤和檔案路徑**：require_once 路徑和 session 處理問題
+* **邀請系統架構設計**：從邀請碼改為一鍵註冊連結方案
+
+**技術堆疊和工具：**
+- **前端**：WordPress + Flatsome 主題 + ACF
+- **後端**：PHP + Google Apps Script + MySQL  
+- **整合**：WordPress REST API + Google Sheets API
+- **邀請系統**：Token-based 驗證 + 自動角色分配
+- **監控**：WordPress 後台診斷工具
 
 ---
 
-**今日已完成進度（2025-08-05）：**
+## 📝 附註
 
-* ✅ **新增：修復 Google Apps Script 語法錯誤**
-  - 轉換所有 ES6+ 語法為 ES5 兼容語法
-  - 修正箭頭函數、模板字符串、解構賦值等問題
-* ✅ **新增：發現 ACF 欄位值格式不匹配問題**
-  - 識別 `is_charged` 和 `open_bottle_service` 欄位的值映射問題
-  - 確認 ACF 期望值格式與傳入值格式不匹配
-* ✅ **新增：修正 WordPress functions.php 資料轉換邏輯**
-  - 修正 `is_charged` 欄位值映射（'是' → 'yes', '否' → 'no'）
-  - 修正 `open_bottle_service` 欄位值映射（'是' → 'yes', '否' → 'no'）
-  - 改善 `equipment` 欄位陣列處理邏輯
-* ✅ **新增：建立完整的除錯工具**
-  - 建立 ACF 欄位除錯頁面（工具 → BYOB ACF 除錯）
-  - 建立 ACF 配置測試函數
-  - 建立 ACF 欄位狀態檢查函數
-* ✅ **新增：完成系統性問題診斷**
-  - 確認問題根本原因
-  - 建立詳細的除錯和測試機制
-  - 準備完整的修正方案
-* 🚨 **新增：發現緊急問題 - Google Apps Script 資料解析完全失敗**
-  - 識別 `parseLatestSpreadsheetData()` 函數執行失敗
-  - 確認資料解析結果為空物件
-  - 導致空的 payload 發送到 WordPress
-  - 需要立即修復的緊急問題
+**專案檔案結構參考：**
+```
+c:\GitHubProjects\BYOB\
+├── wordpress\
+│   ├── functions.php (主要邏輯)
+│   ├── invitation-handler.php (邀請處理)
+│   └── Apps script - 純淨版.js (Google Apps Script)
+└── doc\
+    ├── Next Task Prompt Byob.md (本檔案)
+    └── README.md (專案概述)
+```
 
-**明日重點（按優先級排序）：**
-
-1. **🔴 最高優先級：解決 Google Apps Script 資料解析失敗問題**
-   - 診斷 `parseLatestSpreadsheetData()` 函數的失敗原因
-   - 修復資料解析邏輯
-   - 添加詳細的除錯日誌
-   - 測試資料解析功能
-
-2. **🔴 高優先級：完成資料對應問題的最終測試**
-   - 重新提交 Google 表單測試
-   - 驗證所有欄位修正結果
-   - 確認前端顯示正確
-
-3. **🟡 中等優先級：建立監控和測試機制**
-   - 建立自動化測試流程
-   - 設定錯誤通知機制
-   - 建立資料驗證規則
-
-4. **🟢 低優先級：文件更新和整理**
-   - 更新技術文件
-   - 建立操作手冊
-   - 記錄完整解決方案
-
-**技術注意事項：**
-
-* 🔴 **緊急**：需要立即解決 Google Apps Script 資料解析失敗問題
-* 🔴 **緊急**：需要完成最終測試驗證
-* 🔴 **緊急**：確認前端顯示正確
-* 🟡 **重要**：建立監控機制
-* 🟡 **重要**：更新技術文件
-* 🟢 **一般**：建立自動化測試
-* 🟢 **一般**：改善錯誤處理
-* 🟢 **一般**：建立故障排除流程
+**重要提醒：**
+- 修改前請備份檔案
+- 使用後台診斷工具進行測試
+- 所有變更都有詳細的錯誤日誌記錄
+- 如遇問題可參考 `functions.php` 中的診斷頁面
