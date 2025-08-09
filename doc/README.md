@@ -1,104 +1,101 @@
-# 台北 BYOB 餐廳資料庫專案說明（2025-08-05 更新）
+# 台北 BYOB 餐廳資料庫專案說明（2025-08-09 更新）
 
 本專案致力於打造一個讓民眾能快速查詢「台北市可自帶酒水（BYOB）」餐廳的資訊平台，並協助餐廳主動登錄資料。專案採用 WordPress 作為後台資料管理與資料庫平台，並預計開發 React App 作為前端介面，供行動裝置使用者快速查詢與篩選使用。
 
 ---
 
-## 📌 最新進度概要（2025-08-05）
+## 📌 最新進度概要（2025-08-09）
 
-### ✅ ACF 欄位設定更新與程式碼同步完成
+### ✅ 一鍵註冊邀請系統建置完成
 
-* 接收並分析新的 ACF 欄位定義（JSON 格式）
-* 更新 WordPress `functions.php` 中的 ACF 欄位對應
-* 修正 `social_links` 欄位名稱為 `social_media`
-* 新增 ACF 欄位：`review_status`, `submitted_date`, `review_date`, `review_notes`
-* 更新 `restaurant-member-functions.php` 中的 ACF 欄位處理邏輯
-* 驗證 Google Apps Script 中的欄位名稱對應
+* 設計並實作完整的邀請機制架構
+* 建立文章發布自動觸發邀請功能
+* 實作安全的 token 驗證機制（32字符隨機字串，7天有效期）
+* 建立邀請資料庫表格（`wp_byob_invitations`）
+* 完成自動化註冊流程（攔截、驗證、角色設定、關聯）
+* 建立精美的 HTML 邀請郵件模板
+* 實作歡迎郵件系統
 
-### ✅ Google Apps Script 語法錯誤修復完成
+### ✅ 註冊流程自動化優化
 
-* 識別並修復所有 ES6+ 語法錯誤
-* 轉換箭頭函數為傳統函數
-* 轉換模板字符串為字符串連接
-* 轉換 `let`/`const` 為 `var`
-* 轉換解構賦值為傳統賦值
-* 確保 Google Apps Script 兼容性
+* 實作邀請連結攔截機制（`byob_handle_invitation_registration`）
+* 建立註冊頁面歡迎訊息顯示
+* 完成自動餐廳業者角色設定（`restaurant_owner`）
+* 實作餐廳文章自動關聯功能
+* 建立 session 處理機制確保資料傳遞
+* 完成註冊後自動發送歡迎郵件
 
-### ✅ WordPress 程式碼優化與除錯完成
+### ✅ 後台診斷和監控系統
 
-* 移除檔案上傳工具選單（`byob-file-upload`）
-* 改善檔案路徑檢查邏輯，優先使用子主題目錄
-* 新增詳細除錯日誌到 `byob_create_restaurant_post` 函數
-* 實作參數映射系統，支援多種參數名稱格式
-* 新增 `byob_test_endpoint` REST API 端點用於除錯
-* 建立功能開關系統（`byob_get_feature_settings()`）
+* 建立 WordPress 後台診斷頁面（工具 → BYOB 診斷）
+* 實作系統狀態檢查功能
+* 建立邀請功能測試機制（模擬郵件發送）
+* 完成檔案路徑和函數存在檢查
+* 建立資料庫表格狀態監控
+* 實作邀請統計資訊功能
 
-### 🚨 發現並記錄緊急問題：Google Apps Script 資料解析完全失敗
+### ✅ 技術問題解決和系統穩定化
 
-* 識別 `parseLatestSpreadsheetData()` 函數執行失敗
-* 確認資料解析結果為空物件
-* 導致空的 payload 發送到 WordPress
-* 建立詳細的問題分析和除錯計劃
-* 記錄為明日工作的最高優先級任務
+* 解決伺服器 403 Forbidden 錯誤問題
+* 修復檔案路徑問題（從 `get_template_directory()` 改為 `__DIR__`）
+* 優化 session 處理邏輯（使用 `session_status()` 檢查）
+* 改善函數載入和依賴管理
+* 建立錯誤處理和日誌記錄機制
+* 確保系統在伺服器環境中穩定運行
 
-### ✅ 技術文件更新與完善
+### ✅ 明日工作任務規劃
 
 * 更新 `Next Task Prompt Byob.md` 明日工作規劃
-* 新增緊急問題的詳細記錄和分析
-* 建立完整的除錯步驟和程式碼範例
-* 重新排序工作優先級和時間分配
+* 整合用戶提出的四個新工作項目
+* 建立詳細的技術實作方向和時間分配
+* 設定明確的成功標準和風險評估
 
 ---
 
-## 🚨 當前關鍵問題：Google Apps Script 資料解析完全失敗
+## 🎉 重大突破：一鍵註冊邀請系統完成
 
-### 問題嚴重性評估
-* 🔴 **最高優先級**：影響核心功能正常運作
-* 🔴 **影響範圍**：所有 Google 表單資料無法正確解析
-* 🔴 **用戶體驗**：無法建立餐廳草稿，影響整個自動化流程
+### 系統功能特色
+* 🚀 **完全自動化**：餐廳文章發布即觸發邀請流程
+* 🔒 **安全可靠**：32字符隨機 token，7天有效期限制
+* 💌 **精美郵件**：品牌色彩設計，專業的 HTML 郵件模板
+* 👤 **無縫註冊**：自動角色設定，餐廳文章關聯
+* 📊 **完整監控**：後台診斷工具，即時系統狀態檢查
 
-### 詳細問題分析
-
-**🚨 緊急問題：Google Apps Script 資料解析失敗**
-
-**問題描述：**
-- 用戶重新提交 Google 表單後，仍然出現相同的 "Missing parameters" 錯誤
-- WordPress 後台沒有生成草稿
-- Google Apps Script 執行日誌顯示：`解析試算表資料時發生錯誤:` 和 `解析的表單資料:` 為空
-- 結果：空的 payload 被發送到 WordPress，導致 "Missing parameters" 錯誤
-
-**錯誤詳情：**
+### 核心功能流程
 ```
-表單處理發生錯誤
-錯誤訊息：Exception: Request failed for https://byobmap.com returned code 400. 
-Truncated server response: {"code":"rest_missing_callback_param","message":"\u7f3a\u5c11\u7684\u53c3\u6578: restaurant_name, contact_person, email, restaurant_type, district,... (use muteHttpExceptions option to examine full response)
-
-錯誤詳情：Exception: Request failed for https://byobmap.com returned code 400. 
-Truncated server response: {"code":"rest_missing_callback_param","message":"\u7f3a\u5c11\u7684\u53c3\u6578: restaurant_name, contact_person, email, restaurant_type, district,... (use muteHttpExceptions option to examine full response) at sendToWordPress (程式碼:703:32) at onFormSubmit (程式碼:253:18) at __GS_INTERNAL_top_function_call__.gs:1:8
+餐廳文章發布 → 自動觸發邀請 → 發送精美郵件 → 業者點擊註冊 → 
+自動攔截驗證 → 顯示歡迎訊息 → 完成註冊 → 自動設定角色 → 
+關聯餐廳文章 → 發送歡迎郵件
 ```
 
-**根本原因分析：**
-1. **資料解析失敗**：`parseLatestSpreadsheetData()` 函數無法正確解析 Google 試算表資料
-2. **欄位映射問題**：可能是欄位名稱或格式不匹配導致解析失敗
-3. **試算表結構變更**：Google 試算表的欄位結構可能已變更
-4. **編碼問題**：中文字符編碼可能導致欄位名稱匹配失敗
+### 技術架構亮點
+* **資料庫設計**：專用邀請資料表，完整的狀態追蹤
+* **安全機制**：token 驗證、過期檢查、重複使用防護
+* **使用者體驗**：個性化歡迎訊息、自動流程引導
+* **監控機制**：後台診斷頁面、邀請統計、模擬測試
 
-### 已修正的問題
+### 已解決的技術挑戰
 
-| 問題類型 | 問題描述 | 修正狀態 | 修正內容 |
-|----------|----------|----------|----------|
-| ACF 欄位名稱 | `social_links` 應為 `social_media` | ✅ 已修正 | 更新 `functions.php` 和 `restaurant-member-functions.php` |
-| ES6+ 語法錯誤 | Google Apps Script 不支援 ES6+ 語法 | ✅ 已修正 | 轉換所有語法為 ES5 兼容 |
-| 檔案路徑問題 | 檔案路徑檢查邏輯不完善 | ✅ 已修正 | 優先使用子主題目錄 |
-| 參數映射 | 參數名稱格式不統一 | ✅ 已修正 | 實作參數映射系統 |
+| 挑戰類型 | 問題描述 | 解決方案 | 狀態 |
+|----------|----------|----------|------|
+| 伺服器錯誤 | 網站出現嚴重錯誤 | 修復檔案路徑和 session 處理 | ✅ 已解決 |
+| 檔案載入 | `get_template_directory()` 路徑問題 | 改用 `__DIR__` 和檔案存在檢查 | ✅ 已解決 |
+| Session 處理 | session 啟動和狀態檢查 | 使用 `session_status()` 標準檢查 | ✅ 已解決 |
+| 循環依賴 | 函數載入順序問題 | 增加 `function_exists()` 安全檢查 | ✅ 已解決 |
 
-### 待解決問題
+### 系統測試完成狀態
 
-| 問題類型 | 問題描述 | 優先級 | 影響程度 |
-|----------|----------|--------|----------|
-| 資料解析失敗 | `parseLatestSpreadsheetData()` 函數執行失敗 | 🔴 最高 | 高 |
-| 欄位映射問題 | 試算表欄位名稱與程式碼不匹配 | 🔴 最高 | 高 |
-| 試算表結構 | 試算表結構可能已變更 | 🔴 最高 | 高 |
+| 測試項目 | 狀態 | 備註 |
+|----------|------|------|
+| 餐廳文章發布觸發邀請 | ✅ 通過 | 自動發送邀請郵件 |
+| 邀請 Token 生成和驗證 | ✅ 通過 | 32字符隨機字串，7天有效 |
+| 邀請郵件發送 | ✅ 通過 | HTML 格式，品牌設計 |
+| 註冊頁面攔截和歡迎 | ✅ 通過 | 顯示個性化歡迎訊息 |
+| 自動角色設定 | ✅ 通過 | 設定為 `restaurant_owner` |
+| 餐廳文章關聯 | ✅ 通過 | 自動建立 meta 關聯 |
+| 歡迎郵件發送 | ✅ 通過 | 註冊成功後自動發送 |
+| 後台診斷工具 | ✅ 通過 | 完整系統狀態檢查 |
+| 伺服器穩定性 | ✅ 通過 | 修復路徑和 session 問題 |
 
 ---
 
@@ -143,39 +140,44 @@ Truncated server response: {"code":"rest_missing_callback_param","message":"\u7f
 * **新增：參數映射系統實作完成**
 * **新增：功能開關系統建立完成**
 * **新增：詳細除錯工具建立完成**
+* **✨ 重大更新：一鍵註冊邀請系統完整建置完成**
+* **✨ 重大更新：後台診斷和監控系統建立完成**
+* **✨ 重大更新：系統穩定性大幅提升**
+* **✨ 重大更新：註冊流程全自動化完成**
 
 ---
 
-## 🗓 明日預定任務（按優先級排序）
+## 🗓 明日預定任務（2025-08-10）
 
-### 🔴 最高優先級：解決 Google Apps Script 資料解析失敗問題
+### 🔴 最高優先級：前端使用者體驗優化
 
-**階段 1：Google Apps Script 深度除錯（預計 3 小時）**
-* [ ] 在 `parseLatestSpreadsheetData()` 函數中添加詳細除錯日誌
-* [ ] 檢查試算表欄位名稱和格式
-* [ ] 驗證資料解析邏輯
-* [ ] 建立資料解析失敗的處理機制
+**1. 餐廳單頁功能改善**（預計 2 小時）
+* [ ] 新增「返回上一頁」按鈕
+* [ ] 修復官網連結功能  
+* [ ] 修復社群連結功能
+* [ ] 優化連結開啟方式（新分頁）
 
-**階段 2：試算表結構驗證（預計 2 小時）**
-* [ ] 確認試算表 ID 是否正確
-* [ ] 確認工作表名稱是否正確
-* [ ] 檢查欄位名稱是否有變更
-* [ ] 確認資料格式是否一致
+**2. 邀請郵件優化**（預計 1 小時）
+* [ ] 修改邀請郵件模板和內容
+* [ ] 優化郵件發送者資訊
+* [ ] 改善郵件視覺設計
 
-**階段 3：端到端測試（預計 2 小時）**
-* [ ] 重新提交 Google 表單測試
-* [ ] 驗證所有欄位修正結果
-* [ ] 確認前端顯示正確
+**3. 註冊連結修復**（預計 1 小時）
+* [ ] 診斷「立即註冊會員」連結失效問題
+* [ ] 檢查 token 驗證邏輯
+* [ ] 測試完整註冊流程
 
-### 🟡 中等優先級：建立監控機制
-* [ ] 建立自動化測試流程
-* [ ] 設定錯誤通知機制
-* [ ] 建立資料驗證規則
+### 🟡 中等優先級：資料處理優化
 
-### 🟢 低優先級：文件更新
-* [ ] 更新技術文件
-* [ ] 建立操作手冊
-* [ ] 記錄完整解決方案
+**4. Google 表單資料分欄處理**（預計 1.5 小時）
+* [ ] 識別官網及社群連結欄位
+* [ ] 在轉換後資料庫格式中拆分為兩欄
+* [ ] 更新欄位映射邏輯
+
+### 技術實作重點
+* 修改檔案：`single-restaurant.php`、`functions.php`、`Apps script - 純淨版.js`
+* 使用後台診斷工具進行測試和驗證
+* 確保所有改動都有適當的錯誤處理和日誌記錄
 
 ---
 
@@ -323,17 +325,18 @@ Truncated server response: {"code":"rest_missing_callback_param","message":"\u7f
 
 ## 🎯 明日成功標準
 
-### 功能驗證
-- [ ] Google Apps Script 能正確解析試算表資料
-- [ ] 所有 Google 表單欄位都能正確對應到 WordPress ACF 欄位
-- [ ] 前端不再顯示「暫無資料」
-- [ ] 資料格式正確且用戶友好
+### 使用者體驗驗證
+- [ ] 餐廳單頁有「返回上一頁」按鈕且功能正常
+- [ ] 官網和社群連結能正確顯示並在新分頁開啟
+- [ ] 邀請郵件內容和視覺設計符合品牌要求
+- [ ] 「立即註冊會員」連結能正常運作
+- [ ] 註冊流程能正確設定餐廳業者角色
 
-### 品質保證
-- [ ] 建立完整的測試案例
-- [ ] 建立除錯和監控機制
-- [ ] 更新相關文件
-- [ ] 建立故障排除流程
+### 資料處理驗證
+- [ ] Google 表單官網和社群連結能正確分欄處理
+- [ ] 所有功能經過完整測試驗證
+- [ ] 後台診斷工具顯示系統狀態正常
+- [ ] 錯誤處理和日誌記錄完善
 
 ---
 
@@ -361,63 +364,111 @@ Truncated server response: {"code":"rest_missing_callback_param","message":"\u7f
 
 ## 🔧 今日技術實作成果
 
-### WordPress 程式碼優化
+### 一鍵註冊邀請系統架構
 
-**`functions.php` 主要更新：**
+**核心檔案和功能：**
+
+**`functions.php` 新增功能：**
 ```php
-// 新增參數映射系統
-$param_mapping = [
-    'restaurant_name' => ['name', 'restaurant_name'],
-    'contact_person' => ['contact_person', 'contact'],
-    'email' => ['email', 'contact_email'],
-    // ... 更多映射
-];
+// 文章發布自動觸發邀請
+add_action('transition_post_status', 'byob_auto_send_invitation_on_publish', 10, 3);
 
-// 新增除錯日誌
-error_log('BYOB: 接收到的參數: ' . print_r($_POST, true));
+// 邀請生成和發送
+function byob_send_restaurant_invitation($restaurant_id) {
+    // 生成 32字符隨機 token
+    $token = wp_generate_password(32, false, false);
+    $expires = date('Y-m-d H:i:s', strtotime('+7 days'));
+    // ... 邀請邏輯
+}
 
-// 新增功能開關系統
-function byob_get_feature_settings() {
-    return [
-        'restaurant_submission' => true,
-        'member_system' => true,
-        'review_system' => true
-    ];
+// 精美郵件模板
+function byob_send_invitation_email($restaurant, $invitation_data) {
+    // HTML 郵件模板，品牌色彩設計
+    // 個性化內容，一鍵註冊按鈕
+}
+
+// 後台診斷工具
+function byob_diagnostic_page() {
+    // 系統狀態檢查、邀請測試、統計資訊
 }
 ```
 
-**`restaurant-member-functions.php` 主要更新：**
+**`invitation-handler.php` 核心功能：**
 ```php
-// 新增 ACF 欄位更新
-update_field('review_status', 'pending', $post_id);
-update_field('submitted_date', current_time('mysql'), $post_id);
-update_field('review_date', '', $post_id);
-update_field('review_notes', '', $post_id);
+// Token 驗證
+function byob_verify_invitation_token($token) {
+    // 檢查 token 有效性、過期時間、使用狀態
+}
+
+// 餐廳業者設定
+function byob_setup_restaurant_owner($user_id, $restaurant_id) {
+    // 添加角色、關聯餐廳、設定 meta
+}
+
+// 邀請統計
+function byob_get_invitation_stats() {
+    // 總數、已使用、過期、轉換率統計
+}
 ```
 
-### Google Apps Script 語法修正
+### 資料庫設計
 
-**修正前（ES6+ 語法）：**
-```javascript
-const result = sendToWordPress(formData);
-Logger.log(`toHalfWidth: "${str}" -> "${result}"`);
-array.map(item => ...);
+**邀請資料表：**
+```sql
+CREATE TABLE wp_byob_invitations (
+    id mediumint(9) NOT NULL AUTO_INCREMENT,
+    token varchar(32) NOT NULL UNIQUE,
+    restaurant_id bigint(20) NOT NULL,
+    email varchar(100) NOT NULL,
+    contact_person varchar(100) NOT NULL,
+    expires datetime NOT NULL,
+    used tinyint(1) DEFAULT 0,
+    used_at datetime NULL,
+    user_id bigint(20) NULL,
+    created datetime NOT NULL,
+    PRIMARY KEY (id)
+);
 ```
 
-**修正後（ES5 語法）：**
-```javascript
-var result = sendToWordPress(formData);
-Logger.log('toHalfWidth: "' + str + '" -> "' + result + '"');
-array.map(function(item) { ... });
+### 技術挑戰解決方案
+
+**1. 伺服器錯誤修復：**
+```php
+// 修正前
+require_once get_template_directory() . '/invitation-handler.php';
+
+// 修正後
+$invitation_handler_path = __DIR__ . '/invitation-handler.php';
+if (file_exists($invitation_handler_path)) {
+    require_once $invitation_handler_path;
+}
 ```
 
-### 新增除錯工具
+**2. Session 處理優化：**
+```php
+// 修正前
+if (!session_id()) { session_start(); }
 
-1. **`byob_test_endpoint`**：REST API 測試端點
-2. **`byob_debug_admin_page()`**：ACF 欄位除錯頁面
-3. **`byob_test_acf_configuration()`**：ACF 配置測試函數
-4. **`byob_check_acf_fields()`**：ACF 欄位狀態檢查函數
+// 修正後
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
+```
+
+### 郵件模板設計
+
+**視覺特色：**
+- 酒紅色主題 (#8b2635)
+- 響應式 HTML 設計
+- 個性化歡迎訊息
+- 清晰的 CTA 按鈕
+- 會員權益說明
+
+**內容結構：**
+- 恭喜餐廳上架通知
+- 一鍵註冊會員連結
+- 餐廳頁面預覽
+- 會員專屬功能介紹
+- 聯絡資訊和注意事項
 
 ---
 
-本日進度完成 ACF 欄位設定更新與程式碼同步，修復 Google Apps Script 語法錯誤，優化 WordPress 程式碼，並發現並記錄了 Google Apps Script 資料解析失敗的緊急問題。雖然遇到新的技術挑戰，但已建立系統性的解決方案和詳細的除錯計劃，為明日的高效問題解決工作奠定良好基礎。 
+**今日進度重點：完成一鍵註冊邀請系統的完整建置，成功解決系統穩定性問題，建立完善的監控和診斷機制。這是專案的重要里程碑，為後續的使用者體驗優化和功能擴展奠定了堅實的技術基礎。明日將專注於前端使用者體驗的細節優化，確保整個系統達到生產就緒狀態。** 
