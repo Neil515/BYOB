@@ -131,7 +131,7 @@ function byob_create_restaurant_post($request) {
             'open_bottle_service' => array('open_bottle_service', 'bottle_service', 'service_type'),
             'open_bottle_service_other_note' => array('open_bottle_service_other_note', 'service_note', 'other_service'),
             'website' => array('website', 'website_url', 'url'),
-            'social_media' => array('social_media', 'social', 'social_links'),
+            'social_media' => array('social_media', 'social', 'social_links', '餐廳 Instagram 或 Facebook'),
             'notes' => array('notes', 'additional_notes', 'comments'),
             'is_owner' => array('is_owner', 'owner', 'is_restaurant_owner')
         );
@@ -200,6 +200,31 @@ function byob_create_restaurant_post($request) {
             $social_media_primary = '';
         }
 
+        // 處理 ACF 欄位值格式轉換
+        $is_charged_raw = get_param_value($request, $param_mapping['is_charged']);
+        $is_charged_converted = '';
+        if (strpos($is_charged_raw, '酌收') !== false) {
+            $is_charged_converted = 'yes';
+        } elseif (strpos($is_charged_raw, '不收') !== false) {
+            $is_charged_converted = 'no';
+        } elseif (strpos($is_charged_raw, '其他') !== false) {
+            $is_charged_converted = 'other';
+        } else {
+            $is_charged_converted = $is_charged_raw; // 保持原值
+        }
+        
+        $open_bottle_service_raw = get_param_value($request, $param_mapping['open_bottle_service']);
+        $open_bottle_service_converted = '';
+        if (strpos($open_bottle_service_raw, '是') !== false) {
+            $open_bottle_service_converted = 'yes';
+        } elseif (strpos($open_bottle_service_raw, '否') !== false) {
+            $open_bottle_service_converted = 'no';
+        } elseif (strpos($open_bottle_service_raw, '其他') !== false) {
+            $open_bottle_service_converted = 'other';
+        } else {
+            $open_bottle_service_converted = $open_bottle_service_raw; // 保持原值
+        }
+
         // 更新 ACF 欄位
         if (function_exists('update_field')) {
             $acf_updates = array(
@@ -207,14 +232,14 @@ function byob_create_restaurant_post($request) {
                 'email' => get_param_value($request, $param_mapping['email']) ?: '',
                 'restaurant_type' => $types ?: array(),
                 'address' => get_param_value($request, $param_mapping['address']) ?: '',
-                'is_charged' => get_param_value($request, $param_mapping['is_charged']) ?: '',
+                'is_charged' => $is_charged_converted ?: '',
                 'corkage_fee' => get_param_value($request, $param_mapping['corkage_fee']) ?: '',
                 'equipment' => $equipment ?: array(),
-                'open_bottle_service' => get_param_value($request, $param_mapping['open_bottle_service']) ?: '',
+                'open_bottle_service' => $open_bottle_service_converted ?: '',
                 'open_bottle_service_other_note' => get_param_value($request, $param_mapping['open_bottle_service_other_note']) ?: '',
                 'phone' => get_param_value($request, $param_mapping['phone']) ?: '',
                 'website' => get_param_value($request, $param_mapping['website']) ?: '',
-                'social_media' => $social_media_primary ?: '', // 修正欄位名稱
+                'social_links' => $social_media_primary ?: '', // 修正欄位名稱
                 'notes' => get_param_value($request, $param_mapping['notes']) ?: '',
                 'last_updated' => current_time('Y-m-d'),
                 'source' => get_param_value($request, $param_mapping['is_owner']) === '是' ? '店主' : '表單填寫者',
@@ -815,4 +840,654 @@ function byob_get_feature_settings() {
         'points_system' => false,              // 積分系統 - 初期關閉
         'api_endpoints' => true,               // REST API 端點
     );
+}
+
+// =============================================================================
+// 一鍵註冊邀請系統
+// =============================================================================
+
+// 當餐廳文章發布時自動發送邀請
+add_action('transition_post_status', 'byob_auto_send_invitation_on_publish', 10, 3);
+
+function byob_auto_send_invitation_on_publish($new_status, $old_status, $post) {
+    // 檢查是否為餐廳文章且從草稿變為發布
+    if ($post->post_type !== 'restaurant') {
+        return;
+    }
+    
+    if ($new_status !== 'publish') {
+        return;
+    }
+    
+    if ($old_status === 'publish') {
+        // 如果已經是發布狀態，不重複發送邀請
+        return;
+    }
+    
+    // 檢查功能是否啟用
+    $features = byob_get_feature_settings();
+    if (!$features['invitation_system']) {
+        return;
+    }
+    
+    // 檢查是否已經發送過邀請
+    $invitation_sent = get_post_meta($post->ID, '_byob_invitation_sent', true);
+    if ($invitation_sent) {
+        return;
+    }
+    
+    error_log('BYOB: 餐廳文章發布，準備發送邀請 - 文章ID: ' . $post->ID);
+    
+    // 發送邀請
+    $result = byob_send_restaurant_invitation($post->ID);
+    
+    if ($result['success']) {
+        // 標記已發送邀請
+        update_post_meta($post->ID, '_byob_invitation_sent', current_time('mysql'));
+        update_post_meta($post->ID, '_byob_invitation_token', $result['token']);
+        update_post_meta($post->ID, '_byob_invitation_expires', $result['expires']);
+        
+        error_log('BYOB: 邀請發送成功 - 文章ID: ' . $post->ID . ', Token: ' . $result['token']);
+    } else {
+        error_log('BYOB: 邀請發送失敗 - 文章ID: ' . $post->ID . ', 錯誤: ' . $result['error']);
+    }
+}
+
+// 生成餐廳邀請
+function byob_send_restaurant_invitation($restaurant_id) {
+    $restaurant = get_post($restaurant_id);
+    
+    if (!$restaurant || $restaurant->post_type !== 'restaurant') {
+        return array('success' => false, 'error' => '餐廳不存在');
+    }
+    
+    // 獲取餐廳聯絡資訊
+    $contact_person = get_field('contact_person', $restaurant_id) ?: '餐廳負責人';
+    $email = get_field('email', $restaurant_id);
+    
+    if (!$email || !is_email($email)) {
+        return array('success' => false, 'error' => '無效的電子郵件地址');
+    }
+    
+    // 生成邀請token（32字符隨機字串）
+    $token = wp_generate_password(32, false, false);
+    $expires = date('Y-m-d H:i:s', strtotime('+7 days'));
+    
+    // 儲存邀請資料
+    $invitation_data = array(
+        'token' => $token,
+        'restaurant_id' => $restaurant_id,
+        'email' => $email,
+        'contact_person' => $contact_person,
+        'expires' => $expires,
+        'used' => false,
+        'created' => current_time('mysql')
+    );
+    
+    // 儲存到資料庫
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'byob_invitations';
+    
+    // 檢查表格是否存在，不存在則創建
+    byob_create_invitation_table();
+    
+    $inserted = $wpdb->insert(
+        $table_name,
+        $invitation_data,
+        array('%s', '%d', '%s', '%s', '%s', '%d', '%s')
+    );
+    
+    if ($inserted === false) {
+        return array('success' => false, 'error' => '邀請資料儲存失敗');
+    }
+    
+    // 發送邀請郵件
+    $mail_result = byob_send_invitation_email($restaurant, $invitation_data);
+    
+    if ($mail_result) {
+        return array(
+            'success' => true,
+            'token' => $token,
+            'expires' => $expires,
+            'invitation_id' => $wpdb->insert_id
+        );
+    } else {
+        return array('success' => false, 'error' => '邀請郵件發送失敗');
+    }
+}
+
+// 創建邀請資料表
+function byob_create_invitation_table() {
+    global $wpdb;
+    
+    $table_name = $wpdb->prefix . 'byob_invitations';
+    
+    $charset_collate = $wpdb->get_charset_collate();
+    
+    $sql = "CREATE TABLE IF NOT EXISTS $table_name (
+        id mediumint(9) NOT NULL AUTO_INCREMENT,
+        token varchar(32) NOT NULL,
+        restaurant_id bigint(20) NOT NULL,
+        email varchar(100) NOT NULL,
+        contact_person varchar(100) NOT NULL,
+        expires datetime NOT NULL,
+        used tinyint(1) DEFAULT 0,
+        used_at datetime NULL,
+        user_id bigint(20) NULL,
+        created datetime NOT NULL,
+        PRIMARY KEY (id),
+        UNIQUE KEY token (token),
+        KEY restaurant_id (restaurant_id),
+        KEY email (email)
+    ) $charset_collate;";
+    
+    require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+    dbDelta($sql);
+}
+
+// 發送邀請郵件
+function byob_send_invitation_email($restaurant, $invitation_data) {
+    $restaurant_name = $restaurant->post_title;
+    $contact_person = $invitation_data['contact_person'];
+    $email = $invitation_data['email'];
+    $token = $invitation_data['token'];
+    $expires_date = date('Y年m月d日', strtotime($invitation_data['expires']));
+    
+    // 建立邀請連結
+    $invitation_url = home_url("/wp-login.php?action=register&invitation_token={$token}&restaurant_id={$restaurant->ID}");
+    
+    // 郵件主旨
+    $subject = "歡迎加入 BYOBMAP！{$restaurant_name} 已成功上架";
+    
+    // 郵件內容
+    $message = "
+    <html>
+    <head>
+        <meta charset='UTF-8'>
+        <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background-color: #8b2635; color: white; padding: 20px; text-align: center; }
+            .content { padding: 20px; background-color: #f9f9f9; }
+            .button { display: inline-block; background-color: #8b2635; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+            .footer { text-align: center; color: #666; font-size: 12px; margin-top: 20px; }
+            .highlight { background-color: #fff; padding: 15px; border-left: 4px solid #8b2635; margin: 15px 0; }
+        </style>
+    </head>
+    <body>
+        <div class='container'>
+            <div class='header'>
+                <h1>🍷 歡迎加入 BYOBMAP</h1>
+            </div>
+            
+            <div class='content'>
+                <h2>親愛的 {$contact_person}，您好！</h2>
+                
+                <p>恭喜您的餐廳「<strong>{$restaurant_name}</strong>」已通過審核並成功上架到 BYOBMAP 平台！</p>
+                
+                <div class='highlight'>
+                    <h3>🎉 立即加入會員，管理您的餐廳資料</h3>
+                    <p>點擊下方按鈕完成會員註冊，開始管理您的餐廳資訊：</p>
+                    <p style='text-align: center;'>
+                        <a href='{$invitation_url}' class='button'>立即註冊會員</a>
+                    </p>
+                    <p style='font-size: 14px; color: #666;'>
+                        ※ 此邀請連結將於 <strong>{$expires_date}</strong> 失效
+                    </p>
+                </div>
+                
+                <h3>✨ 加入會員後，您可以：</h3>
+                <ul>
+                    <li>✓ 隨時更新餐廳資訊（營業時間、菜單、特色等）</li>
+                    <li>✓ 查看餐廳頁面訪客統計</li>
+                    <li>✓ 接收並回應客戶評價</li>
+                    <li>✓ 參與平台推廣活動</li>
+                    <li>✓ 享受更多會員專屬服務</li>
+                </ul>
+                
+                <div class='highlight'>
+                    <h3>📍 您的餐廳頁面</h3>
+                    <p>您的餐廳已經在 BYOBMAP 上架，客人可以搜尋到您的資訊。</p>
+                    <p>餐廳頁面：<a href='" . get_permalink($restaurant->ID) . "'>" . get_permalink($restaurant->ID) . "</a></p>
+                </div>
+                
+                <p>如有任何問題，歡迎隨時與我們聯繫。</p>
+                
+                <p>
+                    感謝您的支持！<br>
+                    BYOBMAP 團隊
+                </p>
+            </div>
+            
+            <div class='footer'>
+                <p>此郵件由 BYOBMAP 自動發送，請勿直接回覆此郵件。</p>
+                <p>如需協助，請聯繫：support@byobmap.com</p>
+            </div>
+        </div>
+    </body>
+    </html>";
+    
+    // 設定郵件標頭
+    $headers = array(
+        'Content-Type: text/html; charset=UTF-8',
+        'From: BYOBMAP <noreply@byobmap.com>'
+    );
+    
+    // 發送郵件
+    $sent = wp_mail($email, $subject, $message, $headers);
+    
+    // 記錄發送結果
+    if ($sent) {
+        error_log("BYOB: 邀請郵件發送成功 - 收件人: {$email}, 餐廳: {$restaurant_name}");
+    } else {
+        error_log("BYOB: 邀請郵件發送失敗 - 收件人: {$email}, 餐廳: {$restaurant_name}");
+    }
+    
+    return $sent;
+}
+
+// =============================================================================
+// 註冊流程攔截和自動設定
+// =============================================================================
+
+// 載入邀請處理器
+$invitation_handler_path = __DIR__ . '/invitation-handler.php';
+if (file_exists($invitation_handler_path)) {
+    require_once $invitation_handler_path;
+} else {
+    error_log('BYOB: invitation-handler.php 檔案不存在: ' . $invitation_handler_path);
+}
+
+// 攔截註冊頁面，處理邀請token
+add_action('login_init', 'byob_handle_invitation_registration');
+
+function byob_handle_invitation_registration() {
+    // 只在註冊頁面處理
+    if (!isset($_GET['action']) || $_GET['action'] !== 'register') {
+        return;
+    }
+    
+    // 檢查是否有邀請token
+    $invitation_token = isset($_GET['invitation_token']) ? sanitize_text_field($_GET['invitation_token']) : '';
+    $restaurant_id = isset($_GET['restaurant_id']) ? intval($_GET['restaurant_id']) : 0;
+    
+    if (empty($invitation_token) || empty($restaurant_id)) {
+        return;
+    }
+    
+    // 驗證邀請token
+    $verification = byob_verify_invitation_token($invitation_token);
+    
+    if (!$verification['valid']) {
+        // 如果token無效，顯示錯誤訊息並重導向
+        wp_redirect(wp_login_url() . '?byob_error=' . urlencode($verification['error']));
+        exit;
+    }
+    
+    // 儲存邀請資訊到session（用於註冊完成後處理）
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    $_SESSION['byob_invitation_token'] = $invitation_token;
+    $_SESSION['byob_restaurant_id'] = $restaurant_id;
+    $_SESSION['byob_invitation_data'] = $verification;
+}
+
+// 在註冊頁面顯示歡迎訊息
+add_action('login_form_register', 'byob_add_invitation_welcome_message');
+
+function byob_add_invitation_welcome_message() {
+    $invitation_token = isset($_GET['invitation_token']) ? sanitize_text_field($_GET['invitation_token']) : '';
+    $restaurant_id = isset($_GET['restaurant_id']) ? intval($_GET['restaurant_id']) : 0;
+    
+    if (empty($invitation_token) || empty($restaurant_id)) {
+        return;
+    }
+    
+    // 驗證邀請
+    $verification = byob_verify_invitation_token($invitation_token);
+    
+    if ($verification['valid']) {
+        $restaurant_name = $verification['restaurant']->post_title;
+        $contact_person = $verification['invitation']->contact_person;
+        
+        echo '<div style="background: #e8f5e8; border: 1px solid #4caf50; padding: 15px; margin-bottom: 20px; border-radius: 5px;">';
+        echo '<h3 style="margin: 0 0 10px 0; color: #2e7d32;">🎉 歡迎加入 BYOBMAP！</h3>';
+        echo '<p style="margin: 0;">親愛的 <strong>' . esc_html($contact_person) . '</strong>，</p>';
+        echo '<p style="margin: 5px 0;">您的餐廳「<strong>' . esc_html($restaurant_name) . '</strong>」已成功上架！</p>';
+        echo '<p style="margin: 5px 0 0 0; font-size: 14px; color: #666;">請填寫以下資訊完成會員註冊：</p>';
+        echo '</div>';
+    }
+}
+
+// 顯示邀請錯誤訊息
+add_action('login_form_login', 'byob_show_invitation_error');
+
+function byob_show_invitation_error() {
+    if (isset($_GET['byob_error'])) {
+        $error_message = sanitize_text_field($_GET['byob_error']);
+        echo '<div style="background: #ffe6e6; border: 1px solid #f44336; padding: 15px; margin-bottom: 20px; border-radius: 5px;">';
+        echo '<h3 style="margin: 0 0 10px 0; color: #c62828;">⚠️ 邀請連結問題</h3>';
+        echo '<p style="margin: 0; color: #d32f2f;">' . esc_html($error_message) . '</p>';
+        echo '<p style="margin: 10px 0 0 0; font-size: 14px;">如需協助，請聯繫 BYOBMAP 客服。</p>';
+        echo '</div>';
+    }
+}
+
+// 註冊完成後自動設定餐廳業者
+add_action('user_register', 'byob_auto_setup_restaurant_owner');
+
+function byob_auto_setup_restaurant_owner($user_id) {
+    // 啟動session（如果尚未啟動）
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    
+    // 檢查是否有邀請資訊
+    if (!isset($_SESSION['byob_invitation_token']) || !isset($_SESSION['byob_restaurant_id'])) {
+        return;
+    }
+    
+    $invitation_token = $_SESSION['byob_invitation_token'];
+    $restaurant_id = $_SESSION['byob_restaurant_id'];
+    $invitation_data = $_SESSION['byob_invitation_data'];
+    
+    // 再次驗證邀請（安全起見）
+    $verification = byob_verify_invitation_token($invitation_token);
+    
+    if (!$verification['valid']) {
+        return;
+    }
+    
+    // 設定餐廳業者角色和關聯
+    $setup_result = byob_setup_restaurant_owner($user_id, $restaurant_id);
+    
+    if ($setup_result) {
+        // 標記邀請為已使用
+        byob_mark_invitation_used($invitation_token, $user_id);
+        
+        // 更新餐廳文章的業者資訊
+        update_post_meta($restaurant_id, '_byob_owner_registered', current_time('mysql'));
+        
+        // 發送歡迎郵件給新註冊的業者
+        byob_send_welcome_email($user_id, $restaurant_id);
+        
+        // 記錄日誌
+        error_log("BYOB: 餐廳業者註冊成功 - 用戶ID: {$user_id}, 餐廳ID: {$restaurant_id}");
+    }
+    
+    // 清除session資料
+    unset($_SESSION['byob_invitation_token']);
+    unset($_SESSION['byob_restaurant_id']);
+    unset($_SESSION['byob_invitation_data']);
+}
+
+// 發送歡迎郵件給新註冊的餐廳業者
+function byob_send_welcome_email($user_id, $restaurant_id) {
+    $user = get_user_by('id', $user_id);
+    $restaurant = get_post($restaurant_id);
+    
+    if (!$user || !$restaurant) {
+        return false;
+    }
+    
+    $restaurant_name = $restaurant->post_title;
+    $user_name = $user->display_name ?: $user->user_login;
+    $login_url = wp_login_url();
+    $restaurant_url = get_permalink($restaurant_id);
+    
+    $subject = "歡迎加入 BYOBMAP！註冊成功通知";
+    
+    $message = "
+    <html>
+    <head>
+        <meta charset='UTF-8'>
+        <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background-color: #8b2635; color: white; padding: 20px; text-align: center; }
+            .content { padding: 20px; background-color: #f9f9f9; }
+            .button { display: inline-block; background-color: #8b2635; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+            .info-box { background-color: #fff; padding: 15px; border-left: 4px solid #8b2635; margin: 15px 0; }
+        </style>
+    </head>
+    <body>
+        <div class='container'>
+            <div class='header'>
+                <h1>🎉 註冊成功！</h1>
+            </div>
+            
+            <div class='content'>
+                <h2>親愛的 {$user_name}，您好！</h2>
+                
+                <p>恭喜您成功註冊為 BYOBMAP 餐廳業者會員！</p>
+                
+                <div class='info-box'>
+                    <h3>📋 您的會員資訊</h3>
+                    <p><strong>用戶名稱：</strong>{$user_name}</p>
+                    <p><strong>關聯餐廳：</strong>{$restaurant_name}</p>
+                    <p><strong>會員類型：</strong>餐廳業者</p>
+                </div>
+                
+                <div class='info-box'>
+                    <h3>🔗 重要連結</h3>
+                    <p><strong>登入會員系統：</strong><br>
+                    <a href='{$login_url}' class='button'>立即登入</a></p>
+                    
+                    <p><strong>您的餐廳頁面：</strong><br>
+                    <a href='{$restaurant_url}'>{$restaurant_url}</a></p>
+                </div>
+                
+                <h3>✨ 會員專屬功能</h3>
+                <ul>
+                    <li>✓ 更新餐廳資訊和營業時間</li>
+                    <li>✓ 上傳餐廳照片和菜單</li>
+                    <li>✓ 查看餐廳統計數據</li>
+                    <li>✓ 回應客戶評價和問題</li>
+                    <li>✓ 參與平台行銷活動</li>
+                </ul>
+                
+                <p>如有任何問題，歡迎隨時與我們聯繫。</p>
+                
+                <p>
+                    再次歡迎您的加入！<br>
+                    BYOBMAP 團隊
+                </p>
+            </div>
+        </div>
+    </body>
+    </html>";
+    
+    $headers = array(
+        'Content-Type: text/html; charset=UTF-8',
+        'From: BYOBMAP <noreply@byobmap.com>'
+    );
+    
+    $sent = wp_mail($user->user_email, $subject, $message, $headers);
+    
+    if ($sent) {
+        error_log("BYOB: 歡迎郵件發送成功 - 收件人: {$user->user_email}, 餐廳: {$restaurant_name}");
+    } else {
+        error_log("BYOB: 歡迎郵件發送失敗 - 收件人: {$user->user_email}, 餐廳: {$restaurant_name}");
+    }
+    
+    return $sent;
+}
+
+// 確保session在WordPress中可用
+add_action('init', function() {
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+});
+
+// 手動重發邀請功能（後台使用）
+function byob_manual_resend_invitation($restaurant_id) {
+    if (!current_user_can('administrator')) {
+        return array('success' => false, 'error' => '權限不足');
+    }
+    
+    return byob_resend_invitation($restaurant_id);
+}
+
+// =============================================================================
+// 診斷工具（僅管理員可用）
+// =============================================================================
+
+// 在後台新增診斷頁面
+add_action('admin_menu', 'byob_add_diagnostic_menu');
+
+function byob_add_diagnostic_menu() {
+    add_submenu_page(
+        'tools.php',
+        'BYOB 系統診斷',
+        'BYOB 診斷',
+        'administrator',
+        'byob-diagnostic',
+        'byob_diagnostic_page'
+    );
+}
+
+function byob_diagnostic_page() {
+    echo '<div class="wrap">';
+    echo '<h1>BYOB 系統診斷</h1>';
+    
+    if (isset($_POST['run_test']) && check_admin_referer('byob_diagnostic')) {
+        byob_run_invitation_test();
+    }
+    
+    echo '<form method="post">';
+    wp_nonce_field('byob_diagnostic');
+    echo '<h2>📋 系統狀態檢查</h2>';
+    
+    // 檢查基本資訊
+    echo '<h3>1. 基本資訊</h3>';
+    echo '<table class="widefat">';
+    echo '<tr><td>PHP 版本</td><td>' . phpversion() . '</td></tr>';
+    echo '<tr><td>WordPress 版本</td><td>' . get_bloginfo('version') . '</td></tr>';
+    echo '<tr><td>主題</td><td>' . get_template() . '</td></tr>';
+    echo '<tr><td>子主題</td><td>' . get_stylesheet() . '</td></tr>';
+    echo '</table>';
+    
+    // 檢查檔案路徑
+    echo '<h3>2. 檔案路徑檢查</h3>';
+    $invitation_handler_path = __DIR__ . '/invitation-handler.php';
+    echo '<table class="widefat">';
+    echo '<tr><td>當前目錄</td><td>' . __DIR__ . '</td></tr>';
+    echo '<tr><td>invitation-handler.php 路徑</td><td>' . $invitation_handler_path . '</td></tr>';
+    echo '<tr><td>檔案存在</td><td>' . (file_exists($invitation_handler_path) ? '✅ 是' : '❌ 否') . '</td></tr>';
+    if (file_exists($invitation_handler_path)) {
+        echo '<tr><td>檔案大小</td><td>' . filesize($invitation_handler_path) . ' bytes</td></tr>';
+    }
+    echo '</table>';
+    
+    // 檢查函數存在
+    echo '<h3>3. 邀請系統函數檢查</h3>';
+    $functions_to_check = [
+        'byob_verify_invitation_token',
+        'byob_mark_invitation_used',
+        'byob_setup_restaurant_owner',
+        'byob_send_restaurant_invitation',
+        'byob_send_invitation_email',
+        'byob_create_invitation_table'
+    ];
+    
+    echo '<table class="widefat">';
+    foreach ($functions_to_check as $func) {
+        echo '<tr><td>' . $func . '</td><td>' . (function_exists($func) ? '✅ 存在' : '❌ 不存在') . '</td></tr>';
+    }
+    echo '</table>';
+    
+    // 檢查資料庫表格
+    echo '<h3>4. 資料庫檢查</h3>';
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'byob_invitations';
+    $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'") === $table_name;
+    
+    echo '<table class="widefat">';
+    echo '<tr><td>邀請資料表</td><td>' . ($table_exists ? '✅ 存在' : '❌ 不存在') . '</td></tr>';
+    if ($table_exists) {
+        $count = $wpdb->get_var("SELECT COUNT(*) FROM $table_name");
+        echo '<tr><td>邀請記錄數</td><td>' . $count . '</td></tr>';
+    }
+    echo '</table>';
+    
+    // 檢查功能設定
+    echo '<h3>5. 功能設定檢查</h3>';
+    $features = byob_get_feature_settings();
+    echo '<table class="widefat">';
+    foreach ($features as $key => $value) {
+        echo '<tr><td>' . $key . '</td><td>' . ($value ? '✅ 啟用' : '❌ 停用') . '</td></tr>';
+    }
+    echo '</table>';
+    
+    echo '<h3>6. 測試邀請功能</h3>';
+    echo '<p><strong>注意：</strong>此測試會檢查邀請系統是否正常運作，但不會真的發送郵件。</p>';
+    echo '<p class="submit"><input type="submit" name="run_test" class="button-primary" value="執行邀請功能測試" /></p>';
+    
+    echo '</form>';
+    echo '</div>';
+}
+
+function byob_run_invitation_test() {
+    echo '<div class="notice notice-info"><p><strong>正在執行邀請功能測試...</strong></p></div>';
+    
+    // 檢查是否有餐廳文章可以測試
+    $restaurants = get_posts(array(
+        'post_type' => 'restaurant',
+        'posts_per_page' => 1,
+        'post_status' => 'publish'
+    ));
+    
+    if (empty($restaurants)) {
+        echo '<div class="notice notice-error"><p>❌ 沒有找到已發布的餐廳文章，無法測試</p></div>';
+        return;
+    }
+    
+    $restaurant = $restaurants[0];
+    echo '<div class="notice notice-success"><p>✅ 找到測試餐廳：' . $restaurant->post_title . '</p></div>';
+    
+    // 檢查餐廳是否有必要欄位
+    $contact_person = get_field('contact_person', $restaurant->ID);
+    $email = get_field('email', $restaurant->ID);
+    
+    echo '<h4>餐廳資料檢查：</h4>';
+    echo '<ul>';
+    echo '<li>聯絡人：' . ($contact_person ? '✅ ' . $contact_person : '❌ 未設定') . '</li>';
+    echo '<li>Email：' . ($email ? '✅ ' . $email : '❌ 未設定') . '</li>';
+    echo '</ul>';
+    
+    if (!$email || !is_email($email)) {
+        echo '<div class="notice notice-error"><p>❌ 餐廳缺少有效的 Email 地址，無法繼續測試</p></div>';
+        return;
+    }
+    
+    // 測試邀請函數
+    if (function_exists('byob_send_restaurant_invitation')) {
+        echo '<h4>測試邀請生成（不發送郵件）：</h4>';
+        
+        // 暫時覆蓋郵件函數以避免真的發送
+        add_filter('pre_wp_mail', function($return, $atts) {
+            echo '<div class="notice notice-info"><p>📧 模擬發送郵件到：' . $atts['to'] . '</p></div>';
+            echo '<div class="notice notice-info"><p>📧 郵件主旨：' . $atts['subject'] . '</p></div>';
+            return true; // 阻止真的發送郵件
+        }, 10, 2);
+        
+        $result = byob_send_restaurant_invitation($restaurant->ID);
+        
+        if ($result['success']) {
+            echo '<div class="notice notice-success"><p>✅ 邀請生成成功！</p></div>';
+            echo '<ul>';
+            echo '<li>Token：' . $result['token'] . '</li>';
+            echo '<li>過期時間：' . $result['expires'] . '</li>';
+            echo '</ul>';
+        } else {
+            echo '<div class="notice notice-error"><p>❌ 邀請生成失敗：' . $result['error'] . '</p></div>';
+        }
+        
+        // 移除郵件過濾器
+        remove_all_filters('pre_wp_mail');
+    } else {
+        echo '<div class="notice notice-error"><p>❌ byob_send_restaurant_invitation 函數不存在</p></div>';
+    }
 }
