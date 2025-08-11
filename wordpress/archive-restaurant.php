@@ -1,6 +1,32 @@
 <?php get_header(); ?>
-<h1>所有餐廳列表</h1>  <!-- 移到這裡 -->
+<style>
+.page-header {
+  margin: 2rem 0;
+  padding: 1rem 0;
+  text-align: left;
+  border-bottom: 2px solid #D87F8D;
+}
+
+.page-title {
+  margin: 0;
+  padding: 0;
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #333;
+}
+
+/* 讓標題與餐廳卡片使用相同的容器邏輯 */
+.page-header {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 1rem 2rem;
+}
+</style>
+<div class="page-header">
+  <h1 class="page-title">所有餐廳列表</h1>
+</div>
 <div class="restaurant-archive-list">
+  
   <?php if ( have_posts() ) : while ( have_posts() ) : the_post(); ?>
     <div class="restaurant-card">
       <!-- 加入圖片顯示 -->
