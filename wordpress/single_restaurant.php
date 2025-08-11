@@ -170,17 +170,17 @@
 		  $links = [];
 
 		  if ($website) {
-			$links[] = '<a href="'.esc_url($website).'" target="_blank" rel="noopener">官網</a>';
+			$links[] = '<a href="'.esc_url($website).'" target="_blank" rel="noopener">官網連結</a>';
 		  }
 		  if ($social_links) {
-			$links[] = '<a href="'.esc_url($social_links).'" target="_blank" rel="noopener">社群</a>';
+			$links[] = '<a href="'.esc_url($social_links).'" target="_blank" rel="noopener">社群連結</a>';
 		  }
 		?>
 
 		<?php if (!empty($links)): ?>
 		  <div class="field">
 			<strong>官方網站/社群連結：</strong>
-			<?php echo implode('、', $links); ?>
+			<?php echo implode(' | ', $links); ?>
 		  </div>
 		<?php else: ?>
 		  <div class="field"><strong>官方網站/社群連結：</strong>暫無資料</div>
@@ -201,8 +201,24 @@
   <!-- 底部操作按鈕 -->
   <div class="single-page-actions">
     <div class="back-to-list">
-      <a href="javascript:history.back()" class="back-link">
-        << 返回上一頁
+      <?php
+      // 智能返回邏輯
+      $referer = wp_get_referer();
+      $archive_url = get_post_type_archive_link('restaurant');
+      $home_url = home_url();
+      
+      // 檢查是否有有效的來源頁面
+      if ($referer && $referer !== get_permalink() && strpos($referer, $home_url) === 0) {
+        // 有有效來源頁面，返回上一頁
+        $back_url = $referer;
+      } else {
+        // 沒有有效來源頁面，返回餐廳列表總表
+        $back_url = $archive_url;
+      }
+      ?>
+      
+      <a href="<?php echo esc_url($back_url); ?>" class="back-link">
+        << 返回餐廳列表
       </a>
     </div>
     
