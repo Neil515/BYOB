@@ -383,7 +383,7 @@ function convertFormToBYOBDatabase() {
     outputSheet.appendRow([
       "餐廳名稱", "餐廳類型", "行政區", "地址", "是否收開瓶費",
       "開瓶費金額", "其他：請說明", "提供酒器設備", "是否提供開酒服務？",
-      "餐廳聯絡電話", "官方網站/ 社群連結", "備註說明", "最後更新日期", "資料來源/ 提供人"
+      "餐廳聯絡電話", "餐廳網站或訂位連結", "餐廳 Instagram 或 Facebook", "備註說明", "最後更新日期", "資料來源/ 提供人"
     ]);
 
     var formData = formSheet.getDataRange().getValues();
@@ -442,8 +442,8 @@ function convertFormToBYOBDatabase() {
       var phone = row[headerIndex["聯絡電話"]] || "";
       phone = processPhoneNumber(phone);
 
-      var website = row[headerIndex["餐廳網站或訂位連結"]] || "";
-      var social = row[headerIndex["餐廳 Instagram 或 Facebook"]] || "";
+      var website = row[headerIndex["餐廳網站或訂位連結"]] || "—";
+      var social = row[headerIndex["餐廳 Instagram 或 Facebook"]] || "—";
       var contact = website || social || "—";
 
       var remarks = row[headerIndex["備註"]] || "—";
@@ -462,7 +462,8 @@ function convertFormToBYOBDatabase() {
         wineTools,
         wineService,
         phone,
-        contact,
+        website,
+        social,
         remarks,
         today,
         source
