@@ -1009,7 +1009,7 @@ function byob_send_invitation_email($restaurant, $invitation_data) {
             .container { max-width: 600px; margin: 0 auto; padding: 20px; }
             .header { background-color: #8b2635; color: white; padding: 20px; text-align: center; }
             .content { padding: 20px; background-color: #f9f9f9; }
-            .button { display: inline-block; background-color: #8b2635; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+            .button { display: inline-block; background-color: #8b2635; color: white !important; padding: 15px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
             .footer { text-align: center; color: #666; font-size: 12px; margin-top: 20px; }
             .highlight { background-color: #fff; padding: 15px; border-left: 4px solid #8b2635; margin: 15px 0; }
         </style>
@@ -1025,8 +1025,10 @@ function byob_send_invitation_email($restaurant, $invitation_data) {
                 
                 <p>恭喜您的餐廳「<strong>{$restaurant_name}</strong>」已通過審核並成功上架到 BYOBMAP 平台！</p>
                 
+                <p>現在用戶可以搜尋到並且瀏覽您的餐廳，我們誠心建議您加入會員，完全免費</p>
+                
                 <div class='highlight'>
-                    <h3>🎉 立即加入會員，管理您的餐廳資料</h3>
+                    <h3>🎉 立即加入會員，開始管理你的餐廳資料</h3>
                     <p>點擊下方按鈕完成會員註冊，開始管理您的餐廳資訊：</p>
                     <p style='text-align: center;'>
                         <a href='{$invitation_url}' class='button'>立即註冊會員</a>
@@ -1038,9 +1040,9 @@ function byob_send_invitation_email($restaurant, $invitation_data) {
                 
                 <h3>✨ 加入會員後，您可以：</h3>
                 <ul>
-                    <li>✓ 隨時更新餐廳資訊（營業時間、菜單、特色等）</li>
+                    <li>✓ 上傳增加餐廳辨識度的LOGO或圖片</li>
+                    <li>✓ 隨時更新BYOB自帶酒水資訊</li>
                     <li>✓ 查看餐廳頁面訪客統計</li>
-                    <li>✓ 接收並回應客戶評價</li>
                     <li>✓ 參與平台推廣活動</li>
                     <li>✓ 享受更多會員專屬服務</li>
                 </ul>
@@ -1048,7 +1050,7 @@ function byob_send_invitation_email($restaurant, $invitation_data) {
                 <div class='highlight'>
                     <h3>📍 您的餐廳頁面</h3>
                     <p>您的餐廳已經在 BYOBMAP 上架，客人可以搜尋到您的資訊。</p>
-                    <p>餐廳頁面：<a href='" . get_permalink($restaurant->ID) . "'>" . get_permalink($restaurant->ID) . "</a></p>
+                    <p>您的餐廳頁面：<a href='" . get_permalink($restaurant->ID) . "'>" . get_permalink($restaurant->ID) . "</a></p>
                 </div>
                 
                 <p>如有任何問題，歡迎隨時與我們聯繫。</p>
@@ -1061,7 +1063,7 @@ function byob_send_invitation_email($restaurant, $invitation_data) {
             
             <div class='footer'>
                 <p>此郵件由 BYOBMAP 自動發送，請勿直接回覆此郵件。</p>
-                <p>如需協助，請聯繫：support@byobmap.com</p>
+                <p>如需協助，請聯繫：byobmap.tw@gmail.com</p>
             </div>
         </div>
     </body>
@@ -1151,11 +1153,11 @@ function byob_add_invitation_welcome_message() {
         $restaurant_name = $verification['restaurant']->post_title;
         $contact_person = $verification['invitation']->contact_person;
         
-        echo '<div style="background: #e8f5e8; border: 1px solid #4caf50; padding: 15px; margin-bottom: 20px; border-radius: 5px;">';
-        echo '<h3 style="margin: 0 0 10px 0; color: #2e7d32;">🎉 歡迎加入 BYOBMAP！</h3>';
-        echo '<p style="margin: 0;">親愛的 <strong>' . esc_html($contact_person) . '</strong>，</p>';
-        echo '<p style="margin: 5px 0;">您的餐廳「<strong>' . esc_html($restaurant_name) . '</strong>」已成功上架！</p>';
-        echo '<p style="margin: 5px 0 0 0; font-size: 14px; color: #666;">請填寫以下資訊完成會員註冊：</p>';
+        echo '<div style="background: #e8f5e8; border: 1px solid #4caf50; padding: 20px; margin-bottom: 25px; border-radius: 8px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
+        echo '<h3 style="margin: 0 0 15px 0; color: #2e7d32; font-size: 20px;">🎉 歡迎加入 BYOBMAP！</h3>';
+        echo '<p style="margin: 0; font-size: 16px;">親愛的 <strong>' . esc_html($contact_person) . '</strong>，</p>';
+        echo '<p style="margin: 8px 0; font-size: 16px;">您的餐廳「<strong>' . esc_html($restaurant_name) . '</strong>」已成功上架！</p>';
+        echo '<p style="margin: 15px 0 0 0; font-size: 14px; color: #666; font-style: italic;">✨ 請填寫以下資訊完成會員註冊，開始享受專業的餐廳管理工具</p>';
         echo '</div>';
     }
 }
@@ -1172,6 +1174,38 @@ function byob_show_invitation_error() {
         echo '<p style="margin: 10px 0 0 0; font-size: 14px;">如需協助，請聯繫 BYOBMAP 客服。</p>';
         echo '</div>';
     }
+}
+
+// 自訂註冊頁面標題和說明
+add_filter('gettext', 'byob_customize_registration_texts', 20, 3);
+
+function byob_customize_registration_texts($translated_text, $text, $domain) {
+    // 只在註冊頁面修改文字
+    if (!isset($_GET['action']) || $_GET['action'] !== 'register') {
+        return $translated_text;
+    }
+    
+    // 檢查是否有邀請 token
+    $invitation_token = isset($_GET['invitation_token']) ? sanitize_text_field($_GET['invitation_token']) : '';
+    if (empty($invitation_token)) {
+        return $translated_text;
+    }
+    
+    // 自訂文字
+    switch ($translated_text) {
+        case '在這個網站註冊帳號':
+            return '🚀 完成會員註冊，開啟餐廳管理新體驗';
+        case '註冊確認通知會以電子郵件方式傳送至用於註冊帳號的電子郵件地址。':
+            return '✨ 註冊完成後，您將收到確認通知，並可立即開始管理餐廳資料';
+        case '註冊':
+            return '🎉 立即註冊';
+        case '登入':
+            return '已有帳號？登入';
+        case '忘記密碼?':
+            return '忘記密碼？';
+    }
+    
+    return $translated_text;
 }
 
 // 註冊完成後自動設定餐廳業者
