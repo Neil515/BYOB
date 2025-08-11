@@ -186,6 +186,11 @@ function byob_register_restaurant_owner($request) {
         return new WP_Error('email_exists', '此 email 已被註冊', array('status' => 400));
     }
     
+    // 檢查 email 長度（作為使用者名稱）
+    if (strlen($email) < 3 || strlen($email) > 50) {
+        return new WP_Error('invalid_email_length', 'Email 長度必須在 3-50 字元之間', array('status' => 400));
+    }
+    
     // 建立使用者
     $user_data = array(
         'user_login' => $email,
@@ -752,6 +757,16 @@ function byob_display_restaurant_registration_page() {
                     <div style="margin-bottom: 15px;">
                         <label for="confirm_password" style="display: block; margin-bottom: 5px; font-weight: bold;">確認密碼 *</label>
                         <input type="password" id="confirm_password" name="confirm_password" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                    </div>
+                    
+                    <!-- 新增：使用者名稱規則說明 -->
+                    <div style="background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 5px; padding: 15px; margin-bottom: 20px;">
+                        <h4 style="margin: 0 0 10px 0; color: #495057; font-size: 14px;">📋 使用者名稱規則：</h4>
+                        <ul style="margin: 0; padding-left: 20px; color: #6c757d; font-size: 13px;">
+                            <li>長度：3-50 字元</li>
+                            <li>允許：字母、數字、連字號(-)、底線(_)、點(.)</li>
+                            <li>不允許：空格、特殊符號、中文字元</li>
+                        </ul>
                     </div>
                     
                     <button type="submit" name="byob_restaurant_register" style="width: 100%; background-color: #8b2635; color: white; padding: 15px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer;">
