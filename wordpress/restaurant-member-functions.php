@@ -264,7 +264,7 @@ function byob_register_restaurant_owner($request) {
     $restaurant_name = sanitize_text_field($request->get_param('restaurant_name'));
     
     // 驗證邀請碼
-    $verification = byob_verify_invitation_code(new WP_REST_Request('POST', '', array('code' => $invitation_code)));
+    $verification = byob_verify_invitation_code_direct($invitation_code);
     if (is_wp_error($verification)) {
         return $verification;
     }
@@ -725,11 +725,59 @@ function byob_display_restaurant_registration_page() {
     
     // 處理註冊表單提交
     if ($_POST && isset($_POST['byob_restaurant_register'])) {
-        $result = byob_register_restaurant_owner(new WP_REST_Request('POST', '', $_POST));
-        if (is_wp_error($result)) {
-            $error_message = $result->get_error_message();
+        // 直接處理表單資料，不使用 WP_REST_Request
+        $invitation_code = sanitize_text_field($_POST['invitation_code']);
+        $email = sanitize_email($_POST['email']);
+        $password = $_POST['password'];
+        $restaurant_name = sanitize_text_field($_POST['restaurant_name']);
+        
+        // 驗證邀請碼
+        $verification = byob_verify_invitation_code_direct($invitation_code);
+        if (is_wp_error($verification)) {
+            $error_message = $verification->get_error_message();
         } else {
-            $success_message = '註冊成功！您現在可以登入管理您的餐廳了。';
+            // 檢查 email 是否已存在
+            $existing_user = get_user_by('email', $email);
+            if ($existing_user) {
+                $error_message = '此 email 已被註冊';
+            } else {
+                // 檢查 email 長度（作為使用者名稱）
+                if (strlen($email) < 3 || strlen($email) > 50) {
+                    $error_message = 'Email 長度必須在 3-50 字元之間';
+                } else {
+                    // 建立使用者
+                    $user_data = array(
+                        'user_login' => $email,
+                        'user_email' => $email,
+                        'user_pass' => $password,
+                        'role' => 'restaurant_owner',
+                        'display_name' => $restaurant_name . ' 負責人'
+                    );
+                    
+                    $user_id = wp_insert_user($user_data);
+                    
+                    if (is_wp_error($user_id)) {
+                        $error_message = $user_id->get_error_message();
+                    } else {
+                        // 關聯餐廳與使用者
+                        update_post_meta($verification['restaurant_id'], '_restaurant_owner_id', $user_id);
+                        update_user_meta($user_id, '_owned_restaurant_id', $verification['restaurant_id']);
+                        
+                        // 標記邀請碼為已使用
+                        $invitation_data = get_post_meta($verification['restaurant_id'], '_byob_invitation_code', true);
+                        $invitation_data['used'] = true;
+                        $invitation_data['used_by'] = $user_id;
+                        $invitation_data['used_at'] = current_time('mysql');
+                        update_post_meta($verification['restaurant_id'], '_byob_invitation_code', $invitation_data);
+                        
+                        // 自動登入
+                        wp_set_current_user($user_id);
+                        wp_set_auth_cookie($user_id);
+                        
+                        $success_message = '註冊成功！您現在可以登入管理您的餐廳了。';
+                    }
+                }
+            }
         }
     }
     
