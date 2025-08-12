@@ -31,7 +31,7 @@ function byob_init_restaurant_member_system() {
     add_action('wp_enqueue_scripts', 'byob_enqueue_member_scripts');
     
     // 新增邀請碼註冊頁面
-    add_action('init', 'byob_add_rewrite_rules');
+    // 注意：重寫規則和查詢變數已在 functions.php 中處理
     add_action('template_redirect', 'byob_handle_restaurant_registration_page');
     
     // 註冊限制存取功能
@@ -114,55 +114,144 @@ function byob_generate_invitation_code($restaurant_id) {
 }
 
 /**
- * 驗證邀請碼
+ * 驗證邀請碼（直接調用版本）
  */
-function byob_verify_invitation_code($request) {
-    $code = sanitize_text_field($request->get_param('code'));
+function byob_verify_invitation_code_direct($code) {
+    // 除錯：記錄收到的邀請碼
+    error_log('BYOB: byob_verify_invitation_code_direct 收到邀請碼: ' . $code);
     
     if (empty($code)) {
+        error_log('BYOB: 邀請碼為空');
         return new WP_Error('invalid_code', '邀請碼不能為空', array('status' => 400));
     }
     
     // 查詢邀請碼
     global $wpdb;
     $meta_key = '_byob_invitation_code';
+    
+    // 先獲取所有餐廳的邀請碼資料
     $query = $wpdb->prepare(
         "SELECT post_id, meta_value FROM {$wpdb->postmeta} 
-         WHERE meta_key = %s AND meta_value LIKE %s",
-        $meta_key,
-        '%' . $wpdb->esc_like($code) . '%'
+         WHERE meta_key = %s",
+        $meta_key
     );
     
-    $result = $wpdb->get_row($query);
+    $results = $wpdb->get_results($query);
     
-    if (!$result) {
+    if (!$results) {
+        error_log('BYOB: 沒有找到任何邀請碼資料');
         return new WP_Error('invalid_code', '邀請碼無效', array('status' => 404));
     }
     
-    $invitation_data = maybe_unserialize($result->meta_value);
+    error_log('BYOB: 找到 ' . count($results) . ' 個邀請碼記錄');
     
-    // 檢查是否已使用
-    if ($invitation_data['used']) {
-        return new WP_Error('code_used', '邀請碼已使用', array('status' => 400));
+    // 遍歷所有結果，找到匹配的邀請碼
+    foreach ($results as $result) {
+        $invitation_data = maybe_unserialize($result->meta_value);
+        error_log('BYOB: 檢查邀請碼記錄: ' . print_r($invitation_data, true));
+        
+        // 檢查邀請碼是否匹配
+        if (isset($invitation_data['code']) && $invitation_data['code'] === $code) {
+            error_log('BYOB: 找到匹配的邀請碼');
+            
+            // 檢查是否已使用
+            if (isset($invitation_data['used']) && $invitation_data['used']) {
+                error_log('BYOB: 邀請碼已使用');
+                return new WP_Error('code_used', '邀請碼已使用', array('status' => 400));
+            }
+            
+            // 檢查是否過期
+            if (isset($invitation_data['expires']) && strtotime($invitation_data['expires']) < time()) {
+                error_log('BYOB: 邀請碼已過期');
+                return new WP_Error('code_expired', '邀請碼已過期', array('status' => 400));
+            }
+            
+            // 獲取餐廳資訊
+            $restaurant = get_post($result->post_id);
+            if (!$restaurant || $restaurant->post_type !== 'restaurant') {
+                error_log('BYOB: 餐廳不存在或類型錯誤');
+                return new WP_Error('restaurant_not_found', '餐廳不存在', array('status' => 404));
+            }
+            
+            error_log('BYOB: 邀請碼驗證成功，餐廳: ' . $restaurant->post_title);
+            return array(
+                'success' => true,
+                'restaurant_id' => $result->post_id,
+                'restaurant_name' => $restaurant->post_title,
+                'invitation_code' => $code
+            );
+        }
     }
     
-    // 檢查是否過期
-    if (strtotime($invitation_data['expires']) < time()) {
-        return new WP_Error('code_expired', '邀請碼已過期', array('status' => 400));
+    // 如果沒有找到匹配的邀請碼
+    error_log('BYOB: 沒有找到匹配的邀請碼');
+    return new WP_Error('invalid_code', '邀請碼無效', array('status' => 404));
+}
+
+/**
+ * 驗證邀請碼（REST API版本）
+ */
+function byob_verify_invitation_code($request) {
+    $code = sanitize_text_field($request->get_param('code'));
+    
+    // 除錯：記錄收到的邀請碼
+    error_log('BYOB: byob_verify_invitation_code 收到邀請碼: ' . $code);
+    
+    if (empty($code)) {
+        error_log('BYOB: 邀請碼為空');
+        return new WP_Error('invalid_code', '邀請碼不能為空', array('status' => 400));
     }
     
-    // 獲取餐廳資訊
-    $restaurant = get_post($result->post_id);
-    if (!$restaurant || $restaurant->post_type !== 'restaurant') {
-        return new WP_Error('restaurant_not_found', '餐廳不存在', array('status' => 404));
-    }
+    // 查詢邀請碼
+    global $wpdb;
+    $meta_key = '_byob_invitation_code';
     
-    return array(
-        'success' => true,
-        'restaurant_id' => $result->post_id,
-        'restaurant_name' => $restaurant->post_title,
-        'invitation_code' => $code
+    // 先獲取所有餐廳的邀請碼資料
+    $query = $wpdb->prepare(
+        "SELECT post_id, meta_value FROM {$wpdb->postmeta} 
+         WHERE meta_key = %s",
+        $meta_key
     );
+    
+    $results = $wpdb->get_results($query);
+    
+    if (!$results) {
+        return new WP_Error('invalid_code', '邀請碼無效', array('status' => 404));
+    }
+    
+    // 遍歷所有結果，找到匹配的邀請碼
+    foreach ($results as $result) {
+        $invitation_data = maybe_unserialize($result->meta_value);
+        
+        // 檢查邀請碼是否匹配
+        if (isset($invitation_data['code']) && $invitation_data['code'] === $code) {
+            // 檢查是否已使用
+            if (isset($invitation_data['used']) && $invitation_data['used']) {
+                return new WP_Error('code_used', '邀請碼已使用', array('status' => 400));
+            }
+            
+            // 檢查是否過期
+            if (isset($invitation_data['expires']) && strtotime($invitation_data['expires']) < time()) {
+                return new WP_Error('code_expired', '邀請碼已過期', array('status' => 400));
+            }
+            
+            // 獲取餐廳資訊
+            $restaurant = get_post($result->post_id);
+            if (!$restaurant || $restaurant->post_type !== 'restaurant') {
+                return new WP_Error('restaurant_not_found', '餐廳不存在', array('status' => 404));
+            }
+            
+            return array(
+                'success' => true,
+                'restaurant_id' => $result->post_id,
+                'restaurant_name' => $restaurant->post_title,
+                'invitation_code' => $code
+            );
+        }
+    }
+    
+    // 如果沒有找到匹配的邀請碼
+    return new WP_Error('invalid_code', '邀請碼無效', array('status' => 404));
 }
 
 /**
@@ -391,81 +480,8 @@ function byob_update_restaurant_data($request) {
     );
 }
 
-/**
- * 發送會員邀請郵件
- */
-function byob_send_member_invitation_email($restaurant_id) {
-    $restaurant = get_post($restaurant_id);
-    if (!$restaurant || $restaurant->post_type !== 'restaurant') {
-        return false;
-    }
-    
-    // 生成邀請碼
-    $invitation_code = byob_generate_invitation_code($restaurant_id);
-    
-    // 獲取餐廳聯絡資訊
-    $contact_email = get_field('email', $restaurant_id);
-    $contact_person = get_field('contact_person', $restaurant_id);
-    
-    if (!$contact_email) {
-        return false;
-    }
-    
-    // 建立邀請連結
-    $invitation_url = home_url('/register/restaurant?token=' . $invitation_code);
-    
-    // 郵件內容
-    $subject = '歡迎加入 BYOB 餐廳地圖 - 您的餐廳已成功上架！';
-    
-    $message = '
-    <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif;">
-        <div style="background-color: #8b2635; color: white; padding: 20px; text-align: center;">
-            <h1>BYOB 台北餐廳地圖</h1>
-        </div>
-        
-        <div style="padding: 20px; background-color: #f9f9f9;">
-            <h2>親愛的 ' . ($contact_person ?: $restaurant->post_title . ' 負責人') . '，</h2>
-            
-            <p>恭喜您的餐廳已成功加入台北 BYOB 餐廳地圖！</p>
-            
-            <div style="background-color: white; padding: 15px; margin: 20px 0; border-left: 4px solid #8b2635;">
-                <strong>您的餐廳頁面：</strong><br>
-                <a href="' . get_permalink($restaurant_id) . '">' . get_permalink($restaurant_id) . '</a>
-            </div>
-            
-            <p>為了讓您能更好地管理餐廳資訊，我們邀請您註冊會員帳號：</p>
-            
-            <div style="text-align: center; margin: 30px 0;">
-                <a href="' . $invitation_url . '" style="background-color: #8b2635; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
-                    🔗 立即註冊會員
-                </a>
-            </div>
-            
-            <h3>會員功能包括：</h3>
-            <ul>
-                <li>✅ 修改餐廳基本資訊</li>
-                <li>✅ 上傳餐廳照片</li>
-                <li>✅ 更新 BYOB 政策</li>
-                <li>✅ 查看瀏覽統計</li>
-                <li>✅ 回覆顧客評論</li>
-            </ul>
-            
-            <p><strong>邀請碼：</strong> ' . $invitation_code . '</p>
-            <p><small>此邀請碼將於 7 天後過期</small></p>
-            
-            <p>如有任何問題，請隨時聯絡我們。</p>
-            
-            <p>BYOB 台北餐廳地圖團隊</p>
-        </div>
-    </div>
-    ';
-    
-    // 發送郵件
-    $headers = array('Content-Type: text/html; charset=UTF-8');
-    $sent = wp_mail($contact_email, $subject, $message, $headers);
-    
-    return $sent;
-}
+// 注意：byob_send_member_invitation_email 函數已被移除
+// 改為使用 functions.php 中的 byob_send_approval_notification 函數統一發送email
 
 /**
  * 處理邀請碼驗證
@@ -599,9 +615,7 @@ function byob_review_restaurant($restaurant_id, $status, $review_notes = '') {
         update_field('review_date', current_time('mysql'), $restaurant_id);
         update_field('review_notes', $review_notes, $restaurant_id);
         
-        // 發送審核通過通知和邀請郵件
-        byob_send_approval_notification($restaurant_id);
-        
+        // 注意：不再在此處發送email，改由文章發布時統一發送
         // 記錄審核日誌
         byob_log_review_action($restaurant_id, 'approved', $review_notes);
         
@@ -665,6 +679,14 @@ function byob_add_rewrite_rules() {
 }
 
 /**
+ * 註冊自訂查詢變數
+ */
+function byob_add_query_vars($vars) {
+    $vars[] = 'byob_restaurant_registration';
+    return $vars;
+}
+
+/**
  * 處理餐廳註冊頁面
  */
 function byob_handle_restaurant_registration_page() {
@@ -685,12 +707,20 @@ function byob_display_restaurant_registration_page() {
     
     // 如果有邀請碼，先驗證
     if ($token) {
-        $verification = byob_verify_invitation_code(new WP_REST_Request('POST', '', array('code' => $token)));
+        // 除錯：記錄邀請碼
+        error_log('BYOB: 收到邀請碼: ' . $token);
+        
+        // 直接調用函數，不使用REST API包裝
+        $verification = byob_verify_invitation_code_direct($token);
         if (!is_wp_error($verification)) {
             $restaurant_info = $verification;
+            error_log('BYOB: 邀請碼驗證成功，餐廳: ' . $verification['restaurant_name']);
         } else {
             $error_message = $verification->get_error_message();
+            error_log('BYOB: 邀請碼驗證失敗: ' . $error_message);
         }
+    } else {
+        error_log('BYOB: 沒有收到邀請碼');
     }
     
     // 處理註冊表單提交
@@ -713,10 +743,10 @@ function byob_display_restaurant_registration_page() {
         <?php wp_head(); ?>
     </head>
     <body <?php body_class(); ?>>
-        <div class="byob-registration-page" style="max-width: 600px; margin: 50px auto; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-            <div style="text-align: center; margin-bottom: 30px;">
-                <h1 style="color: #8b2635;">BYOB 餐廳業者註冊</h1>
-                <p>歡迎加入 BYOB 台北餐廳地圖！</p>
+        <div class="byob-registration-page" style="max-width: 700px; margin: 50px auto; padding: 50px; background: white; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+            <div style="text-align: center; margin-bottom: 40px;">
+                <h1 style="color: #8b2635; font-family: 'Microsoft JhengHei', Arial, sans-serif; font-size: 32px; font-weight: 700; margin-bottom: 20px; text-align: center;">BYOB 餐廳業者註冊</h1>
+                <p style="font-family: 'Microsoft JhengHei', Arial, sans-serif; font-size: 18px; color: #666; text-align: center; line-height: 1.6;">歡迎加入 BYOB 台北餐廳地圖！</p>
             </div>
             
             <?php if ($error_message): ?>
@@ -734,10 +764,10 @@ function byob_display_restaurant_registration_page() {
             <?php endif; ?>
             
             <?php if ($restaurant_info && !$success_message): ?>
-                <div style="background-color: #e7f3ff; border: 1px solid #b3d9ff; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
-                    <h3>餐廳資訊</h3>
-                    <p><strong>餐廳名稱：</strong><?php echo esc_html($restaurant_info['restaurant_name']); ?></p>
-                    <p><strong>邀請碼：</strong><?php echo esc_html($restaurant_info['invitation_code']); ?></p>
+                <div style="background-color: #e7f3ff; border: 1px solid #b3d9ff; padding: 25px; margin-bottom: 30px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    <h3 style="font-family: 'Microsoft JhengHei', Arial, sans-serif; font-size: 20px; font-weight: 600; color: #2c3e50; margin: 0 0 20px 0; text-align: center;">餐廳資訊</h3>
+                    <p style="font-family: 'Microsoft JhengHei', Arial, sans-serif; font-size: 16px; margin: 10px 0; color: #34495e;"><strong>餐廳名稱：</strong><?php echo esc_html($restaurant_info['restaurant_name']); ?></p>
+                    <p style="font-family: 'Microsoft JhengHei', Arial, sans-serif; font-size: 16px; margin: 10px 0; color: #34495e;"><strong>邀請碼：</strong><?php echo esc_html($restaurant_info['invitation_code']); ?></p>
                 </div>
                 
                 <form method="post" style="margin-top: 20px;">
@@ -749,27 +779,58 @@ function byob_display_restaurant_registration_page() {
                         <input type="email" id="email" name="email" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
                     </div>
                     
-                    <div style="margin-bottom: 15px;">
-                        <label for="password" style="display: block; margin-bottom: 5px; font-weight: bold;">密碼 *</label>
-                        <input type="password" id="password" name="password" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                    <!-- 密碼設定區塊 -->
+                    <div class="password-section" style="background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 12px; padding: 30px; margin-bottom: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <h4 style="margin: 0 0 20px 0; color: #495057; font-size: 18px; border-bottom: 2px solid #8b2635; padding-bottom: 12px; font-family: 'Microsoft JhengHei', Arial, sans-serif; font-weight: 600;">
+                            🔐 密碼設定
+                        </h4>
+                        
+                        <!-- 密碼欄位 -->
+                        <div class="password-field" style="margin-bottom: 25px;">
+                            <label for="password" style="display: block; margin-bottom: 10px; font-weight: 600; color: #333; font-family: 'Microsoft JhengHei', Arial, sans-serif; font-size: 16px;">
+                                密碼 * <span class="password-strength" id="password-strength"></span>
+                            </label>
+                            <div class="password-input-wrapper" style="position: relative;">
+                                <input type="password" id="password" name="password" required 
+                                       style="width: 100%; padding: 12px 45px 12px 12px; border: 2px solid #ddd; border-radius: 6px; font-size: 16px; transition: border-color 0.3s; box-sizing: border-box;">
+                                <button type="button" class="toggle-password" onclick="togglePassword('password')" 
+                                        style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 18px; color: #666; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">
+                                    👁️
+                                </button>
+                            </div>
+                            <div class="password-strength-bar" style="margin-top: 8px; height: 4px; background-color: #eee; border-radius: 2px; overflow: hidden;">
+                                <div class="strength-fill" id="strength-fill" style="height: 100%; width: 0%; transition: width 0.3s, background-color 0.3s;"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- 確認密碼欄位 -->
+                        <div class="confirm-password-field" style="margin-bottom: 25px;">
+                            <label for="confirm_password" style="display: block; margin-bottom: 10px; font-weight: 600; color: #333; font-family: 'Microsoft JhengHei', Arial, sans-serif; font-size: 16px;">
+                                確認密碼 * <span class="match-indicator" id="match-indicator"></span>
+                            </label>
+                            <div class="password-input-wrapper" style="position: relative;">
+                                <input type="password" id="confirm_password" name="confirm_password" required 
+                                       style="width: 100%; padding: 12px 45px 12px 12px; border: 2px solid #ddd; border-radius: 6px; font-size: 16px; transition: border-color 0.3s; box-sizing: border-box;">
+                                <button type="button" class="toggle-password" onclick="togglePassword('confirm_password')" 
+                                        style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 18px; color: #666; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">
+                                    👁️
+                                </button>
+                            </div>
+                            <div class="match-message" id="match-message" style="margin-top: 5px; font-size: 14px;"></div>
+                        </div>
+                        
+                        <!-- 密碼規則 -->
+                        <div class="password-rules" style="background-color: white; border-left: 4px solid #8b2635; padding: 20px; border-radius: 0 8px 8px 0; box-shadow: 0 1px 4px rgba(0,0,0,0.1);">
+                            <h5 style="margin: 0 0 15px 0; color: #495057; font-size: 16px; font-family: 'Microsoft JhengHei', Arial, sans-serif; font-weight: 600;">📋 密碼設定規則：</h5>
+                            <ul style="margin: 0; padding-left: 25px; color: #6c757d; font-size: 14px; font-family: 'Microsoft JhengHei', Arial, sans-serif; line-height: 1.8;">
+                                <li>長度：至少8個字元</li>
+                                <li>建議包含：大小寫字母、數字、特殊符號</li>
+                                <li>避免使用：個人資訊、常見密碼</li>
+                            </ul>
+                        </div>
                     </div>
                     
-                    <div style="margin-bottom: 15px;">
-                        <label for="confirm_password" style="display: block; margin-bottom: 5px; font-weight: bold;">確認密碼 *</label>
-                        <input type="password" id="confirm_password" name="confirm_password" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
-                    </div>
-                    
-                    <!-- 新增：使用者名稱規則說明 -->
-                    <div style="background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 5px; padding: 15px; margin-bottom: 20px;">
-                        <h4 style="margin: 0 0 10px 0; color: #495057; font-size: 14px;">📋 使用者名稱規則：</h4>
-                        <ul style="margin: 0; padding-left: 20px; color: #6c757d; font-size: 13px;">
-                            <li>長度：3-50 字元</li>
-                            <li>允許：字母、數字、連字號(-)、底線(_)、點(.)</li>
-                            <li>不允許：空格、特殊符號、中文字元</li>
-                        </ul>
-                    </div>
-                    
-                    <button type="submit" name="byob_restaurant_register" style="width: 100%; background-color: #8b2635; color: white; padding: 15px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer;">
+                    <button type="submit" name="byob_restaurant_register" style="width: 100%; background-color: #8b2635; color: white; padding: 18px; border: none; border-radius: 8px; font-size: 18px; cursor: pointer; font-family: 'Microsoft JhengHei', Arial, sans-serif; font-weight: 600; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(139, 38, 53, 0.3);">
                         完成註冊
                     </button>
                 </form>
@@ -785,96 +846,129 @@ function byob_display_restaurant_registration_page() {
             <?php endif; ?>
         </div>
         
+        <!-- JavaScript 功能 -->
+        <script>
+        // 密碼顯示/隱藏功能
+        function togglePassword(fieldId) {
+            const field = document.getElementById(fieldId);
+            const button = field.nextElementSibling;
+            
+            if (field.type === 'password') {
+                field.type = 'text';
+                button.innerHTML = '🙈';
+                button.title = '隱藏密碼';
+            } else {
+                field.type = 'password';
+                button.innerHTML = '👁️';
+                button.title = '顯示密碼';
+            }
+        }
+        
+        // 密碼強度檢查
+        function checkPasswordStrength(password) {
+            let strength = 0;
+            let feedback = '';
+            
+            if (password.length >= 8) strength += 1;
+            if (/[a-z]/.test(password)) strength += 1;
+            if (/[A-Z]/.test(password)) strength += 1;
+            if (/[0-9]/.test(password)) strength += 1;
+            if (/[^A-Za-z0-9]/.test(password)) strength += 1;
+            
+            const strengthBar = document.getElementById('strength-fill');
+            const strengthText = document.getElementById('password-strength');
+            
+            switch(strength) {
+                case 0:
+                case 1:
+                    feedback = '很弱';
+                    strengthBar.style.backgroundColor = '#dc3545';
+                    strengthBar.style.width = '20%';
+                    break;
+                case 2:
+                    feedback = '弱';
+                    strengthBar.style.backgroundColor = '#fd7e14';
+                    strengthBar.style.width = '40%';
+                    break;
+                case 3:
+                    feedback = '中等';
+                    strengthBar.style.backgroundColor = '#ffc107';
+                    strengthBar.style.width = '60%';
+                    break;
+                case 4:
+                    feedback = '強';
+                    strengthBar.style.backgroundColor = '#28a745';
+                    strengthBar.style.width = '80%';
+                    break;
+                case 5:
+                    feedback = '很強';
+                    strengthBar.style.backgroundColor = '#20c997';
+                    strengthBar.style.width = '100%';
+                    break;
+            }
+            
+            strengthText.innerHTML = ' (' + feedback + ')';
+            strengthText.style.color = strengthBar.style.backgroundColor;
+        }
+        
+        // 密碼匹配檢查
+        function checkPasswordMatch() {
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm_password').value;
+            const matchIndicator = document.getElementById('match-indicator');
+            const matchMessage = document.getElementById('match-message');
+            const confirmField = document.getElementById('confirm_password');
+            
+            if (confirmPassword === '') {
+                matchIndicator.innerHTML = '';
+                matchMessage.innerHTML = '';
+                confirmField.style.borderColor = '#ddd';
+                return;
+            }
+            
+            if (password === confirmPassword) {
+                matchIndicator.innerHTML = ' ✅';
+                matchIndicator.style.color = '#28a745';
+                matchMessage.innerHTML = '密碼匹配！';
+                matchMessage.style.color = '#28a745';
+                confirmField.style.borderColor = '#28a745';
+            } else {
+                matchIndicator.innerHTML = ' ❌';
+                matchIndicator.style.color = '#dc3545';
+                matchMessage.innerHTML = '密碼不匹配';
+                matchMessage.style.color = '#dc3545';
+                confirmField.style.borderColor = '#dc3545';
+            }
+        }
+        
+        // 頁面載入完成後綁定事件
+        document.addEventListener('DOMContentLoaded', function() {
+            const passwordField = document.getElementById('password');
+            const confirmPasswordField = document.getElementById('confirm_password');
+            
+            if (passwordField) {
+                passwordField.addEventListener('input', function() {
+                    checkPasswordStrength(this.value);
+                    if (confirmPasswordField.value) {
+                        checkPasswordMatch();
+                    }
+                });
+            }
+            
+            if (confirmPasswordField) {
+                confirmPasswordField.addEventListener('input', checkPasswordMatch);
+            }
+        });
+        </script>
+        
         <?php wp_footer(); ?>
     </body>
     </html>
     <?php
 }
 
-/**
- * 發送審核通過通知和邀請郵件
- */
-function byob_send_approval_notification($restaurant_id) {
-    $restaurant = get_post($restaurant_id);
-    $contact_email = get_field('email', $restaurant_id);
-    $contact_person = get_field('contact_person', $restaurant_id);
-    
-    if (!$contact_email) {
-        return false;
-    }
-    
-    // 生成邀請碼
-    $invitation_code = wp_generate_password(12, false);
-    $expires = date('Y-m-d H:i:s', strtotime('+7 days'));
-    
-    // 儲存邀請碼
-    $invitation_data = array(
-        'code' => $invitation_code,
-        'restaurant_id' => $restaurant_id,
-        'expires' => $expires,
-        'used' => false,
-        'created' => current_time('mysql')
-    );
-    
-    update_post_meta($restaurant_id, '_byob_invitation_code', $invitation_data);
-    
-    // 建立邀請連結
-    $invitation_url = home_url('/register/restaurant?token=' . $invitation_code);
-    
-    // 郵件內容
-    $subject = '🎉 恭喜！您的餐廳已通過審核並上架 - BYOB 台北餐廳地圖';
-    
-    $message = '
-    <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif;">
-        <div style="background-color: #8b2635; color: white; padding: 20px; text-align: center;">
-            <h1>BYOB 台北餐廳地圖</h1>
-        </div>
-        
-        <div style="padding: 20px; background-color: #f9f9f9;">
-            <h2>親愛的 ' . ($contact_person ?: $restaurant->post_title . ' 負責人') . '，</h2>
-            
-            <div style="background-color: #d4edda; border: 1px solid #c3e6cb; padding: 15px; margin: 20px 0; border-radius: 5px;">
-                <h3 style="color: #155724; margin: 0;">🎉 恭喜！您的餐廳已通過審核並成功上架！</h3>
-            </div>
-            
-            <div style="background-color: white; padding: 15px; margin: 20px 0; border-left: 4px solid #8b2635;">
-                <strong>您的餐廳頁面：</strong><br>
-                <a href="' . get_permalink($restaurant_id) . '">' . get_permalink($restaurant_id) . '</a>
-            </div>
-            
-            <p>為了讓您能更好地管理餐廳資訊，我們邀請您註冊會員帳號：</p>
-            
-            <div style="text-align: center; margin: 30px 0;">
-                <a href="' . $invitation_url . '" style="background-color: #8b2635; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
-                    🔗 立即註冊會員
-                </a>
-            </div>
-            
-            <h3>會員功能包括：</h3>
-            <ul>
-                <li>✅ 修改餐廳基本資訊</li>
-                <li>✅ 上傳餐廳照片</li>
-                <li>✅ 更新 BYOB 政策</li>
-                <li>✅ 查看瀏覽統計</li>
-                <li>✅ 回覆顧客評論</li>
-            </ul>
-            
-            <p><strong>邀請碼：</strong> ' . $invitation_code . '</p>
-            <p><small>此邀請碼將於 7 天後過期</small></p>
-            
-            <p>如有任何問題，請隨時聯絡我們。</p>
-            
-            <p>BYOB 台北餐廳地圖團隊</p>
-        </div>
-    </div>
-    ';
-    
-    // 發送郵件
-    $headers = array('Content-Type: text/html; charset=UTF-8');
-    $sent = wp_mail($contact_email, $subject, $message, $headers);
-    
-    return $sent;
-}
+// 注意：byob_send_approval_notification 函數已移動到 functions.php 中
+// 此處不再重複定義
 
 /**
  * 發送審核未通過通知
