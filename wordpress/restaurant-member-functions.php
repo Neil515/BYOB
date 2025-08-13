@@ -39,6 +39,20 @@ function byob_init_restaurant_member_system() {
     
     // 註冊存取控制
     add_action('admin_init', 'byob_restrict_admin_access');
+    
+    // 自定義 WooCommerce 會員選單
+    add_action('init', 'byob_customize_woocommerce_menu');
+    add_filter('woocommerce_account_menu_items', 'byob_customize_account_menu_items', 999);
+    add_action('woocommerce_account_restaurant-profile_endpoint', 'byob_restaurant_profile_content');
+    add_action('woocommerce_account_restaurant-photos_endpoint', 'byob_restaurant_photos_content');
+    add_action('woocommerce_account_restaurant-menu_endpoint', 'byob_restaurant_menu_content');
+    
+    // 覆蓋預設控制台內容
+    add_action('woocommerce_account_dashboard', 'byob_override_dashboard_content', 999);
+    
+    // 註冊自定義端點
+    add_action('init', 'byob_register_restaurant_endpoints');
+
 }
 
 /**
@@ -1305,6 +1319,155 @@ function byob_restaurant_owner_dashboard() {
     echo '</div>';
 }
 
+
+
+/**
+ * 餐廳資料編輯頁面內容
+ */
+function byob_restaurant_profile_content() {
+    // 檢查使用者是否為餐廳業者
+    $user_id = get_current_user_id();
+    if (!$user_id) {
+        echo '<p>請先登入。</p>';
+        return;
+    }
+    
+    $user = get_user_by('id', $user_id);
+    if (!in_array('restaurant_owner', $user->roles)) {
+        echo '<p>權限不足，只有餐廳業者才能存取此頁面。</p>';
+        return;
+    }
+    
+    // 獲取使用者擁有的餐廳
+    $user_restaurants = byob_get_user_restaurants($user_id);
+    if (empty($user_restaurants)) {
+        echo '<div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 20px; border-radius: 5px;">';
+        echo '<h3>⚠️ 注意</h3>';
+        echo '<p>您目前沒有關聯的餐廳。請聯絡管理員。</p>';
+        echo '</div>';
+        return;
+    }
+    
+    $restaurant = $user_restaurants[0]; // 取第一個餐廳
+    $restaurant_id = $restaurant->ID;
+    
+    // 獲取當前餐廳資料
+    $current_logo_id = get_post_meta($restaurant_id, '_restaurant_logo', true);
+    $current_logo_url = $current_logo_id ? wp_get_attachment_image_url($current_logo_id, 'thumbnail') : '';
+    
+    // 處理表單提交
+    if ($_POST['action'] === 'update_restaurant_profile') {
+        byob_handle_restaurant_profile_submit($restaurant_id);
+    }
+    
+    echo '<div class="restaurant-profile" style="max-width: 800px;">';
+    echo '<h2>餐廳資料編輯</h2>';
+    echo '<p>編輯您的餐廳基本資料和 LOGO。</p>';
+    
+    // 顯示成功/失敗訊息
+    if (isset($_GET['message'])) {
+        $message = sanitize_text_field($_GET['message']);
+        if ($message === 'success') {
+            echo '<div style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 15px; border-radius: 5px; margin-bottom: 20px;">';
+            echo '✅ 餐廳資料更新成功！';
+            echo '</div>';
+        } elseif ($message === 'error') {
+            echo '<div style="background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 15px; border-radius: 5px; margin-bottom: 20px;">';
+            echo '❌ 更新失敗，請檢查輸入資料。';
+            echo '</div>';
+        }
+    }
+    
+    echo '<form method="post" enctype="multipart/form-data" style="background: #f9f9f9; padding: 25px; border-radius: 8px;">';
+    echo '<input type="hidden" name="action" value="update_restaurant_profile">';
+    echo '<input type="hidden" name="restaurant_id" value="' . esc_attr($restaurant_id) . '">';
+    
+    // 餐廳基本資料
+    echo '<div style="margin-bottom: 25px;">';
+    echo '<h3 style="color: #333; border-bottom: 2px solid #8b2635; padding-bottom: 10px;">基本資料</h3>';
+    
+    // 餐廳名稱
+    echo '<div style="margin-bottom: 20px;">';
+    echo '<label for="restaurant_name" style="display: block; margin-bottom: 8px; font-weight: bold; color: #333;">餐廳名稱 *</label>';
+    echo '<input type="text" id="restaurant_name" name="restaurant_name" value="' . esc_attr($restaurant->post_title) . '" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px;">';
+    echo '</div>';
+    
+    // 餐廳描述
+    echo '<div style="margin-bottom: 20px;">';
+    echo '<label for="restaurant_description" style="display: block; margin-bottom: 8px; font-weight: bold; color: #333;">餐廳描述</label>';
+    echo '<textarea id="restaurant_description" name="restaurant_description" rows="4" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px;">' . esc_textarea($restaurant->post_content) . '</textarea>';
+    echo '</div>';
+    
+    // 聯絡電話
+    echo '<div style="margin-bottom: 20px;">';
+    echo '<label for="restaurant_phone" style="display: block; margin-bottom: 8px; font-weight: bold; color: #333;">聯絡電話</label>';
+    echo '<input type="tel" id="restaurant_phone" name="restaurant_phone" value="' . esc_attr(get_field('phone', $restaurant_id)) . '" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px;">';
+    echo '</div>';
+    
+    // 地址
+    echo '<div style="margin-bottom: 20px;">';
+    echo '<label for="restaurant_address" style="display: block; margin-bottom: 8px; font-weight: bold; color: #333;">地址</label>';
+    echo '<textarea id="restaurant_address" name="restaurant_address" rows="3" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px;">' . esc_textarea(get_field('address', $restaurant_id)) . '</textarea>';
+    echo '</div>';
+    
+    // 營業時間
+    echo '<div style="margin-bottom: 20px;">';
+    echo '<label for="business_hours" style="display: block; margin-bottom: 8px; font-weight: bold; color: #333;">營業時間</label>';
+    echo '<textarea id="business_hours" name="business_hours" rows="3" placeholder="例：週一至週五 11:00-22:00，週六日 10:00-23:00" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px;">' . esc_textarea(get_field('business_hours', $restaurant_id)) . '</textarea>';
+    echo '</div>';
+    
+    echo '</div>';
+    
+    // LOGO 上傳
+    echo '<div style="margin-bottom: 25px;">';
+    echo '<h3 style="color: #333; border-bottom: 2px solid #8b2635; padding-bottom: 10px;">餐廳 LOGO</h3>';
+    
+    // 顯示當前 LOGO
+    if ($current_logo_url) {
+        echo '<div style="margin-bottom: 20px;">';
+        echo '<p style="font-weight: bold; margin-bottom: 10px;">當前 LOGO：</p>';
+        echo '<img src="' . esc_url($current_logo_url) . '" alt="當前 LOGO" style="max-width: 150px; max-height: 150px; border: 2px solid #ddd; border-radius: 5px;">';
+        echo '</div>';
+    }
+    
+    // LOGO 上傳欄位
+    echo '<div style="margin-bottom: 20px;">';
+    echo '<label for="restaurant_logo" style="display: block; margin-bottom: 8px; font-weight: bold; color: #333;">上傳新 LOGO</label>';
+    echo '<input type="file" id="restaurant_logo" name="restaurant_logo" accept="image/jpeg,image/png,image/gif" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px;">';
+    echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">支援格式：JPG、PNG、GIF，檔案大小限制 2MB</p>';
+    echo '</div>';
+    
+    echo '</div>';
+    
+    // 提交按鈕
+    echo '<div style="text-align: center;">';
+    echo '<button type="submit" style="background-color: rgba(139, 38, 53, 0.8); color: white; padding: 15px 30px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; font-weight: bold;">更新餐廳資料</button>';
+    echo '</div>';
+    
+    echo '</form>';
+    echo '</div>';
+}
+
+/**
+ * 照片管理頁面內容
+ */
+function byob_restaurant_photos_content() {
+    echo '<div class="restaurant-photos">';
+    echo '<h2>照片管理</h2>';
+    echo '<p>此功能正在開發中...</p>';
+    echo '</div>';
+}
+
+/**
+ * 菜單管理頁面內容
+ */
+function byob_restaurant_menu_content() {
+    echo '<div class="restaurant-menu">';
+    echo '<h2>菜單管理</h2>';
+    echo '<p>此功能正在開發中...</p>';
+    echo '</div>';
+}
+
 /**
  * 新增餐廳業者儀表板選單
  */
@@ -1329,6 +1492,247 @@ function byob_add_restaurant_owner_menu() {
         'dashicons-store',
         30
     );
+}
+
+/**
+ * 自定義 WooCommerce 會員選單
+ */
+function byob_customize_woocommerce_menu() {
+    // 註冊自定義端點
+    add_rewrite_endpoint('restaurant-profile', EP_ROOT | EP_PAGES);
+    add_rewrite_endpoint('restaurant-photos', EP_ROOT | EP_PAGES);
+    add_rewrite_endpoint('restaurant-menu', EP_ROOT | EP_PAGES);
+}
+
+/**
+ * 自定義帳戶選單項目
+ */
+function byob_customize_account_menu_items($menu_items) {
+    // 檢查使用者是否為餐廳業者
+    $user_id = get_current_user_id();
+    if (!$user_id) {
+        return $menu_items;
+    }
+    
+    $user = get_user_by('id', $user_id);
+    if (!in_array('restaurant_owner', $user->roles)) {
+        return $menu_items;
+    }
+    
+    // 完全重新定義選單項目，強制覆蓋所有其他外掛的修改
+    $new_menu_items = array();
+    
+    // 只保留我們需要的選單項目，使用固定的順序
+    $new_menu_items['dashboard'] = '控制台';
+    $new_menu_items['restaurant-profile'] = '餐廳資料編輯';
+    $new_menu_items['restaurant-photos'] = '照片管理';
+    $new_menu_items['restaurant-menu'] = '菜單管理';
+    // 不添加 customer-logout，讓 WooCommerce 自動處理
+    
+    return $new_menu_items;
+}
+
+/**
+ * 覆蓋預設 WooCommerce 帳戶儀表板內容
+ */
+function byob_override_dashboard_content() {
+    // 檢查使用者是否已登入且為餐廳業者
+    $user_id = get_current_user_id();
+    if (!$user_id) {
+        return;
+    }
+    
+    $user = get_user_by('id', $user_id);
+    if (!in_array('restaurant_owner', $user->roles)) {
+        return;
+    }
+    
+    // 清除 WooCommerce 預設的控制台內容
+    ob_clean();
+    
+    // 獲取使用者擁有的餐廳
+    $user_restaurants = byob_get_user_restaurants($user_id);
+    
+    echo '<div class="restaurant-dashboard-main">';
+    echo '<h2>餐廳業者控制台</h2>';
+    echo '<p>歡迎，' . esc_html($user->display_name) . '！</p>';
+    
+    if (!empty($user_restaurants)) {
+        $restaurant = $user_restaurants[0]; // 取第一個餐廳
+        echo '<div class="restaurant-overview-main" style="background: #f9f9f9; padding: 20px; border-radius: 5px; margin: 20px 0;">';
+        echo '<h3>餐廳概覽</h3>';
+        echo '<p><strong>餐廳名稱：</strong>' . esc_html($restaurant->post_title) . '</p>';
+        echo '<p><strong>狀態：</strong>已上架</p>';
+        echo '<p><strong>最後更新：</strong>' . get_the_modified_date('Y-m-d H:i', $restaurant->ID) . '</p>';
+        echo '</div>';
+        
+        echo '<div class="quick-actions-main" style="margin: 20px 0;">';
+        echo '<h3>快速操作</h3>';
+        echo '<a href="' . wc_get_account_endpoint_url('restaurant-profile') . '" class="button" style="margin-right: 10px; background-color: rgba(139, 38, 53, 0.8); border-radius: 5px; padding: 12px 20px; font-size: 16px; display: inline-block; text-decoration: none; color: white;">編輯餐廳資料</a> ';
+        echo '<a href="' . wc_get_account_endpoint_url('restaurant-photos') . '" class="button" style="margin-right: 10px; background-color: rgba(139, 38, 53, 0.8); border-radius: 5px; padding: 12px 20px; font-size: 16px; display: inline-block; text-decoration: none; color: white;">管理照片</a> ';
+        echo '<a href="' . wc_get_account_endpoint_url('restaurant-menu') . '" class="button" style="background-color: rgba(139, 38, 53, 0.8); border-radius: 5px; padding: 12px 20px; font-size: 16px; display: inline-block; text-decoration: none; color: white;">管理菜單</a>';
+        echo '</div>';
+        
+        echo '<div class="restaurant-stats-main" style="background: #f9f9f9; padding: 20px; border-radius: 5px;">';
+        echo '<h3>統計資訊</h3>';
+        echo '<p><strong>餐廳頁面訪問次數：</strong>統計中...</p>';
+        echo '<p><strong>評論數量：</strong>0</p>';
+        echo '<p><strong>照片數量：</strong>0</p>';
+        echo '</div>';
+    } else {
+        echo '<div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 20px; border-radius: 5px; margin: 20px 0;">';
+        echo '<h3>⚠️ 注意</h3>';
+        echo '<p>您目前沒有關聯的餐廳。這可能是因為：</p>';
+        echo '<ul style="margin-left: 20px;">';
+        echo '<li>餐廳資料尚未建立</li>';
+        echo '<li>餐廳與您的帳號尚未關聯</li>';
+        echo '<li>餐廳狀態不是「已上架」</li>';
+        echo '</ul>';
+        echo '<p>請聯絡管理員協助處理。</p>';
+        echo '</div>';
+    }
+    echo '</div>';
+}
+
+/**
+ * 處理餐廳資料提交
+ */
+function byob_handle_restaurant_profile_submit($restaurant_id) {
+    // 檢查權限
+    $user_id = get_current_user_id();
+    if (!$user_id) {
+        wp_redirect(add_query_arg('message', 'error', wc_get_account_endpoint_url('restaurant-profile')));
+        exit;
+    }
+    
+    $user = get_user_by('id', $user_id);
+    if (!in_array('restaurant_owner', $user->roles)) {
+        wp_redirect(add_query_arg('message', 'error', wc_get_account_endpoint_url('restaurant-profile')));
+        exit;
+    }
+    
+    // 驗證餐廳所有權
+    $owner_id = get_post_meta($restaurant_id, '_restaurant_owner_id', true);
+    if ($owner_id != $user_id) {
+        wp_redirect(add_query_arg('message', 'error', wc_get_account_endpoint_url('restaurant-profile')));
+        exit;
+    }
+    
+    // 驗證必填欄位
+    if (empty($_POST['restaurant_name'])) {
+        wp_redirect(add_query_arg('message', 'error', wc_get_account_endpoint_url('restaurant-profile')));
+        exit;
+    }
+    
+    // 更新餐廳基本資料
+    $post_data = array(
+        'ID' => $restaurant_id,
+        'post_title' => sanitize_text_field($_POST['restaurant_name']),
+        'post_content' => sanitize_textarea_field($_POST['restaurant_description'])
+    );
+    
+    $updated_post = wp_update_post($post_data);
+    
+    if (is_wp_error($updated_post)) {
+        wp_redirect(add_query_arg('message', 'error', wc_get_account_endpoint_url('restaurant-profile')));
+        exit;
+    }
+    
+    // 更新 ACF 欄位
+    if (function_exists('update_field')) {
+        update_field('phone', sanitize_text_field($_POST['restaurant_phone']), $restaurant_id);
+        update_field('address', sanitize_textarea_field($_POST['restaurant_address']), $restaurant_id);
+        update_field('business_hours', sanitize_textarea_field($_POST['business_hours']), $restaurant_id);
+    }
+    
+    // 處理 LOGO 上傳
+    if (!empty($_FILES['restaurant_logo']['name'])) {
+        $logo_result = byob_handle_logo_upload($restaurant_id);
+        if (is_wp_error($logo_result)) {
+            // LOGO 上傳失敗，但基本資料已更新
+            wp_redirect(add_query_arg('message', 'partial_success', wc_get_account_endpoint_url('restaurant-profile')));
+            exit;
+        }
+    }
+    
+    // 重導向到成功頁面
+    wp_redirect(add_query_arg('message', 'success', wc_get_account_endpoint_url('restaurant-profile')));
+    exit;
+}
+
+/**
+ * 處理 LOGO 上傳
+ */
+function byob_handle_logo_upload($restaurant_id) {
+    // 檢查是否有檔案上傳
+    if (!isset($_FILES['restaurant_logo']) || $_FILES['restaurant_logo']['error'] !== UPLOAD_ERR_OK) {
+        return new WP_Error('upload_error', '檔案上傳失敗');
+    }
+    
+    $file = $_FILES['restaurant_logo'];
+    
+    // 驗證檔案類型
+    $allowed_types = array('image/jpeg', 'image/png', 'image/gif');
+    if (!in_array($file['type'], $allowed_types)) {
+        return new WP_Error('invalid_type', '只支援 JPG、PNG、GIF 格式的圖片');
+    }
+    
+    // 驗證檔案大小（2MB）
+    if ($file['size'] > 2 * 1024 * 1024) {
+        return new WP_Error('file_too_large', '檔案大小不能超過 2MB');
+    }
+    
+    // 準備上傳參數
+    $upload_overrides = array(
+        'test_form' => false,
+        'mimes' => array(
+            'jpg|jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'gif' => 'image/gif'
+        )
+    );
+    
+    // 處理檔案上傳
+    $uploaded_file = wp_handle_upload($file, $upload_overrides);
+    
+    if (isset($uploaded_file['error'])) {
+        return new WP_Error('upload_failed', $uploaded_file['error']);
+    }
+    
+    // 準備附件資料
+    $attachment = array(
+        'post_mime_type' => $uploaded_file['type'],
+        'post_title' => sanitize_file_name($file['name']),
+        'post_content' => '',
+        'post_status' => 'inherit'
+    );
+    
+    // 插入附件到媒體庫
+    $attachment_id = wp_insert_attachment($attachment, $uploaded_file['file'], $restaurant_id);
+    
+    if (is_wp_error($attachment_id)) {
+        return $attachment_id;
+    }
+    
+    // 生成縮圖
+    require_once(ABSPATH . 'wp-admin/includes/image.php');
+    $attachment_data = wp_generate_attachment_metadata($attachment_id, $uploaded_file['file']);
+    wp_update_attachment_metadata($attachment_id, $attachment_data);
+    
+    // 更新餐廳的 LOGO meta
+    update_post_meta($restaurant_id, '_restaurant_logo', $attachment_id);
+    
+    return $attachment_id;
+}
+
+/**
+ * 註冊餐廳相關端點
+ */
+function byob_register_restaurant_endpoints() {
+    // 註冊自定義端點
+    add_rewrite_endpoint('restaurant-profile', EP_ROOT | EP_PAGES);
+    add_rewrite_endpoint('restaurant-photos', EP_ROOT | EP_PAGES);
+    add_rewrite_endpoint('restaurant-menu', EP_ROOT | EP_PAGES);
 }
 
 // 初始化系統
