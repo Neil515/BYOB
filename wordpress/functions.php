@@ -1470,3 +1470,29 @@ function byob_run_invitation_test() {
         echo '<div class="notice notice-error"><p>❌ byob_send_approval_notification 函數不存在</p></div>';
     }
 }
+
+/**
+ * 使用 WooCommerce 內容鉤子載入餐廳資料編輯表單
+ */
+function byob_load_restaurant_profile_content() {
+    global $wp_query;
+    
+    // 檢查是否為餐廳資料編輯頁面
+    if (is_account_page() && isset($wp_query->query_vars['restaurant-profile'])) {
+        // 移除 WooCommerce 預設的帳戶內容
+        remove_action('woocommerce_account_content', 'woocommerce_account_content', 10);
+        
+        // 載入我們的表單內容
+        $template_path = get_stylesheet_directory() . '/woocommerce/myaccount/restaurant-profile.php';
+        
+        if (file_exists($template_path)) {
+            error_log('BYOB: 載入餐廳資料編輯表單: ' . $template_path);
+            include $template_path;
+        } else {
+            error_log('BYOB: 餐廳資料編輯表單檔案不存在: ' . $template_path);
+        }
+    }
+}
+
+// 使用 WooCommerce 內容鉤子
+add_action('woocommerce_account_content', 'byob_load_restaurant_profile_content', 5);
