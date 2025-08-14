@@ -56,6 +56,51 @@ $restaurant_id = $restaurant->ID;
 $current_logo_id = get_post_meta($restaurant_id, '_restaurant_logo', true);
 $current_logo_url = $current_logo_id ? wp_get_attachment_image_url($current_logo_id, 'thumbnail') : '';
 
+// ACF 欄位資料載入除錯（僅在開發環境顯示）
+if (defined('WP_DEBUG') && WP_DEBUG) {
+    echo '<div style="background: #f8f9fa; border: 1px solid #dee2e6; padding: 20px; border-radius: 8px; margin-bottom: 20px; font-family: monospace; font-size: 12px;">';
+    echo '<h4 style="margin: 0 0 15px 0; color: #495057;">🔍 ACF 欄位資料載入除錯資訊</h4>';
+    
+    // 檢查 ACF 外掛是否啟用
+    if (function_exists('get_field')) {
+        echo '<p style="color: #28a745; margin: 5px 0;">✅ ACF 外掛已啟用</p>';
+        
+        // 檢查各個 ACF 欄位的資料
+        $debug_fields = array(
+            'restaurant_type' => '餐廳類型',
+            'is_charged' => '是否收開瓶費',
+            'corkage_fee' => '開瓶費說明',
+            'equipment' => '酒器設備',
+            'open_bottle_service' => '開酒服務',
+            'open_bottle_service_other_note' => '開酒服務其他說明',
+            'website' => '官方網站',
+            'social_links' => '社群連結',
+            'phone' => '聯絡電話',
+            'address' => '地址',
+            'business_hours' => '營業時間'
+        );
+        
+        foreach ($debug_fields as $field_name => $field_label) {
+            $field_value = get_field($field_name, $restaurant_id);
+            if ($field_value !== false && $field_value !== null && $field_value !== '') {
+                if (is_array($field_value)) {
+                    echo '<p style="color: #28a745; margin: 5px 0;">✅ ' . $field_label . ': ' . implode(', ', $field_value) . '</p>';
+                } else {
+                    echo '<p style="color: #28a745; margin: 5px 0;">✅ ' . $field_label . ': ' . esc_html($field_value) . '</p>';
+                }
+            } else {
+                echo '<p style="color: #dc3545; margin: 5px 0;">❌ ' . $field_label . ': 無資料或欄位不存在</p>';
+            }
+        }
+    } else {
+        echo '<p style="color: #dc3545; margin: 5px 0;">❌ ACF 外掛未啟用</p>';
+    }
+    
+    echo '<p style="color: #6c757d; margin: 5px 0;">餐廳 ID: ' . $restaurant_id . '</p>';
+    echo '<p style="color: #6c757d; margin: 5px 0;">餐廳標題: ' . esc_html($restaurant->post_title) . '</p>';
+    echo '</div>';
+}
+
 // 處理表單提交
 if (isset($_POST['action']) && $_POST['action'] === 'update_restaurant_profile') {
     byob_handle_restaurant_profile_submit($restaurant_id);
@@ -111,21 +156,21 @@ echo '<label style="display: block; margin-bottom: 10px; font-weight: bold; colo
 echo '<div class="checkbox-group" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-top: 15px;">';
 
 $restaurant_types = array(
-    'taiwanese' => '台式',
-    'french' => '法式',
-    'italian' => '義式',
-    'japanese' => '日式',
-    'american' => '美式',
-    'stir_fry' => '熱炒',
-    'bistro' => '小酒館',
-    'cafe' => '咖啡廳',
-    'private_kitchen' => '私廚',
-    'international' => '異國料理',
-    'bbq' => '燒烤',
-    'hotpot' => '火鍋',
-    'steakhouse' => '牛排',
-    'lounge_bar' => 'Lounge Bar',
-    'buffet' => 'Buffet'
+    '台式' => '台式',
+    '法式' => '法式',
+    '義式' => '義式',
+    '日式' => '日式',
+    '美式' => '美式',
+    '熱炒' => '熱炒',
+    '小酒館' => '小酒館',
+    '咖啡廳' => '咖啡廳',
+    '私廚' => '私廚',
+    '異國料理' => '異國料理',
+    '燒烤' => '燒烤',
+    '火鍋' => '火鍋',
+    '牛排' => '牛排',
+    'Lounge Bar' => 'Lounge Bar',
+    'Buffet' => 'Buffet'
 );
 
 $current_types = get_field('restaurant_type', $restaurant_id);
@@ -204,16 +249,16 @@ echo '<label style="display: block; margin-bottom: 10px; font-weight: bold; colo
 echo '<div class="checkbox-group" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-top: 15px;">';
 
 $equipment_options = array(
-    'wine_glass' => '酒杯',
-    'corkscrew' => '開瓶器',
-    'ice_bucket' => '冰桶',
-    'decanter' => '醒酒器',
-    'wine_stopper' => '酒塞/瓶塞',
-    'wine_rack' => '酒架/酒櫃',
-    'thermometer' => '溫度計',
-    'wine_filter' => '濾酒器',
-    'other' => '其他',
-    'none' => '無提供'
+    '酒杯' => '酒杯',
+    '開瓶器' => '開瓶器',
+    '冰桶' => '冰桶',
+    '醒酒器' => '醒酒器',
+    '酒塞/瓶塞' => '酒塞/瓶塞',
+    '酒架/酒櫃' => '酒架/酒櫃',
+    '溫度計' => '溫度計',
+    '濾酒器' => '濾酒器',
+    '其他' => '其他',
+    '無提供' => '無提供'
 );
 
 $current_equipment = get_field('equipment', $restaurant_id);
@@ -234,13 +279,38 @@ echo '</div>';
 // 開酒服務
 echo '<div class="form-group" style="margin-bottom: 25px;">';
 echo '<label for="open_bottle_service" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">開酒服務</label>';
-echo '<select id="open_bottle_service" name="open_bottle_service" style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; transition: border-color 0.3s;">';
+
+// 除錯：顯示 ACF 欄位的實際值
+$open_bottle_service_value = get_field('open_bottle_service', $restaurant_id);
+if (defined('WP_DEBUG') && WP_DEBUG) {
+    echo '<p style="font-size: 12px; color: #666; margin-bottom: 5px;">🔍 除錯：ACF 欄位值 = "' . esc_html($open_bottle_service_value) . '"</p>';
+}
+
+echo '<select id="open_bottle_service" name="open_bottle_service" onchange="toggleOtherNote()" style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; transition: border-color 0.3s; min-width: 200px; text-overflow: clip; white-space: nowrap;">';
 echo '<option value="">請選擇</option>';
-echo '<option value="yes" ' . (get_field('open_bottle_service', $restaurant_id) === 'yes' ? 'selected' : '') . '>是</option>';
-echo '<option value="no" ' . (get_field('open_bottle_service', $restaurant_id) === 'no' ? 'selected' : '') . '>否</option>';
-echo '<option value="other" ' . (get_field('open_bottle_service', $restaurant_id) === 'other' ? 'selected' : '') . '>其他</option>';
+echo '<option value="yes" ' . ($open_bottle_service_value === 'yes' ? 'selected' : '') . '>是</option>';
+echo '<option value="no" ' . ($open_bottle_service_value === 'no' ? 'selected' : '') . '>否</option>';
+echo '<option value="other" ' . ($open_bottle_service_value === 'other' ? 'selected' : '') . '>其他</option>';
 echo '</select>';
 echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">請選擇是否提供開酒服務</p>';
+echo '</div>';
+
+// 開酒服務說明文字（是/否選項）
+echo '<div id="service_status_text" class="form-group" style="margin-bottom: 25px; display: ' . (in_array($open_bottle_service_value, array('yes', 'no')) ? 'block' : 'none') . ';">';
+echo '<div style="background: #e8f5e8; border: 1px solid #c3e6cb; padding: 15px; border-radius: 8px; text-align: center;">';
+if ($open_bottle_service_value === 'yes') {
+    echo '<p style="margin: 0; color: #155724; font-weight: bold; font-size: 16px;">✅ 提供開酒服務</p>';
+} elseif ($open_bottle_service_value === 'no') {
+    echo '<p style="margin: 0; color: #721c24; font-weight: bold; font-size: 16px;">❌ 未提供開酒服務</p>';
+}
+echo '</div>';
+echo '</div>';
+
+// 開酒服務其他說明
+echo '<div id="other_note_field" class="form-group" style="margin-bottom: 25px; display: ' . ($open_bottle_service_value === 'other' ? 'block' : 'none') . ';">';
+echo '<label for="open_bottle_service_other_note" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">其他說明</label>';
+echo '<input type="text" id="open_bottle_service_other_note" name="open_bottle_service_other_note" value="' . esc_attr(get_field('open_bottle_service_other_note', $restaurant_id)) . '" placeholder="請說明您提供的開酒服務內容..." style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; transition: border-color 0.3s;">';
+echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">請詳細說明您提供的開酒服務內容（選填）</p>';
 echo '</div>';
 
 // 官方網站/社群連結
@@ -354,5 +424,39 @@ function limitCheckboxes(checkbox, maxCount, groupName) {
     
     return true;
 }
+
+// 控制開酒服務欄位的顯示邏輯
+function toggleOtherNote() {
+    var openBottleService = document.getElementById(\'open_bottle_service\');
+    var otherNoteField = document.getElementById(\'other_note_field\');
+    var serviceStatusText = document.getElementById(\'service_status_text\');
+    
+    // 隱藏所有相關欄位
+    otherNoteField.style.display = \'none\';
+    serviceStatusText.style.display = \'none\';
+    
+    // 根據選擇顯示對應的欄位
+    if (openBottleService.value === \'yes\') {
+        serviceStatusText.style.display = \'block\';
+        // 更新說明文字
+        serviceStatusText.innerHTML = \'<div style="background: #e8f5e8; border: 1px solid #c3e6cb; padding: 15px; border-radius: 8px; text-align: center;"><p style="margin: 0; color: #155724; font-weight: bold; font-size: 16px;">✅ 提供開酒服務</p></div>\';
+    } else if (openBottleService.value === \'no\') {
+        serviceStatusText.style.display = \'block\';
+        // 更新說明文字
+        serviceStatusText.innerHTML = \'<div style="background: #e8f5e8; border: 1px solid #c3e6cb; padding: 15px; border-radius: 8px; text-align: center;"><p style="margin: 0; color: #721c24; font-weight: bold; font-size: 16px;">❌ 未提供開酒服務</p></div>\';
+    } else if (openBottleService.value === \'other\') {
+        otherNoteField.style.display = \'block\';
+    }
+    
+    // 如果不是選擇「其他」，清空其他說明欄位的值
+    if (openBottleService.value !== \'other\') {
+        document.getElementById(\'open_bottle_service_other_note\').value = \'\';
+    }
+}
+
+// 頁面載入完成後初始化開酒服務欄位的顯示狀態
+document.addEventListener(\'DOMContentLoaded\', function() {
+    toggleOtherNote();
+});
 </script>';
 ?>
