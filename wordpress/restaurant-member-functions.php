@@ -1691,9 +1691,14 @@ function byob_handle_restaurant_profile_submit($restaurant_id) {
             update_field('equipment', $equipment, $restaurant_id);
         }
         
-        // 新增欄位：開酒服務（下拉選單）
+        // 新增欄位：開酒服務（選取）
         if (isset($_POST['open_bottle_service'])) {
             update_field('open_bottle_service', sanitize_text_field($_POST['open_bottle_service']), $restaurant_id);
+        }
+        
+        // 新增欄位：開酒服務其他說明（單行文字）
+        if (isset($_POST['open_bottle_service_other_note'])) {
+            update_field('open_bottle_service_other_note', sanitize_text_field($_POST['open_bottle_service_other_note']), $restaurant_id);
         }
         
         // 新增欄位：官方網站（URL）
