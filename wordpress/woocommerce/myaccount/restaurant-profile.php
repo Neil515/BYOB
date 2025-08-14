@@ -1,4 +1,5 @@
 <?php
+
 /**
  * 餐廳資料編輯頁面模板
  * 
@@ -56,7 +57,7 @@ $current_logo_id = get_post_meta($restaurant_id, '_restaurant_logo', true);
 $current_logo_url = $current_logo_id ? wp_get_attachment_image_url($current_logo_id, 'thumbnail') : '';
 
 // 處理表單提交
-if ($_POST['action'] === 'update_restaurant_profile') {
+if (isset($_POST['action']) && $_POST['action'] === 'update_restaurant_profile') {
     byob_handle_restaurant_profile_submit($restaurant_id);
 }
 
@@ -104,9 +105,47 @@ echo '<input type="text" id="restaurant_name" name="restaurant_name" value="' . 
 echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">餐廳名稱是必填欄位</p>';
 echo '</div>';
 
-// 餐廳描述
+// 餐廳類型
 echo '<div class="form-group" style="margin-bottom: 25px;">';
-echo '<label for="restaurant_description" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">餐廳描述</label>';
+echo '<label style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">餐廳類型 <span style="color: #dc3545;">(最多選擇3個)</span></label>';
+echo '<div class="checkbox-group" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-top: 15px;">';
+
+$restaurant_types = array(
+    'taiwanese' => '台式',
+    'french' => '法式',
+    'italian' => '義式',
+    'japanese' => '日式',
+    'american' => '美式',
+    'stir_fry' => '熱炒',
+    'bistro' => '小酒館',
+    'cafe' => '咖啡廳',
+    'private_kitchen' => '私廚',
+    'international' => '異國料理',
+    'bbq' => '燒烤',
+    'hotpot' => '火鍋',
+    'steakhouse' => '牛排',
+    'lounge_bar' => 'Lounge Bar',
+    'buffet' => 'Buffet'
+);
+
+$current_types = get_field('restaurant_type', $restaurant_id);
+$current_types = is_array($current_types) ? $current_types : array();
+
+foreach ($restaurant_types as $value => $label) {
+    $checked = in_array($value, $current_types) ? 'checked' : '';
+    echo '<label style="display: flex; align-items: center; cursor: pointer; font-weight: normal; padding: 10px; border: 1px solid #ddd; border-radius: 6px; transition: all 0.3s;">';
+    echo '<input type="checkbox" name="restaurant_type[]" value="' . $value . '" ' . $checked . ' style="margin-right: 8px;" onchange="limitCheckboxes(this, 3, \'restaurant_type\')">';
+    echo $label;
+    echo '</label>';
+}
+
+echo '</div>';
+echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">請選擇您的餐廳類型（最多3個）</p>';
+echo '</div>';
+
+// 其他BYOB規定或備註
+echo '<div class="form-group" style="margin-bottom: 25px;">';
+echo '<label for="restaurant_description" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">其他BYOB規定或備註</label>';
 echo '<textarea id="restaurant_description" name="restaurant_description" rows="5" placeholder="請描述您的餐廳特色、風格、服務等..." style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; resize: vertical; transition: border-color 0.3s;">' . esc_textarea($restaurant->post_content) . '</textarea>';
 echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">讓顧客更了解您的餐廳</p>';
 echo '</div>';
@@ -130,6 +169,94 @@ echo '<div class="form-group" style="margin-bottom: 25px;">';
 echo '<label for="business_hours" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">營業時間</label>';
 echo '<textarea id="business_hours" name="business_hours" rows="3" placeholder="例：週一至週五 11:00-22:00，週六日 10:00-23:00" style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; resize: vertical; transition: border-color 0.3s;">' . esc_textarea(get_field('business_hours', $restaurant_id)) . '</textarea>';
 echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">清楚標示營業時間，避免顧客白跑一趟</p>';
+echo '</div>';
+
+// 是否收開瓶費
+echo '<div class="form-group" style="margin-bottom: 25px;">';
+echo '<label for="is_charged" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">是否收開瓶費</label>';
+echo '<div class="radio-group" style="display: flex; gap: 20px; align-items: center;">';
+echo '<label style="display: flex; align-items: center; cursor: pointer; font-weight: normal;">';
+echo '<input type="radio" name="is_charged" value="yes" ' . (get_field('is_charged', $restaurant_id) === 'yes' ? 'checked' : '') . ' style="margin-right: 8px;">';
+echo '酌收';
+echo '</label>';
+echo '<label style="display: flex; align-items: center; cursor: pointer; font-weight: normal;">';
+echo '<input type="radio" name="is_charged" value="no" ' . (get_field('is_charged', $restaurant_id) === 'no' ? 'checked' : '') . ' style="margin-right: 8px;">';
+echo '不收費';
+echo '</label>';
+echo '<label style="display: flex; align-items: center; cursor: pointer; font-weight: normal;">';
+echo '<input type="radio" name="is_charged" value="other" ' . (get_field('is_charged', $restaurant_id) === 'other' ? 'checked' : '') . ' style="margin-right: 8px;">';
+echo '其他';
+echo '</label>';
+echo '</div>';
+echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">請選擇您的開瓶費政策</p>';
+echo '</div>';
+
+// 開瓶費說明
+echo '<div class="form-group" style="margin-bottom: 25px;">';
+echo '<label for="corkage_fee" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">開瓶費說明</label>';
+echo '<input type="text" id="corkage_fee" name="corkage_fee" value="' . esc_attr(get_field('corkage_fee', $restaurant_id)) . '" placeholder="例：每瓶酌收100元，或依酒款而定" style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; transition: border-color 0.3s;">';
+echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">請詳細說明您的開瓶費政策</p>';
+echo '</div>';
+
+// 酒器設備
+echo '<div class="form-group" style="margin-bottom: 25px;">';
+echo '<label style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">酒器設備</label>';
+echo '<div class="checkbox-group" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-top: 15px;">';
+
+$equipment_options = array(
+    'wine_glass' => '酒杯',
+    'corkscrew' => '開瓶器',
+    'ice_bucket' => '冰桶',
+    'decanter' => '醒酒器',
+    'wine_stopper' => '酒塞/瓶塞',
+    'wine_rack' => '酒架/酒櫃',
+    'thermometer' => '溫度計',
+    'wine_filter' => '濾酒器',
+    'other' => '其他',
+    'none' => '無提供'
+);
+
+$current_equipment = get_field('equipment', $restaurant_id);
+$current_equipment = is_array($current_equipment) ? $current_equipment : array();
+
+foreach ($equipment_options as $value => $label) {
+    $checked = in_array($value, $current_equipment) ? 'checked' : '';
+    echo '<label style="display: flex; align-items: center; cursor: pointer; font-weight: normal; padding: 10px; border: 1px solid #ddd; border-radius: 6px; transition: all 0.3s;">';
+    echo '<input type="checkbox" name="equipment[]" value="' . $value . '" ' . $checked . ' style="margin-right: 8px;">';
+    echo $label;
+    echo '</label>';
+}
+
+echo '</div>';
+echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">請選擇您提供的酒器設備</p>';
+echo '</div>';
+
+// 開酒服務
+echo '<div class="form-group" style="margin-bottom: 25px;">';
+echo '<label for="open_bottle_service" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">開酒服務</label>';
+echo '<select id="open_bottle_service" name="open_bottle_service" style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; transition: border-color 0.3s;">';
+echo '<option value="">請選擇</option>';
+echo '<option value="yes" ' . (get_field('open_bottle_service', $restaurant_id) === 'yes' ? 'selected' : '') . '>是</option>';
+echo '<option value="no" ' . (get_field('open_bottle_service', $restaurant_id) === 'no' ? 'selected' : '') . '>否</option>';
+echo '<option value="other" ' . (get_field('open_bottle_service', $restaurant_id) === 'other' ? 'selected' : '') . '>其他</option>';
+echo '</select>';
+echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">請選擇是否提供開酒服務</p>';
+echo '</div>';
+
+// 官方網站/社群連結
+echo '<div class="form-group" style="margin-bottom: 25px;">';
+echo '<label style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">官方網站/社群連結</label>';
+echo '<div style="display: flex; gap: 15px;">';
+echo '<div style="flex: 1;">';
+echo '<label for="website" style="display: block; margin-bottom: 8px; font-weight: normal; color: #666; font-size: 14px;">官方網站</label>';
+echo '<input type="url" id="website" name="website" value="' . esc_attr(get_field('website', $restaurant_id)) . '" placeholder="例：https://www.example.com" style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 6px; font-size: 14px; transition: border-color 0.3s;">';
+echo '</div>';
+echo '<div style="flex: 1;">';
+echo '<label for="social_links" style="display: block; margin-bottom: 8px; font-weight: normal; color: #666; font-size: 14px;">社群連結</label>';
+echo '<input type="url" id="social_links" name="social_links" value="' . esc_attr(get_field('social_links', $restaurant_id)) . '" placeholder="例：Facebook、Instagram 等" style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 6px; font-size: 14px; transition: border-color 0.3s;">';
+echo '</div>';
+echo '</div>';
+echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">請輸入您的官方網站和社群媒體連結（選填）</p>';
 echo '</div>';
 
 echo '</div>';
@@ -157,8 +284,8 @@ echo '<input type="file" id="restaurant_logo" name="restaurant_logo" accept="ima
 echo '<div style="margin-top: 10px; padding: 15px; background: #e9ecef; border-radius: 8px;">';
 echo '<p style="font-size: 14px; color: #495057; margin: 0 0 8px 0;"><strong>📋 上傳須知：</strong></p>';
 echo '<ul style="font-size: 14px; color: #495057; margin: 0; padding-left: 20px;">';
-echo '<li>支援格式：JPG、PNG、GIF</li>';
-echo '<li>檔案大小限制：2MB</li>';
+echo '<li>支援格式：JPG、PNG 及其他常見圖片格式</li>';
+echo '<li>檔案大小限制：1MB</li>';
 echo '<li>建議尺寸：300x300 像素以上</li>';
 echo '<li>上傳後會自動替換現有 LOGO</li>';
 echo '</ul>';
@@ -193,5 +320,39 @@ echo '<style>
 .form-submit button:active {
     transform: translateY(0);
 }
+
+.checkbox-group label:hover {
+    border-color: rgba(139, 38, 53, 0.5);
+    background-color: rgba(139, 38, 53, 0.05);
+}
+
+.checkbox-group input[type="checkbox"]:checked + span {
+    color: rgba(139, 38, 53, 0.8);
+    font-weight: bold;
+}
 </style>';
+
+// 添加 JavaScript 來限制餐廳類型最多只能選3個
+echo '<script>
+function limitCheckboxes(checkbox, maxCount, groupName) {
+    var checkboxes = document.querySelectorAll(\'input[name="\' + groupName + \'[]"]\');
+    var checkedCount = 0;
+    
+    // 計算已選中的數量
+    checkboxes.forEach(function(cb) {
+        if (cb.checked) {
+            checkedCount++;
+        }
+    });
+    
+    // 如果超過限制，取消選中
+    if (checkedCount > maxCount) {
+        checkbox.checked = false;
+        alert("餐廳類型最多只能選擇 " + maxCount + " 個選項");
+        return false;
+    }
+    
+    return true;
+}
+</script>';
 ?>
