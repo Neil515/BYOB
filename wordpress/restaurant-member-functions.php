@@ -18,6 +18,29 @@ if (!defined('ABSPATH')) {
  * 初始化餐廳會員系統
  */
 function byob_init_restaurant_member_system() {
+    error_log('=== BYOB 系統初始化開始 ===');
+    error_log('時間: ' . date('Y-m-d H:i:s'));
+    error_log('函數: byob_init_restaurant_member_system() 開始執行');
+    
+    // 檢查當前使用者
+    $user_id = get_current_user_id();
+    error_log('當前使用者ID: ' . $user_id);
+    
+    if ($user_id) {
+        $user = get_user_by('id', $user_id);
+        $roles = $user ? $user->roles : array();
+        error_log('使用者角色: ' . implode(', ', $roles));
+        
+        if (in_array('restaurant_owner', $roles)) {
+            error_log('使用者是餐廳業者，開始註冊端點');
+            byob_register_restaurant_endpoints();
+        } else {
+            error_log('使用者不是餐廳業者，跳過端點註冊');
+        }
+    } else {
+        error_log('沒有登入使用者');
+    }
+    
     // 註冊自定義使用者角色
     byob_register_restaurant_owner_role();
     
@@ -52,7 +75,8 @@ function byob_init_restaurant_member_system() {
     
     // 註冊自定義端點
     add_action('init', 'byob_register_restaurant_endpoints');
-
+    
+    error_log('=== BYOB 系統初始化結束 ===');
 }
 
 /**
@@ -1640,9 +1664,47 @@ function byob_handle_restaurant_profile_submit($restaurant_id) {
     
     // 更新 ACF 欄位
     if (function_exists('update_field')) {
+        // 基本資料欄位
         update_field('phone', sanitize_text_field($_POST['restaurant_phone']), $restaurant_id);
         update_field('address', sanitize_textarea_field($_POST['restaurant_address']), $restaurant_id);
         update_field('business_hours', sanitize_textarea_field($_POST['business_hours']), $restaurant_id);
+        
+        // 新增欄位：餐廳類型（核取方塊陣列）
+        if (isset($_POST['restaurant_type']) && is_array($_POST['restaurant_type'])) {
+            $restaurant_types = array_map('sanitize_text_field', $_POST['restaurant_type']);
+            update_field('restaurant_type', $restaurant_types, $restaurant_id);
+        }
+        
+        // 新增欄位：是否收開瓶費（選項按鈕）
+        if (isset($_POST['is_charged'])) {
+            update_field('is_charged', sanitize_text_field($_POST['is_charged']), $restaurant_id);
+        }
+        
+        // 新增欄位：開瓶費說明（單行文字）
+        if (isset($_POST['corkage_fee'])) {
+            update_field('corkage_fee', sanitize_text_field($_POST['corkage_fee']), $restaurant_id);
+        }
+        
+        // 新增欄位：酒器設備（核取方塊陣列）
+        if (isset($_POST['equipment']) && is_array($_POST['equipment'])) {
+            $equipment = array_map('sanitize_text_field', $_POST['equipment']);
+            update_field('equipment', $equipment, $restaurant_id);
+        }
+        
+        // 新增欄位：開酒服務（下拉選單）
+        if (isset($_POST['open_bottle_service'])) {
+            update_field('open_bottle_service', sanitize_text_field($_POST['open_bottle_service']), $restaurant_id);
+        }
+        
+        // 新增欄位：官方網站（URL）
+        if (isset($_POST['website'])) {
+            update_field('website', esc_url_raw($_POST['website']), $restaurant_id);
+        }
+        
+        // 新增欄位：社群連結（URL）
+        if (isset($_POST['social_links'])) {
+            update_field('social_links', esc_url_raw($_POST['social_links']), $restaurant_id);
+        }
     }
     
     // 處理 LOGO 上傳
@@ -1672,14 +1734,14 @@ function byob_handle_logo_upload($restaurant_id) {
     $file = $_FILES['restaurant_logo'];
     
     // 驗證檔案類型
-    $allowed_types = array('image/jpeg', 'image/png', 'image/gif');
+    $allowed_types = array('image/jpeg', 'image/png', 'image/webp', 'image/bmp', 'image/tiff');
     if (!in_array($file['type'], $allowed_types)) {
-        return new WP_Error('invalid_type', '只支援 JPG、PNG、GIF 格式的圖片');
+        return new WP_Error('invalid_type', '只支援 JPG、PNG 及其他常見圖片格式');
     }
     
-    // 驗證檔案大小（2MB）
-    if ($file['size'] > 2 * 1024 * 1024) {
-        return new WP_Error('file_too_large', '檔案大小不能超過 2MB');
+    // 驗證檔案大小（1MB）
+    if ($file['size'] > 1 * 1024 * 1024) {
+        return new WP_Error('file_too_large', '檔案大小不能超過 1MB');
     }
     
     // 準備上傳參數
@@ -1688,7 +1750,9 @@ function byob_handle_logo_upload($restaurant_id) {
         'mimes' => array(
             'jpg|jpeg' => 'image/jpeg',
             'png' => 'image/png',
-            'gif' => 'image/gif'
+            'webp' => 'image/webp',
+            'bmp' => 'image/bmp',
+            'tiff|tif' => 'image/tiff'
         )
     );
     
@@ -1729,11 +1793,62 @@ function byob_handle_logo_upload($restaurant_id) {
  * 註冊餐廳相關端點
  */
 function byob_register_restaurant_endpoints() {
+    // 添加診斷日誌
+    error_log('=== BYOB 診斷開始 ===');
+    error_log('時間: ' . date('Y-m-d H:i:s'));
+    error_log('函數: byob_register_restaurant_endpoints() 開始執行');
+    
     // 註冊自定義端點
     add_rewrite_endpoint('restaurant-profile', EP_ROOT | EP_PAGES);
     add_rewrite_endpoint('restaurant-photos', EP_ROOT | EP_PAGES);
     add_rewrite_endpoint('restaurant-menu', EP_ROOT | EP_PAGES);
+    
+    error_log('端點註冊完成，準備刷新重寫規則');
+    
+    // 強制刷新重寫規則
+    flush_rewrite_rules();
+    
+    error_log('重寫規則已刷新');
+    error_log('=== BYOB 診斷結束 ===');
+}
+
+/**
+ * 檢查重寫規則
+ */
+function byob_check_rewrite_rules() {
+    error_log('=== BYOB 重寫規則檢查 ===');
+    
+    // 獲取所有重寫規則
+    $rules = get_option('rewrite_rules');
+    error_log('總重寫規則數量: ' . count($rules));
+    
+    // 檢查我們的端點是否存在
+    $our_endpoints = array(
+        'restaurant-profile' => false,
+        'restaurant-photos' => false,
+        'restaurant-menu' => false
+    );
+    
+    foreach ($rules as $rule => $rewrite) {
+        foreach ($our_endpoints as $endpoint => $found) {
+            if (strpos($rule, $endpoint) !== false) {
+                $our_endpoints[$endpoint] = true;
+                error_log('找到端點: ' . $endpoint . ' -> ' . $rule);
+            }
+        }
+    }
+    
+    // 報告結果
+    foreach ($our_endpoints as $endpoint => $found) {
+        $status = $found ? '✅ 已註冊' : '❌ 未註冊';
+        error_log($endpoint . ': ' . $status);
+    }
+    
+    error_log('=== BYOB 重寫規則檢查結束 ===');
 }
 
 // 初始化系統
-add_action('init', 'byob_init_restaurant_member_system'); 
+add_action('init', 'byob_init_restaurant_member_system');
+
+// 在 wp_loaded 鉤子中檢查重寫規則（確保所有鉤子都已註冊）
+add_action('wp_loaded', 'byob_check_rewrite_rules'); 
