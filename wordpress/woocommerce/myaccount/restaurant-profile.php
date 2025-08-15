@@ -98,6 +98,14 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
     
     echo '<p style="color: #6c757d; margin: 5px 0;">餐廳 ID: ' . $restaurant_id . '</p>';
     echo '<p style="color: #6c757d; margin: 5px 0;">餐廳標題: ' . esc_html($restaurant->post_title) . '</p>';
+    
+    // 添加權限檢查除錯資訊
+    $restaurant_owner_id = get_post_meta($restaurant_id, '_restaurant_owner_id', true);
+    echo '<p style="color: #6c757d; margin: 5px 0;">餐廳擁有者 ID: ' . $restaurant_owner_id . '</p>';
+    echo '<p style="color: #6c757d; margin: 5px 0;">當前使用者 ID: ' . $user_id . '</p>';
+    echo '<p style="color: #6c757d; margin: 5px 0;">使用者角色: ' . implode(', ', $user->roles) . '</p>';
+    echo '<p style="color: ' . ($restaurant_owner_id == $user_id ? '#28a745' : '#dc3545') . '; margin: 5px 0;">權限檢查: ' . ($restaurant_owner_id == $user_id ? '✅ 有權限' : '❌ 無權限') . '</p>';
+    
     echo '</div>';
 }
 
@@ -106,31 +114,158 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_restaurant_profile')
     byob_handle_restaurant_profile_submit($restaurant_id);
 }
 
+// 處理 LOGO 刪除
+if (isset($_POST['action']) && $_POST['action'] === 'delete_restaurant_logo') {
+    $delete_restaurant_id = intval($_POST['restaurant_id']);
+    
+    // 添加除錯日誌
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('BYOB LOGO 刪除: 開始處理');
+        error_log('BYOB LOGO 刪除: 餐廳 ID = ' . $restaurant_id . ' (類型: ' . gettype($restaurant_id) . ')');
+        error_log('BYOB LOGO 刪除: 提交的餐廳 ID = ' . $delete_restaurant_id . ' (類型: ' . gettype($delete_restaurant_id) . ')');
+        error_log('BYOB LOGO 刪除: 使用者 ID = ' . $user_id);
+        error_log('BYOB LOGO 刪除: 使用者角色 = ' . implode(', ', $user->roles));
+    }
+    
+    // 檢查權限 - 餐廳業者應該能編輯自己的餐廳
+    if ($delete_restaurant_id == $restaurant_id) { // 使用 == 而不是 === 來處理類型差異
+        // 直接檢查餐廳的擁有者 ID
+        $restaurant_owner_id = get_post_meta($restaurant_id, '_restaurant_owner_id', true);
+        $user_has_restaurant = ($restaurant_owner_id == $user_id);
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('BYOB LOGO 刪除: 餐廳擁有者 ID = ' . $restaurant_owner_id);
+            error_log('BYOB LOGO 刪除: 當前使用者 ID = ' . $user_id);
+            error_log('BYOB LOGO 刪除: 使用者擁有此餐廳 = ' . ($user_has_restaurant ? 'true' : 'false'));
+        }
+        
+        if ($user_has_restaurant) {
+        // 獲取當前 LOGO ID
+        $current_logo_id = get_post_meta($restaurant_id, '_restaurant_logo', true);
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('BYOB LOGO 刪除: 當前 LOGO ID = ' . $current_logo_id);
+        }
+        
+        if ($current_logo_id) {
+            // 刪除媒體庫中的附件
+            $delete_result = wp_delete_attachment($current_logo_id, true);
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('BYOB LOGO 刪除: wp_delete_attachment 結果 = ' . ($delete_result ? '成功' : '失敗'));
+            }
+            
+            if ($delete_result) {
+                // 刪除餐廳的 LOGO meta
+                $meta_delete_result = delete_post_meta($restaurant_id, '_restaurant_logo');
+                
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('BYOB LOGO 刪除: delete_post_meta 結果 = ' . ($meta_delete_result ? '成功' : '失敗'));
+                }
+                
+                // 清除當前頁面的 LOGO 資料，避免重定向
+                $current_logo_id = '';
+                $current_logo_url = '';
+                
+                // 設置成功訊息
+                $logo_delete_message = 'logo_deleted';
+                
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('BYOB LOGO 刪除: 成功完成');
+                }
+            } else {
+                // 設置錯誤訊息
+                $logo_delete_message = 'logo_delete_error';
+                
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('BYOB LOGO 刪除: 附件刪除失敗');
+                }
+            }
+        } else {
+            // 沒有 LOGO 可刪除
+            $logo_delete_message = 'no_logo';
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('BYOB LOGO 刪除: 沒有 LOGO 可刪除');
+            }
+        }
+        } else {
+            // 使用者沒有此餐廳的權限
+            $logo_delete_message = 'permission_denied';
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('BYOB LOGO 刪除: 使用者沒有此餐廳的權限');
+                error_log('BYOB LOGO 刪除: 使用者餐廳列表: ' . print_r(array_map(function($r) { return $r->ID; }, $user_restaurants), true));
+            }
+        }
+    } else {
+        // 餐廳 ID 不匹配
+        $logo_delete_message = 'permission_denied';
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('BYOB LOGO 刪除: 餐廳 ID 不匹配');
+            error_log('BYOB LOGO 刪除: 提交的餐廳 ID = ' . $delete_restaurant_id . ', 當前餐廳 ID = ' . $restaurant_id);
+        }
+    }
+}
+
 // 顯示成功/失敗訊息
+$message_to_show = '';
+
+// 檢查 GET 參數中的訊息
 if (isset($_GET['message'])) {
-    $message = sanitize_text_field($_GET['message']);
-    if ($message === 'success') {
+    $message_to_show = sanitize_text_field($_GET['message']);
+}
+
+// 檢查 LOGO 刪除訊息
+if (isset($logo_delete_message)) {
+    $message_to_show = $logo_delete_message;
+}
+
+// 顯示訊息
+if ($message_to_show) {
+    if ($message_to_show === 'success') {
         echo '<div style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 20px; border-radius: 8px; margin-bottom: 30px; text-align: center;">';
         echo '<h3 style="margin: 0 0 10px 0;">✅ 更新成功！</h3>';
         echo '<p style="margin: 0;">餐廳資料已成功更新。</p>';
         echo '</div>';
-    } elseif ($message === 'error') {
+    } elseif ($message_to_show === 'error') {
         echo '<div style="background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 20px; border-radius: 8px; margin-bottom: 30px; text-align: center;">';
         echo '<h3 style="margin: 0 0 10px 0;">❌ 更新失敗</h3>';
         echo '<p style="margin: 0;">請檢查輸入資料是否正確。</p>';
         echo '</div>';
-    } elseif ($message === 'partial_success') {
+    } elseif ($message_to_show === 'partial_success') {
         echo '<div style="background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; padding: 20px; border-radius: 8px; margin-bottom: 30px; text-align: center;">';
         echo '<h3 style="margin: 0 0 10px 0;">⚠️ 部分更新成功</h3>';
         echo '<p style="margin: 0;">基本資料已更新，但 LOGO 上傳失敗。</p>';
+        echo '</div>';
+    } elseif ($message_to_show === 'logo_deleted') {
+        echo '<div style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 20px; border-radius: 8px; margin-bottom: 30px; text-align: center;">';
+        echo '<h3 style="margin: 0 0 10px 0;">✅ LOGO 已刪除</h3>';
+        echo '<p style="margin: 0;">餐廳 LOGO 已成功刪除。</p>';
+        echo '</div>';
+    } elseif ($message_to_show === 'logo_delete_error') {
+        echo '<div style="background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 20px; border-radius: 8px; margin-bottom: 30px; text-align: center;">';
+        echo '<h3 style="margin: 0 0 10px 0;">❌ LOGO 刪除失敗</h3>';
+        echo '<p style="margin: 0;">刪除 LOGO 時發生錯誤，請稍後再試。</p>';
+        echo '</div>';
+    } elseif ($message_to_show === 'no_logo') {
+        echo '<div style="background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; padding: 20px; border-radius: 8px; margin-bottom: 30px; text-align: center;">';
+        echo '<h3 style="margin: 0 0 10px 0;">⚠️ 沒有 LOGO 可刪除</h3>';
+        echo '<p style="margin: 0;">目前沒有設定 LOGO。</p>';
+        echo '</div>';
+    } elseif ($message_to_show === 'permission_denied') {
+        echo '<div style="background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 20px; border-radius: 8px; margin-bottom: 30px; text-align: center;">';
+        echo '<h3 style="margin: 0 0 10px 0;">❌ 權限不足</h3>';
+        echo '<p style="margin: 0;">您沒有權限執行此操作。</p>';
         echo '</div>';
     }
 }
 
 // 頁面標題和說明
-echo '<div class="restaurant-profile-header" style="text-align: center; margin-bottom: 30px;">';
-echo '<h1 style="color: #333; margin-bottom: 10px;">餐廳資料編輯</h1>';
-echo '<p style="color: #666; font-size: 16px;">編輯您的餐廳基本資料和 LOGO</p>';
+echo '<div class="restaurant-profile-header" style="margin-bottom: 30px;">';
+echo '<h1 style="color: #333; margin-bottom: 10px; text-align: center;">餐廳資料編輯</h1>';
+echo '<p style="color: #666; font-size: 16px; text-align: left;">編輯您的餐廳基本資料和 LOGO</p>';
 echo '</div>';
 
 // 主要表單
@@ -152,7 +287,7 @@ echo '</div>';
 
 // 餐廳類型
 echo '<div class="form-group" style="margin-bottom: 25px;">';
-echo '<label style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">餐廳類型 <span style="color: #dc3545;">(最多選擇3個)</span></label>';
+echo '<label style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">餐廳類型</label>';
 echo '<div class="checkbox-group" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-top: 15px;">';
 
 $restaurant_types = array(
@@ -192,28 +327,25 @@ echo '</div>';
 echo '<div class="form-group" style="margin-bottom: 25px;">';
 echo '<label for="restaurant_description" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">其他BYOB規定或備註</label>';
 echo '<textarea id="restaurant_description" name="restaurant_description" rows="5" placeholder="請描述您的餐廳特色、風格、服務等..." style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; resize: vertical; transition: border-color 0.3s;">' . esc_textarea($restaurant->post_content) . '</textarea>';
-echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">讓顧客更了解您的餐廳</p>';
 echo '</div>';
 
 // 聯絡電話
 echo '<div class="form-group" style="margin-bottom: 25px;">';
 echo '<label for="restaurant_phone" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">聯絡電話</label>';
 echo '<input type="tel" id="restaurant_phone" name="restaurant_phone" value="' . esc_attr(get_field('phone', $restaurant_id)) . '" placeholder="例：02-1234-5678" style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; transition: border-color 0.3s;">';
-echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">顧客可以透過此電話聯絡您</p>';
 echo '</div>';
 
 // 地址
 echo '<div class="form-group" style="margin-bottom: 25px;">';
 echo '<label for="restaurant_address" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">地址</label>';
 echo '<textarea id="restaurant_address" name="restaurant_address" rows="3" placeholder="請輸入完整地址..." style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; resize: vertical; transition: border-color 0.3s;">' . esc_textarea(get_field('address', $restaurant_id)) . '</textarea>';
-echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">詳細地址有助於顧客找到您的餐廳</p>';
+echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">請填完整地址，包括縣市及行政區，方便您被顧客搜尋</p>';
 echo '</div>';
 
 // 營業時間
 echo '<div class="form-group" style="margin-bottom: 25px;">';
 echo '<label for="business_hours" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">營業時間</label>';
 echo '<textarea id="business_hours" name="business_hours" rows="3" placeholder="例：週一至週五 11:00-22:00，週六日 10:00-23:00" style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; resize: vertical; transition: border-color 0.3s;">' . esc_textarea(get_field('business_hours', $restaurant_id)) . '</textarea>';
-echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">清楚標示營業時間，避免顧客白跑一趟</p>';
 echo '</div>';
 
 // 是否收開瓶費
@@ -240,7 +372,7 @@ echo '</div>';
 echo '<div class="form-group" style="margin-bottom: 25px;">';
 echo '<label for="corkage_fee" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">開瓶費說明</label>';
 echo '<input type="text" id="corkage_fee" name="corkage_fee" value="' . esc_attr(get_field('corkage_fee', $restaurant_id)) . '" placeholder="例：每瓶酌收100元，或依酒款而定" style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; transition: border-color 0.3s;">';
-echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">請詳細說明您的開瓶費政策</p>';
+echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">您的開瓶費金額，或其他說明</p>';
 echo '</div>';
 
 // 酒器設備
@@ -318,7 +450,7 @@ echo '<div class="form-group" style="margin-bottom: 25px;">';
 echo '<label style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">官方網站/社群連結</label>';
 echo '<div style="display: flex; gap: 15px;">';
 echo '<div style="flex: 1;">';
-echo '<label for="website" style="display: block; margin-bottom: 8px; font-weight: normal; color: #666; font-size: 14px;">官方網站</label>';
+echo '<label for="website" style="display: block; margin-bottom: 8px; font-weight: normal; color: #666; font-size: 14px;">官網或訂位網址</label>';
 echo '<input type="url" id="website" name="website" value="' . esc_attr(get_field('website', $restaurant_id)) . '" placeholder="例：https://www.example.com" style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 6px; font-size: 14px; transition: border-color 0.3s;">';
 echo '</div>';
 echo '<div style="flex: 1;">';
@@ -337,29 +469,45 @@ echo '<h3 style="color: #333; border-bottom: 3px solid rgba(139, 38, 53, 0.8); p
 
 // 顯示當前 LOGO
 if ($current_logo_url) {
-    echo '<div class="current-logo" style="margin-bottom: 25px; text-align: center;">';
+    echo '<div class="current-logo" style="margin-bottom: 25px;">';
     echo '<p style="font-weight: bold; margin-bottom: 15px; color: #333;">當前 LOGO：</p>';
-    echo '<img src="' . esc_url($current_logo_url) . '" alt="當前 LOGO" style="max-width: 200px; max-height: 200px; border: 3px solid #ddd; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">';
+    echo '<div class="logo-display-area" style="width: 300px; height: 300px; border: 3px solid #ddd; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); overflow: hidden; display: flex; align-items: center; justify-content: center;">';
+    echo '<img src="' . esc_url($current_logo_url) . '" alt="當前 LOGO" class="logo-image" style="max-width: 100%; max-height: 100%; object-fit: contain; transition: all 0.3s;">';
+    echo '</div>';
+    
+    // 簡化的說明文字
+    echo '<div class="logo-display-info" style="margin-top: 15px; text-align: center;">';
+    
+    // 刪除 LOGO 按鈕
+    echo '<div class="logo-actions" style="border-top: 1px solid #e9ecef; padding-top: 15px;">';
+    echo '<button type="button" onclick="deleteLogo()" style="background-color: #dc3545; color: white; padding: 8px 16px; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; font-weight: normal; transition: all 0.3s;">🗑️ 刪除 LOGO</button>';
+    echo '<p style="font-size: 12px; color: #999; margin-top: 8px;">點擊後會永久刪除當前 LOGO</p>';
+    echo '</div>';
+    echo '</div>';
     echo '</div>';
 } else {
-    echo '<div class="no-logo" style="margin-bottom: 25px; text-align: center; padding: 30px; background: #f8f9fa; border: 2px dashed #dee2e6; border-radius: 10px;">';
-    echo '<p style="color: #6c757d; margin: 0;">目前沒有設定 LOGO</p>';
+    echo '<div class="no-logo" style="margin-bottom: 25px;">';
+    echo '<p style="font-weight: bold; margin-bottom: 15px; color: #333;">目前沒有設定 LOGO</p>';
+    echo '<div class="logo-display-area" style="width: 300px; height: 300px; border: 2px dashed #dee2e6; border-radius: 10px; background: #f8f9fa; display: flex; align-items: center; justify-content: center;">';
+    echo '<p style="color: #6c757d; margin: 0;">請上傳 LOGO 或餐廳照片</p>';
+    echo '</div>';
     echo '</div>';
 }
 
 // LOGO 上傳欄位
 echo '<div class="form-group" style="margin-bottom: 25px;">';
-echo '<label for="restaurant_logo" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">上傳新 LOGO</label>';
-echo '<input type="file" id="restaurant_logo" name="restaurant_logo" accept="image/jpeg,image/png,image/gif" style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; background: white; transition: border-color 0.3s;">';
-echo '<div style="margin-top: 10px; padding: 15px; background: #e9ecef; border-radius: 8px;">';
-echo '<p style="font-size: 14px; color: #495057; margin: 0 0 8px 0;"><strong>📋 上傳須知：</strong></p>';
-echo '<ul style="font-size: 14px; color: #495057; margin: 0; padding-left: 20px;">';
-echo '<li>支援格式：JPG、PNG 及其他常見圖片格式</li>';
-echo '<li>檔案大小限制：1MB</li>';
-echo '<li>建議尺寸：300x300 像素以上</li>';
-echo '<li>上傳後會自動替換現有 LOGO</li>';
-echo '</ul>';
-echo '</div>';
+    echo '<label for="restaurant_logo" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">上傳 LOGO或具代表性的餐廳照片(選擇檔案之後按更新餐廳資料)</label>';
+echo '<input type="file" id="restaurant_logo" name="restaurant_logo" accept="image/jpeg,image/png,image/webp,image/svg+xml" style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; background: white; transition: border-color 0.3s;">';
+      echo '<div style="margin-top: 10px; padding: 15px; background: #e9ecef; border-radius: 8px;">';
+      echo '<p style="font-size: 14px; color: #495057; margin: 0 0 8px 0;"><strong>📋 上傳須知：</strong></p>';
+      echo '<ul style="font-size: 14px; color: #495057; margin: 0; padding-left: 20px;">';
+      echo '<li><strong>建議上傳正方形或接近正方形的圖片檔案，以達到最佳顯示效果</strong></li>';
+      echo '<li>支援格式：JPG/JPEG、PNG、WebP、SVG</li>';
+      echo '<li>檔案大小限制：1MB</li>';
+      echo '<li>建議尺寸：300x300 像素以上</li>';
+      echo '<li>上傳後會自動替換現有 LOGO</li>';
+      echo '</ul>';
+      echo '</div>';
 echo '</div>';
 
 echo '</div>';
@@ -399,6 +547,13 @@ echo '<style>
 .checkbox-group input[type="checkbox"]:checked + span {
     color: rgba(139, 38, 53, 0.8);
     font-weight: bold;
+}
+
+/* LOGO 顯示樣式 */
+.logo-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain; /* 預設為保持比例模式 */
 }
 </style>';
 
@@ -458,5 +613,34 @@ function toggleOtherNote() {
 document.addEventListener(\'DOMContentLoaded\', function() {
     toggleOtherNote();
 });
+
+
+
+// 刪除 LOGO 功能
+function deleteLogo() {
+    if (confirm(\'確定要刪除這個 LOGO 嗎？刪除後將無法恢復。\')) {
+        // 創建一個隱藏的表單來提交刪除請求
+        var form = document.createElement(\'form\');
+        form.method = \'POST\';
+        form.style.display = \'none\';
+        
+        var actionInput = document.createElement(\'input\');
+        actionInput.type = \'hidden\';
+        actionInput.name = \'action\';
+        actionInput.value = \'delete_restaurant_logo\';
+        
+        var restaurantIdInput = document.createElement(\'input\');
+        restaurantIdInput.type = \'hidden\';
+        restaurantIdInput.name = \'restaurant_id\';
+        restaurantIdInput.value = \'' . esc_attr($restaurant_id) . '\';
+        
+        form.appendChild(actionInput);
+        form.appendChild(restaurantIdInput);
+        document.body.appendChild(form);
+        
+        // 提交表單
+        form.submit();
+    }
+}
 </script>';
 ?>
