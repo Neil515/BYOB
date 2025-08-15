@@ -31,14 +31,39 @@
     <div class="restaurant-card">
       <!-- 加入圖片顯示 -->
       <?php 
-      $restaurant_photo = get_field('restaurant_photo');
-      if ($restaurant_photo): ?>
-        <div class="restaurant-photo">
-          <img src="<?php echo esc_url($restaurant_photo['url']); ?>" 
-               alt="<?php echo esc_attr($restaurant_photo['alt']); ?>"
-               class="restaurant-image">
-        </div>
-      <?php endif; ?>
+      // 獲取兩個 LOGO 的上傳時間，選擇最新的
+      $admin_logo = get_field('restaurant_photo', get_the_ID());
+      $user_logo_id = get_post_meta(get_the_ID(), '_restaurant_logo', true);
+      
+      $logo_id = null;
+      
+      if ($admin_logo && is_array($admin_logo)) {
+        $admin_logo_id = $admin_logo['ID'];
+        $admin_time = get_post_modified_time('U', false, $admin_logo_id);
+        
+        if ($user_logo_id) {
+          $user_time = get_post_modified_time('U', false, $user_logo_id);
+          // 選擇最新的
+          $logo_id = ($admin_time > $user_time) ? $admin_logo_id : $user_logo_id;
+        } else {
+          $logo_id = $admin_logo_id;
+        }
+      } else {
+        $logo_id = $user_logo_id;
+      }
+      
+      if ($logo_id): 
+        // 強制讀取原始圖片，避免使用任何預處理的尺寸
+        $logo_url = wp_get_attachment_url($logo_id);
+        if ($logo_url): ?>
+          <div class="restaurant-photo">
+            <img src="<?php echo esc_url($logo_url); ?>" 
+                 alt="<?php echo esc_attr(get_the_title()); ?> LOGO"
+                 class="restaurant-image"
+                 style="object-fit: contain; max-width: 100%; height: auto;">
+          </div>
+        <?php endif;
+      endif; ?>
       
       <h2 class="restaurant-title-line">
         <a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
