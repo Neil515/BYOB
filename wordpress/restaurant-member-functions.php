@@ -1783,9 +1783,22 @@ function byob_handle_logo_upload($restaurant_id) {
         return $attachment_id;
     }
     
-    // 生成縮圖
+    // 生成縮圖 - 禁用自動裁切，保持原始比例
     require_once(ABSPATH . 'wp-admin/includes/image.php');
+    
+    // 自定義圖片尺寸，避免裁切
+    add_filter('wp_image_editors', function($editors) {
+        return array('WP_Image_Editor_GD', 'WP_Image_Editor_Imagick');
+    });
+    
+    // 生成附件元數據，但不生成預設的 thumbnail 尺寸
     $attachment_data = wp_generate_attachment_metadata($attachment_id, $uploaded_file['file']);
+    
+    // 移除預設的 thumbnail 尺寸，避免裁切
+    if (isset($attachment_data['sizes']['thumbnail'])) {
+        unset($attachment_data['sizes']['thumbnail']);
+    }
+    
     wp_update_attachment_metadata($attachment_id, $attachment_data);
     
     // 更新餐廳的 LOGO meta
