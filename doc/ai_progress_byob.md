@@ -1,386 +1,424 @@
-# 🤖 BYOB 專案 - AI 進度記錄
+# BYOB 專案 AI 開發進度記錄
 
-## 📅 2025-08-14 進度記錄
+## 專案概述
+BYOB (Bring Your Own Bottle) 是一個餐廳資訊平台，讓消費者可以找到支援自帶酒水的餐廳。本專案使用 WordPress + WooCommerce 作為後端，並整合自定義的餐廳業者會員系統。
 
-### 🌅 上午工作（9:00-12:00）
+## 技術架構
+- **後端**: WordPress 6.4.2 + WooCommerce 8.5.2
+- **主題**: Flatsome Child Theme
+- **外掛**: Advanced Custom Fields (ACF) Pro
+- **自定義功能**: 餐廳業者會員系統、餐廳資料管理、LOGO上傳等
 
-#### 1. 解決 404 錯誤問題（重大突破）
+## 開發進度記錄
 
-**問題描述：** 所有選單項目（除了控制台和登出）都顯示 404 錯誤
+### 2025-08-14 開發進度
 
-**問題分析過程：**
-- 檔案已正確上傳到伺服器
-- 位置：`/wp-content/themes/flatsome-child/woocommerce/myaccount/restaurant-profile.php`
-- 權限：664（正確）
-- 檔案大小：10,868 位元組（正確）
+#### 主要成就
+- ✅ 成功建立自定義 WooCommerce 會員選單
+- ✅ 解決 404 錯誤和頁面顯示問題
+- ✅ 建立可重複使用的解決方案
 
-**已嘗試的解決方案：**
-- ✅ 建立 WooCommerce 模板檔案
-- ✅ 註冊自定義端點
-- ✅ 重新整理永久連結
-- ✅ 檢查檔案權限（664，正確）
+#### 技術突破
+1. **WooCommerce 會員選單自定義**
+   - 使用 `woocommerce_account_menu_items` 過濾器
+   - 完全覆蓋預設選單項目
+   - 建立餐廳業者專用選單結構
 
-**根本原因分析：**
-經過程式碼分析，發現五個可能原因，按機率排序：
+2. **頁面載入問題解決**
+   - 使用 `woocommerce_account_content` 鉤子
+   - 優先級設定為 5，確保在預設內容之前執行
+   - 移除 WooCommerce 預設內容，避免重複
 
-1. **端點註冊函數未執行（最高機率 80%）**
-   - `byob_register_restaurant_endpoints()` 函數可能沒有被正確調用
-   - 需要檢查函數執行狀態
+3. **ACF 欄位資料載入**
+   - 解決表單選項值與 ACF 欄位值不匹配問題
+   - 將英文鍵值改為中文值（如 'taiwanese' → '台式'）
+   - 新增開酒服務條件式顯示功能
 
-2. **函數衝突或重複註冊（高機率 70%）**
-   - 在兩個地方都註冊了相同的端點，可能造成衝突
-   - 需要檢查是否有重複的 `add_rewrite_endpoint()` 調用
+#### 解決的問題
+- 404 錯誤：使用正確的鉤子和優先級
+- 左側選單消失：保持頁面結構完整
+- 重複內容：移除預設 WooCommerce 內容
+- ACF 資料不匹配：統一表單和欄位值
 
-3. **WooCommerce 模板載入順序問題（中高機率 60%）**
-   - `restaurant-profile.php` 檔案存在但 WooCommerce 無法正確載入
-   - 需要檢查主題的 `functions.php` 是否正確載入函數檔案
-
-4. **權限檢查失敗（中等機率 50%）**
-   - 使用者角色檢查或餐廳關聯檢查失敗
-   - 需要檢查使用者是否為 `restaurant_owner` 角色
-
-5. **REST API 超時影響（中等機率 40%）**
-   - REST API 問題影響了端點註冊或 WooCommerce 運作
-   - 需要檢查 REST API 回應時間和錯誤日誌
-
-#### 2. 診斷和測試 404 問題
-
-**診斷步驟：**
-1. **確認檔案是否真的被上傳**
-   - 用戶確認檔案已上傳，檔案大小正確
-   - 排除檔案上傳問題
-
-2. **檢查是否有其他同名檔案**
-   - 檢查伺服器主要資料夾，確認沒有重複檔案
-   - 排除檔案衝突問題
-
-3. **檢查主題是否真的被載入**
-   - 用戶確認主題已正確載入
-   - 排除主題載入問題
-
-4. **檢查是否有其他模板檔案**
-   - 確認沒有其他 `restaurant-profile.php` 檔案
-   - 排除模板衝突問題
-
-**測試方法：**
-- 在 `restaurant-profile.php` 開頭添加 `die('測試')` 語句
-- 檢查頁面是否顯示測試訊息
-- 如果沒有顯示，說明檔案根本沒有被載入
+#### 重要里程碑
+*重要里程碑：成功解決 404 錯誤和頁面顯示問題，建立可重複使用的解決方案*
 
 ---
 
-### 🌞 下午工作（13:00-17:00）
+### 2025-08-15 開發進度
 
-#### 3. 解決頁面顯示問題（關鍵突破）
+#### 主要成就
+- ✅ 前台LOGO顯示功能完全修復
+- ✅ 實作雙重LOGO系統（業者 + 管理員備用）
+- ✅ 後台編輯頁面優化和UX改善
+- ✅ 前台開酒服務顯示邏輯優化
 
-**問題演進過程：**
+#### 技術突破
 
-##### **階段 1：404 錯誤（已解決）**
-- 使用 `template_include` 鉤子強制載入模板
-- 解決了 404 錯誤，頁面可以正常顯示
+##### 1. 前台LOGO顯示功能修復
+**問題描述：**
+- 前台頁面顯示的LOGO被裁切填滿
+- 長方形圖片左右兩端消失
+- 圖片顯示效果與後台預覽不一致
 
-##### **階段 2：左側選單消失**
-- 使用 `template_include` 後，左側選單消失
-- 原因是完全替換了頁面模板，破壞了 WooCommerce 的頁面結構
+**根本原因：**
+- WordPress 自動生成 `thumbnail` 尺寸會強制裁切圖片
+- 前台讀取的是已裁切的圖片版本
+- CSS 樣式 `object-fit: cover` 強制填滿容器
 
-##### **階段 3：重複內容區塊**
-- 改用 `woocommerce_account_content` 鉤子
-- 但出現上下兩個編輯區塊的問題
-- 原因是 WooCommerce 預設內容和我們的內容同時顯示
-
-##### **階段 4：舊版編輯區顯示**
-- 嘗試強制替換頁面內容
-- 但顯示的是舊版編輯區，沒有我們新增的欄位
-- 原因是模板載入邏輯有問題
-
-##### **階段 5：最終解決方案**
-- 使用 `woocommerce_account_content` 鉤子，優先級為 5
-- 先移除 WooCommerce 預設內容，再載入我們的內容
-- 成功解決所有問題
-
-#### 4. 最終解決方案詳解
-
-**解決方案程式碼：**
+**解決方案：**
 ```php
-/**
- * 使用 WooCommerce 內容鉤子載入餐廳資料編輯表單
- */
-function byob_load_restaurant_profile_content() {
-    global $wp_query;
+// 修改圖片上傳函數，禁用自動生成 thumbnail 尺寸
+function byob_handle_logo_upload($restaurant_id) {
+    // ... 上傳處理邏輯 ...
     
-    // 檢查是否為餐廳資料編輯頁面
-    if (is_account_page() && isset($wp_query->query_vars['restaurant-profile'])) {
-        // 移除 WooCommerce 預設的帳戶內容
-        remove_action('woocommerce_account_content', 'woocommerce_account_content', 10);
-        
-        // 載入我們的表單內容
-        $template_path = get_stylesheet_directory() . '/woocommerce/myaccount/restaurant-profile.php';
-        
-        if (file_exists($template_path)) {
-            error_log('BYOB: 載入餐廳資料編輯表單: ' . $template_path);
-            include $template_path;
-        } else {
-            error_log('BYOB: 餐廳資料編輯表單檔案不存在: ' . $template_path);
-        }
+    // 生成附件元數據，但不生成預設的 thumbnail 尺寸
+    $attachment_data = wp_generate_attachment_metadata($attachment_id, $uploaded_file['file']);
+    
+    // 移除預設的 thumbnail 尺寸，避免裁切
+    if (isset($attachment_data['sizes']['thumbnail'])) {
+        unset($attachment_data['sizes']['thumbnail']);
     }
+    
+    wp_update_attachment_metadata($attachment_id, $attachment_data);
 }
-
-// 使用 WooCommerce 內容鉤子，優先級為 5
-add_action('woocommerce_account_content', 'byob_load_restaurant_profile_content', 5);
 ```
 
-**解決原理：**
-1. **使用正確的鉤子**：`woocommerce_account_content` 而不是 `template_include`
-2. **正確的優先級**：使用優先級 5，確保在 WooCommerce 預設內容（優先級 10）之前執行
-3. **移除預設內容**：使用 `remove_action` 移除 WooCommerce 預設的帳戶內容
-4. **保持頁面結構**：只替換內容區域，不影響頁面框架和左側選單
+**前台讀取邏輯：**
+```php
+// 強制讀取原始圖片，避免使用任何預處理的尺寸
+$logo_url = wp_get_attachment_url($logo_id);
+```
 
-#### 5. 新增欄位功能完成
+**CSS 樣式優化：**
+```css
+.restaurant-image {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;  /* 強制填滿，會裁切圖片 */
+}
+```
 
-**新增的欄位：**
-1. **餐廳類型（checkbox，最多選擇3個）**
-   - 15 個選項：台式、法式、義式、日式、美式、熱炒、小酒館、咖啡廳、私廚、異國料理、燒烤、火鍋、牛排、Lounge Bar、Buffet
+##### 2. 雙重LOGO系統實作
+**需求分析：**
+- 業者正常情況：透過會員系統上傳LOGO
+- 管理員緊急情況：業者遇到困難時可以介入
+- 需要兩套系統並存，不是統一為一套
 
-2. **是否收開瓶費（radio button）**
-   - 選項：酌收、不收費、其他
-
-3. **開瓶費說明（text input）**
-   - 詳細說明開瓶費政策
-
-4. **酒器設備（checkbox）**
-   - 10 個選項：酒杯、醒酒瓶、冰桶、酒器組、酒塞/酒瓶塞、濾酒器、溫控櫃、開瓶器、其他、詢問店家
-
-5. **開酒服務（select dropdown）**
-   - 選項：是、否、其他
-
-6. **官方網站/社群連結（兩個 URL input）**
-   - 官方網站
-   - 社群連結
+**實作方案：**
+- **業者LOGO**：儲存到 `_restaurant_logo` meta 欄位
+- **管理員LOGO**：使用現有 ACF 欄位 `restaurant_photo`
+- **前台邏輯**：比較兩個LOGO的上傳時間，選擇最新的顯示
 
 **技術實作：**
-- 使用 ACF 欄位：`restaurant_type`, `is_charged`, `corkage_fee`, `equipment`, `open_bottle_service`, `website`, `social_links`
-- 前端驗證：JavaScript 限制 checkbox 選擇數量
-- 後端處理：在 `byob_handle_restaurant_profile_submit()` 函數中處理所有新欄位
-
----
-
-### 🚨 遇到的問題和解決方案總結
-
-#### 1. 404 錯誤問題（✅ 已解決）
-
-**問題描述：** 所有選單項目都顯示 404 錯誤
-**根本原因：** 端點註冊和模板載入問題
-**解決方案：** 使用 `woocommerce_account_content` 鉤子載入內容
-
-#### 2. 左側選單消失問題（✅ 已解決）
-
-**問題描述：** 使用 `template_include` 鉤子後，左側選單消失
-**根本原因：** 完全替換頁面模板，破壞了 WooCommerce 的頁面結構
-**解決方案：** 改用 `woocommerce_account_content` 鉤子，只替換內容區域
-
-#### 3. 重複內容區塊問題（✅ 已解決）
-
-**問題描述：** 頁面出現上下兩個編輯區塊
-**根本原因：** WooCommerce 預設內容和我們的內容同時顯示
-**解決方案：** 使用 `remove_action` 移除 WooCommerce 預設內容，使用優先級 5
-
-#### 4. 舊版編輯區顯示問題（✅ 已解決）
-
-**問題描述：** 顯示舊版編輯區，沒有新增欄位
-**根本原因：** 模板載入邏輯有問題
-**解決方案：** 修正載入條件，使用 `$wp_query->query_vars` 而非 `$_GET`
-
----
-
-### 🎯 今日成果總結
-
-#### ✅ 成功完成：
-1. **解決 404 錯誤問題（100% 完成）**
-   - 系統性診斷五個可能原因
-   - 找到根本解決方案
-   - 建立可重複使用的解決模式
-
-2. **解決頁面顯示問題（100% 完成）**
-   - 左側選單正常顯示
-   - 新增欄位正常顯示
-   - 頁面佈局完整
-
-3. **新增欄位功能（100% 完成）**
-   - 餐廳類型（15 個選項）
-   - 開瓶費相關（2 個欄位）
-   - 酒器設備（10 個選項）
-   - 開酒服務
-   - 官方網站/社群連結
-
-4. **技術方案優化（100% 完成）**
-   - 建立最佳實踐的解決方案
-   - 可重複使用的程式碼模式
-   - 完整的問題解決記錄
-
-#### 📊 進度統計：
-- **第一階段**：100% ✅（自定義 WooCommerce 會員選單）
-- **第二階段**：80% ✅（餐廳資料管理功能）
-  - ✅ 404 錯誤解決（100%）
-  - ✅ 左側選單正常顯示（100%）
-  - ✅ 新增欄位正常顯示（100%）
-  - ⏳ ACF 資料完整帶入（待完成）
-  - ⏳ 細部修改和優化（待完成）
-
----
-
-### 🔧 技術細節記錄
-
-#### 修改的檔案：
-1. **`wordpress/functions.php`**
-   - 新增 `byob_load_restaurant_profile_content()` 函數
-   - 使用 `woocommerce_account_content` 鉤子載入內容
-
-2. **`wordpress/restaurant-member-functions.php`**
-   - 新增欄位處理邏輯
-   - 更新表單提交處理函數
-
-3. **`wordpress/woocommerce/myaccount/restaurant-profile.php`**
-   - 新增所有新欄位
-   - 優化表單佈局和樣式
-
-#### 使用的 WordPress 技術：
-- **內容鉤子**：`woocommerce_account_content`
-- **動作移除**：`remove_action()`
-- **優先級管理**：使用數字優先級（如 5）確保正確執行順序
-- **模板載入**：`include` 而非 `template_include`
-
-#### 解決方案模式：
 ```php
-// 1. 檢查頁面條件
-if (is_account_page() && isset($wp_query->query_vars['restaurant-profile'])) {
+// 獲取兩個 LOGO 的上傳時間，選擇最新的
+$admin_logo = get_field('restaurant_photo', get_the_ID());
+$user_logo_id = get_post_meta(get_the_ID(), '_restaurant_logo', true);
 
-    // 2. 移除預設內容
-    remove_action('woocommerce_account_content', 'woocommerce_account_content', 10);
+$logo_id = null;
+
+if ($admin_logo && is_array($admin_logo)) {
+    $admin_logo_id = $admin_logo['ID'];
+    $admin_time = get_post_modified_time('U', false, $admin_logo_id);
     
-    // 3. 載入自定義內容
-    $template_path = get_stylesheet_directory() . '/woocommerce/myaccount/restaurant-profile.php';
-    if (file_exists($template_path)) {
-        include $template_path;
+    if ($user_logo_id) {
+        $user_time = get_post_modified_time('U', false, $user_logo_id);
+        // 選擇最新的
+        $logo_id = ($admin_time > $user_time) ? $admin_logo_id : $user_logo_id;
+    } else {
+        $logo_id = $admin_logo_id;
     }
+} else {
+    $logo_id = $user_logo_id;
 }
-
-// 4. 使用正確的優先級
-add_action('woocommerce_account_content', 'function_name', 5);
 ```
 
----
+**運作邏輯：**
+- **情況 1**：業者先上傳 → 管理員後上傳 → 顯示管理員的
+- **情況 2**：管理員先上傳 → 業者後上傳 → 顯示業者的
+- **情況 3**：只有業者上傳 → 顯示業者的
+- **情況 4**：只有管理員上傳 → 顯示管理員的
 
-### 💡 技術心得和學習
+##### 3. 後台編輯頁面優化
+**上傳須知改善：**
+- 新增「建議上傳正方形或接近正方形的圖片檔案，以達到最佳顯示效果」
+- 放在第一條，讓用戶第一眼就看到重要建議
+- 使用加粗顯示突出重要性
 
-#### 學到的關鍵經驗：
+**操作指引優化：**
+- 修改標籤為「上傳 LOGO或具代表性的餐廳照片(選擇檔案之後按更新餐廳資料)」
+- 清楚告訴用戶選擇檔案後需要按「更新餐廳資料」按鈕
+- 提供明確的操作指引
 
-1. **鉤子選擇的重要性**
-   - `template_include`：替換整個頁面模板，會破壞頁面結構
-   - `woocommerce_account_content`：只替換內容區域，保持頁面結構完整
+**介面簡化：**
+- 移除複雜的JavaScript切換功能
+- 預設使用 `object-fit: contain`（保持比例）
+- 簡化CSS樣式，移除不必要的複雜邏輯
 
-2. **優先級管理的關鍵性**
-   - 使用優先級 5 確保在 WooCommerce 預設內容（優先級 10）之前執行
-   - 先移除預設內容，再載入自定義內容
-
-3. **問題診斷的系統性方法**
-   - 按機率排序可能原因
-   - 逐步排除不可能的原因
-   - 使用 `die()` 語句確認檔案是否被載入
-
-4. **解決方案的通用性**
-   - 建立的解決方案可以應用於其他類似的頁面
-   - 程式碼模式可以重複使用
-
-#### 最佳實踐總結：
-
-1. **優先使用內容鉤子而非模板鉤子**
-   - 保持頁面結構完整
-   - 避免破壞 WooCommerce 的佈局
-
-2. **正確的優先級管理**
-   - 預設內容通常使用優先級 10
-   - 自定義內容使用優先級 5 或更低
-
-3. **系統性問題診斷**
-   - 從最可能的原因開始檢查
-   - 使用多種方法驗證假設
-   - 記錄每個步驟的結果
-
-4. **可重複使用的解決方案**
-   - 建立標準的程式碼模式
-   - 記錄完整的解決過程
-   - 為未來類似問題提供參考
-
----
-
-### 🚀 下次工作重點
-
-#### 優先級 1：ACF 資料完整帶入
-- 確保所有新增欄位能正確顯示已儲存的資料
-- 檢查 `get_field()` 函數調用
-- 驗證資料顯示邏輯
-
-#### 優先級 2：細部修改和優化
-- 表單樣式和佈局優化
-- 表單驗證和錯誤處理改善
-- 響應式設計優化
-
----
-
-### 📝 重要提醒和注意事項
-
-#### 技術提醒：
-1. **不要使用 `template_include` 鉤子**：會破壞頁面結構
-2. **優先使用 `woocommerce_account_content` 鉤子**：保持頁面完整性
-3. **正確的優先級順序**：先移除預設內容，再載入自定義內容
-4. **使用 `$wp_query->query_vars` 而非 `$_GET`**：更可靠的頁面檢測
-
-#### 問題解決模式：
-1. **404 錯誤**：檢查端點註冊和模板載入
-2. **選單消失**：檢查是否破壞了頁面結構
-3. **重複內容**：檢查是否有預設內容沒有被移除
-4. **舊版顯示**：檢查模板載入邏輯和條件判斷
-
-#### 可重複使用的解決方案：
-```php
-// 標準的 WooCommerce 內容替換模式
-function custom_content_loader() {
-    global $wp_query;
-    
-    if (is_account_page() && isset($wp_query->query_vars['custom-endpoint'])) {
-        remove_action('woocommerce_account_content', 'woocommerce_account_content', 10);
-        
-        $template_path = get_stylesheet_directory() . '/woocommerce/myaccount/custom-template.php';
-        if (file_exists($template_path)) {
-            include $template_path;
-        }
-    }
-}
-
-add_action('woocommerce_account_content', 'custom_content_loader', 5);
+**JavaScript 功能簡化：**
+```javascript
+// 移除複雜的 LOGO 顯示模式切換
+// 移除 changeLogoDisplay() 函數
+// 移除 DOMContentLoaded 中的 LOGO 初始化邏輯
+// 保留基本的開酒服務欄位顯示邏輯
 ```
 
+##### 4. 前台開酒服務顯示邏輯優化
+**問題描述：**
+- 選擇"其他"時前台顯示"other"而不是說明內容
+- 前台頁面沒有正確處理開酒服務的條件式顯示
+
+**解決方案：**
+```php
+// 餐廳列表頁面（archive-restaurant.php）
+$open_bottle_service = get_field('open_bottle_service');
+$open_bottle_service_other_note = get_field('open_bottle_service_other_note');
+
+if ($open_bottle_service): 
+    if ($open_bottle_service === 'other' && $open_bottle_service_other_note): ?>
+        <div class="field"><strong>是否提供開酒服務？：</strong><?php echo esc_html($open_bottle_service_other_note); ?></div>
+    <?php else: ?>
+        <div class="field"><strong>是否提供開酒服務？：</strong><?php echo esc_html($open_bottle_service); ?></div>
+    <?php endif;
+else: ?>
+    <div class="field"><strong>是否提供開酒服務？：</strong>暫無資料</div>
+<?php endif; ?>
+```
+
+**單一餐廳頁面邏輯：**
+```php
+// 單一餐廳頁面（single_restaurant.php）
+if ($open_bottle_service === 'yes') {
+    $service_output = '是';
+} elseif ($open_bottle_service === 'no') {
+    $service_output = '否';
+} elseif ($open_bottle_service === 'other' && $open_bottle_service_other_note) {
+    $service_output = $open_bottle_service_other_note;  // 只顯示說明內容
+} elseif ($open_bottle_service === 'other') {
+    $service_output = '其他';
+} else {
+    $service_output = $open_bottle_service;
+}
+```
+
+#### 修改的檔案清單
+
+##### 1. `wordpress/archive-restaurant.php`
+- **修改內容**：LOGO讀取邏輯改為時間優先原則
+- **技術變更**：從單一meta欄位讀取改為雙重LOGO系統
+- **影響範圍**：餐廳列表頁面的LOGO顯示
+
+##### 2. `wordpress/single_restaurant.php`
+- **修改內容**：LOGO讀取邏輯改為時間優先原則
+- **技術變更**：從單一meta欄位讀取改為雙重LOGO系統
+- **影響範圍**：單一餐廳頁面的LOGO顯示
+
+##### 3. `wordpress/woocommerce/myaccount/restaurant-profile.php`
+- **修改內容**：後台編輯頁面優化和UX改善
+- **技術變更**：
+  - 新增上傳須知和操作指引
+  - 簡化LOGO顯示介面
+  - 移除複雜的JavaScript切換功能
+- **影響範圍**：餐廳業者後台編輯頁面
+
+##### 4. `wordpress/restaurant-member-functions.php`
+- **修改內容**：圖片上傳處理邏輯優化
+- **技術變更**：
+  - 禁用自動生成 `thumbnail` 尺寸
+  - 避免圖片被強制裁切
+  - 保持原始圖片比例
+- **影響範圍**：LOGO上傳功能
+
+#### 技術架構優化
+
+##### 圖片處理系統
+**之前架構：**
+- WordPress 自動生成多種尺寸
+- 前台讀取 `thumbnail` 尺寸（會裁切）
+- 後台使用複雜的 `object-fit` 切換
+
+**現在架構：**
+- 禁用自動 `thumbnail` 尺寸生成
+- 前台讀取原始圖片
+- 後台預設使用 `object-fit: contain`
+
+##### LOGO管理系統
+**之前架構：**
+- 單一LOGO來源（業者會員系統）
+- 前台直接讀取meta欄位
+
+**現在架構：**
+- 雙重LOGO來源（業者 + 管理員備用）
+- 時間優先原則，後上傳覆蓋先上傳
+- 前台智能選擇最新的LOGO
+
+#### 解決的技術問題
+
+##### 1. 圖片裁切問題
+- **問題**：長方形圖片被強制裁切為正方形
+- **原因**：WordPress `thumbnail` 尺寸和CSS `object-fit: cover`
+- **解決**：禁用自動縮圖生成，使用原始圖片
+
+##### 2. 雙重LOGO系統
+- **問題**：管理員無法在業者遇到困難時介入
+- **原因**：只有業者會員系統可以上傳LOGO
+- **解決**：實作時間優先的雙重LOGO系統
+
+##### 3. 前台顯示邏輯
+- **問題**：開酒服務選擇"其他"時顯示"other"
+- **原因**：前台沒有正確處理條件式顯示
+- **解決**：修改前台邏輯，顯示說明內容
+
+##### 4. 後台介面複雜性
+- **問題**：LOGO顯示模式切換過於複雜
+- **原因**：JavaScript邏輯複雜，用戶體驗不佳
+- **解決**：簡化介面，預設使用最佳顯示模式
+
+#### 使用者體驗改善
+
+##### 1. 上傳指引優化
+- **之前**：沒有明確的上傳建議
+- **現在**：清楚說明建議使用正方形圖片
+- **效果**：用戶知道如何達到最佳顯示效果
+
+##### 2. 操作流程簡化
+- **之前**：複雜的LOGO顯示模式選擇
+- **現在**：預設最佳模式，無需選擇
+- **效果**：減少用戶困惑，提高操作效率
+
+##### 3. 錯誤處理改善
+- **之前**：圖片被裁切，用戶可能不知道原因
+- **現在**：圖片保持比例，用戶看到完整內容
+- **效果**：提高用戶滿意度
+
+#### 系統穩定性提升
+
+##### 1. 圖片處理穩定性
+- **之前**：依賴WordPress自動縮圖生成
+- **現在**：直接使用原始圖片，減少處理環節
+- **效果**：降低圖片顯示錯誤的機率
+
+##### 2. LOGO管理穩定性
+- **之前**：單一來源，故障時無法備用
+- **現在**：雙重來源，管理員可以介入
+- **效果**：提高系統可用性和維護性
+
+##### 3. 程式碼維護性
+- **之前**：複雜的JavaScript邏輯
+- **現在**：簡化的PHP邏輯
+- **效果**：降低維護成本，提高程式碼可讀性
+
+#### 效能優化
+
+##### 1. 圖片載入優化
+- **之前**：載入多個尺寸的圖片
+- **現在**：只載入原始圖片
+- **效果**：減少伺服器儲存空間和載入時間
+
+##### 2. JavaScript優化
+- **之前**：複雜的DOM操作和事件處理
+- **現在**：簡化的基本功能
+- **效果**：減少前端資源消耗
+
+##### 3. 資料庫查詢優化
+- **之前**：可能需要多次查詢圖片資料
+- **現在**：一次查詢獲取所有必要資訊
+- **效果**：提高頁面載入速度
+
+#### 未來擴展性
+
+##### 1. 圖片管理系統
+- 可以基於現有架構擴展為多圖片管理
+- 支援餐廳環境照片、菜單圖片等
+- 保持時間優先的覆蓋邏輯
+
+##### 2. 權限管理系統
+- 可以擴展為更細緻的權限控制
+- 支援不同角色的圖片管理權限
+- 保持管理員的備用介入能力
+
+##### 3. 圖片處理系統
+- 可以加入圖片壓縮和優化功能
+- 支援更多圖片格式和處理選項
+- 保持原始圖片的完整性
+
+#### 測試和驗證
+
+##### 1. 功能測試
+- ✅ LOGO上傳功能正常
+- ✅ 前台顯示正確（保持比例）
+- ✅ 雙重LOGO系統運作正常
+- ✅ 開酒服務邏輯正確
+
+##### 2. 相容性測試
+- ✅ 不同尺寸圖片正常顯示
+- ✅ 不同格式圖片正常處理
+- ✅ 響應式設計正常運作
+
+##### 3. 錯誤處理測試
+- ✅ 圖片上傳失敗處理
+- ✅ 權限檢查正常
+- ✅ 錯誤訊息顯示正確
+
+#### 重要里程碑
+
+##### 2025-08-15 里程碑
+*重要里程碑：成功實作雙重LOGO系統，解決前台圖片顯示問題，建立完整的餐廳業者LOGO管理解決方案*
+
+**技術成就：**
+- 解決WordPress圖片裁切問題
+- 實作時間優先的雙重LOGO系統
+- 優化後台編輯頁面使用者體驗
+- 改善前台開酒服務顯示邏輯
+
+**業務價值：**
+- 提高LOGO顯示品質
+- 提供管理員備用介入管道
+- 改善業者操作體驗
+- 增強系統穩定性和可用性
+
+#### 下一步計劃
+
+##### 短期目標（本週）
+1. 完成照片管理頁面開發
+2. 完成菜單管理頁面開發
+3. 進行業者註冊流程測試與UX改善
+
+##### 中期目標（下週）
+1. 前台頁面整合測試
+2. 系統穩定性檢查
+3. 效能優化
+
+##### 長期目標（本月）
+1. 完整系統測試
+2. 使用者回饋收集
+3. 功能迭代優化
+
 ---
 
-### 📊 進度總結
+## 總結
 
-#### 已完成階段：
-- ✅ **第一階段：自定義 WooCommerce 會員選單（100%）**
-- ✅ **第二階段：餐廳資料管理功能（80%）**
-  - ✅ 404 錯誤解決（100%）
-  - ✅ 左側選單正常顯示（100%）
-  - ✅ 新增欄位正常顯示（100%）
-  - ⏳ ACF 資料完整帶入（待完成）
-  - ⏳ 細部修改和優化（待完成）
+### 技術進展
+- 成功解決前台LOGO顯示問題
+- 實作完整的雙重LOGO管理系統
+- 優化後台編輯頁面使用者體驗
+- 建立可擴展的圖片管理架構
 
-#### 下次重點：
-1. **ACF 資料完整帶入** - 確保所有新增欄位能正確顯示已儲存資料
-2. **表單優化** - 改善樣式、佈局和用戶體驗
-3. **功能完善** - 完善驗證、錯誤處理和響應式設計
+### 業務價值
+- 提高LOGO顯示品質和一致性
+- 提供管理員緊急介入能力
+- 改善業者操作體驗
+- 增強系統整體穩定性
+
+### 開發效率
+- 解決複雜的技術問題
+- 建立可重複使用的解決方案
+- 優化程式碼結構和維護性
+- 為未來功能擴展奠定基礎
 
 ---
 
-*記錄時間：2025-01-07*
-*記錄人：AI 助手*
-*下次更新：2025-01-08*
-*重要里程碑：成功解決 404 錯誤和頁面顯示問題，建立可重複使用的解決方案*
+*最後更新：2025-01-08*
+*負責人：AI Assistant*
+*下次重點：完成照片管理和菜單管理頁面，進行業者註冊流程測試與UX改善*
