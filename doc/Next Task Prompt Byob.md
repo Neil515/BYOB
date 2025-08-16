@@ -1,6 +1,6 @@
 # 🎯 BYOB 專案工作規劃與進度追蹤
 
-## 📅 今日工作完成（2025-08-15）
+## 📅 今日工作完成（2025-08-16）
 
 ### ✅ 已完成項目：
 
@@ -29,28 +29,49 @@
 - **問題**：選擇"其他"時前台顯示"other"而不是說明內容
 - **解決方案**：修改前台頁面，當選擇"其他"時只顯示"其他說明"欄位的內容
 
+#### 5. 照片管理頁面開發（主要功能完成）
+- **檔案位置**：`wordpress/restaurant-member-functions.php` 中的 `byob_restaurant_photos_content` 函數
+- **已完成功能**：
+  - ✅ 餐廳環境照片上傳（最多3張）
+  - ✅ 照片預覽和管理
+  - ✅ 照片刪除功能
+  - ✅ 照片說明文字上傳
+  - ✅ 上傳區塊永久顯示（即使達上限）
+  - ✅ 上傳須知優化（建議尺寸、排序邏輯說明）
+  - ✅ 樣式優化（按鈕顏色、通知訊息背景色）
+  - ✅ 照片預覽區塊寬度控制（不延伸至整個欄位）
+- **技術細節**：
+  - 使用 ACF 群組欄位（restaurant_photo_1, restaurant_photo_2, restaurant_photo_3）
+  - 支援 JPG、PNG、WebP 格式，單張檔案大小不超過 2MB
+  - 照片排序：最晚上傳的照片會顯示在最前面
+  - 響應式設計，手機和桌機都有良好體驗
+
 ### 🔧 修改的檔案：
 1. `wordpress/archive-restaurant.php` - 餐廳列表頁面LOGO讀取邏輯
 2. `wordpress/single_restaurant.php` - 單一餐廳頁面LOGO讀取邏輯  
 3. `wordpress/woocommerce/myaccount/restaurant-profile.php` - 後台編輯頁面優化
-4. `wordpress/restaurant-member-functions.php` - 圖片上傳處理邏輯
+4. `wordpress/restaurant-member-functions.php` - 圖片上傳處理邏輯、照片管理功能實作
 
 ---
 
-## 🚀 明日工作規劃（2025-08-16）
+## 🚀 明日工作規劃（2025-08-17）
 
 ### 🎯 主要目標：
-完成剩餘兩個後台頁面的開發，並進行業者註冊流程測試與UX改善
+完成照片管理頁面的剩餘功能，並開始菜單管理頁面開發
 
 ### 📋 工作項目：
 
-#### 1. 照片管理頁面開發（優先級：高）
-- **檔案位置**：`wordpress/woocommerce/myaccount/restaurant-photos.php`
-- **功能需求**：
-  - 餐廳環境照片上傳（多張）
-  - 照片預覽和管理
-  - 照片排序和刪除功能
-  - 照片說明文字編輯
+#### 1. 照片管理頁面功能完善（優先級：高）
+- **檔案位置**：`wordpress/restaurant-member-functions.php` 中的 `byob_restaurant_photos_content` 函數
+- **待完成功能**：
+  - 🔄 照片說明文字編輯功能
+    - 點擊照片說明文字進入編輯模式
+    - 即時更新說明文字
+    - 保持編輯狀態的視覺回饋
+  - ✅ 已完成功能：
+    - 照片上傳、預覽、刪除
+    - 上傳區塊永久顯示
+    - 樣式優化和響應式設計
 
 #### 2. 菜單管理頁面開發（優先級：高）
 - **檔案位置**：`wordpress/woocommerce/myaccount/restaurant-menu.php`
@@ -100,9 +121,10 @@
 - ✅ 前台LOGO顯示
 - ✅ 開酒服務邏輯
 - ✅ 雙重LOGO系統
+- ✅ 照片管理頁面（主要功能）
 
 #### 進行中功能：
-- 🔄 照片管理頁面（待開發）
+- 🔄 照片管理頁面（主要功能完成，待完善編輯功能）
 - 🔄 菜單管理頁面（待開發）
 
 #### 待改善功能：
