@@ -1476,9 +1476,242 @@ function byob_restaurant_profile_content() {
  * 照片管理頁面內容
  */
 function byob_restaurant_photos_content() {
-    echo '<div class="restaurant-photos">';
-    echo '<h2>照片管理</h2>';
-    echo '<p>此功能正在開發中...</p>';
+    // 檢查使用者是否為餐廳業者
+    $user_id = get_current_user_id();
+    if (!$user_id) {
+        echo '<p>請先登入。</p>';
+        return;
+    }
+    
+    $user = get_user_by('id', $user_id);
+    if (!in_array('restaurant_owner', $user->roles)) {
+        echo '<p>權限不足，只有餐廳業者才能存取此頁面。</p>';
+        return;
+    }
+    
+    // 獲取使用者擁有的餐廳
+    $user_restaurants = byob_get_user_restaurants($user_id);
+    if (empty($user_restaurants)) {
+        echo '<div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 20px; border-radius: 5px;">';
+        echo '<h3>⚠️ 注意</h3>';
+        echo '<p>您目前沒有關聯的餐廳。請聯絡管理員。</p>';
+        echo '</div>';
+        return;
+    }
+    
+    $restaurant = $user_restaurants[0]; // 取第一個餐廳
+    $restaurant_id = $restaurant->ID;
+    
+    // 處理照片上傳
+    if ($_POST['action'] === 'upload_photos') {
+        if (isset($_FILES['photos']) && $_FILES['photos']['error'][0] === UPLOAD_ERR_OK) {
+            // 檢查檔案類型
+            $file_type = wp_check_filetype($_FILES['photos']['name'][0]);
+            
+            if (in_array($file_type['type'], array('image/jpeg', 'image/png', 'image/webp'))) {
+                // 準備檔案上傳參數
+                $file = array(
+                    'name' => $_FILES['photos']['name'][0],
+                    'type' => $_FILES['photos']['type'][0],
+                    'tmp_name' => $_FILES['photos']['tmp_name'][0],
+                    'error' => $_FILES['photos']['error'][0],
+                    'size' => $_FILES['photos']['size'][0]
+                );
+                
+                // 上傳檔案
+                $upload = wp_handle_upload($file, array('test_form' => false));
+                
+                if (isset($upload['error'])) {
+                    echo '<div class="error" style="background: #e7f3ff; border: 1px solid #b3d9ff; padding: 15px; border-radius: 5px; color: #0066cc; margin: 10px 0;">檔案上傳失敗：' . esc_html($upload['error']) . '</div>';
+                } else {
+                    // 建立附件
+                    $attachment = array(
+                        'post_mime_type' => $upload['type'],
+                        'post_title' => sanitize_file_name($file['name']),
+                        'post_content' => '',
+                        'post_status' => 'inherit'
+                    );
+                    
+                    $attachment_id = wp_insert_attachment($attachment, $upload['file'], $restaurant_id);
+                    
+                    if (is_wp_error($attachment_id)) {
+                        echo '<div class="error" style="background: #e7f3ff; border: 1px solid #b3d9ff; padding: 15px; border-radius: 5px; color: #0066cc; margin: 10px 0;">建立附件失敗：' . esc_html($attachment_id->get_error_message()) . '</div>';
+                    } else {
+                        // 新增到餐廳照片欄位
+                        $new_photo = array(
+                            'photo' => $attachment_id,
+                            'description' => sanitize_text_field($_POST['photo_description'] ?? '')
+                        );
+                        
+                        // 找到第一個空的群組欄位
+                        $photo_1 = get_field('restaurant_photo_1', $restaurant_id);
+                        $photo_2 = get_field('restaurant_photo_2', $restaurant_id);
+                        $photo_3 = get_field('restaurant_photo_3', $restaurant_id);
+                        
+                        if (!$photo_1 || empty($photo_1['photo'])) {
+                            update_field('restaurant_photo_1', $new_photo, $restaurant_id);
+                        } elseif (!$photo_2 || empty($photo_2['photo'])) {
+                            update_field('restaurant_photo_2', $new_photo, $restaurant_id);
+                        } elseif (!$photo_3 || empty($photo_3['photo'])) {
+                            update_field('restaurant_photo_3', $new_photo, $restaurant_id);
+                        }
+                        
+                        echo '<div class="success" style="background: #e7f3ff; border: 1px solid #b3d9ff; padding: 15px; border-radius: 5px; color: #0066cc; margin: 10px 0;">照片上傳成功！</div>';
+                    }
+                }
+            } else {
+                echo '<div class="error" style="background: #e7f3ff; border: 1px solid #b3d9ff; padding: 15px; border-radius: 5px; color: #0066cc; margin: 10px 0;">檔案類型不支援：' . esc_html($file_type['type']) . '</div>';
+            }
+        } else {
+            echo '<div class="error" style="background: #e7f3ff; border: 1px solid #b3d9ff; padding: 15px; border-radius: 5px; color: #0066cc; margin: 10px 0;">檔案上傳失敗或未選擇檔案</div>';
+        }
+    }
+    
+    // 處理照片刪除
+    if ($_POST['action'] === 'delete_photo') {
+        $photo_id = intval($_POST['photo_id']);
+        $result = byob_delete_restaurant_photo($restaurant_id, $photo_id);
+        if (is_wp_error($result)) {
+            echo '<div class="error" style="background: #e7f3ff; border: 1px solid #b3d9ff; padding: 15px; border-radius: 5px; color: #0066cc; margin: 10px 0;">' . $result->get_error_message() . '</div>';
+        } else {
+            echo '<div class="success" style="background: #e7f3ff; border: 1px solid #b3d9ff; padding: 15px; border-radius: 5px; color: #0066cc; margin: 10px 0;">照片刪除成功！</div>';
+        }
+    }
+    
+    // 獲取現有照片（讀取三個群組欄位）
+    $photo_1 = get_field('restaurant_photo_1', $restaurant_id);
+    $photo_2 = get_field('restaurant_photo_2', $restaurant_id);
+    $photo_3 = get_field('restaurant_photo_3', $restaurant_id);
+    
+    $existing_photos = array();
+    if ($photo_1 && !empty($photo_1['photo'])) {
+        $existing_photos[] = $photo_1;
+    }
+    if ($photo_2 && !empty($photo_2['photo'])) {
+        $existing_photos[] = $photo_2;
+    }
+    if ($photo_3 && !empty($photo_3['photo'])) {
+        $existing_photos[] = $photo_3;
+    }
+    
+    $photo_count = count($existing_photos);
+    $max_photos = 3;
+    $can_upload = $photo_count < $max_photos;
+    
+    echo '<div class="restaurant-photos-management" style="max-width: 800px;">';
+    echo '<h2>餐廳環境照片管理</h2>';
+    
+    // 照片上傳區域（永久顯示）
+    echo '<div class="photo-upload-section" style="background: #f9f9f9; padding: 20px; margin: 20px 0; border-radius: 8px;">';
+    echo '<h3>上傳照片</h3>';
+    
+    // 上傳須知（永久顯示）
+    echo '<div class="upload-instructions" style="background: #e7f3ff; padding: 15px; border-radius: 5px; margin-bottom: 20px;">';
+    echo '<p><strong>上傳須知：</strong></p>';
+    echo '<ul style="margin: 10px 0; padding-left: 20px;">';
+    echo '<li>最多可上傳 ' . $max_photos . ' 張照片</li>';
+    echo '<li>建議上傳餐廳環境、用餐區域等代表性照片（建議尺寸：1200x800 像素）</li>';
+    echo '<li>可加註照片說明</li>';
+    echo '<li>支援 JPG、PNG、WebP 格式，單張檔案大小不超過 2MB</li>';
+    echo '<li>照片排序：最晚上傳的照片會顯示在最前面</li>';
+    echo '</ul>';
+    echo '</div>';
+    
+    if ($can_upload) {
+        // 可以上傳時顯示表單
+        echo '<form method="post" enctype="multipart/form-data">';
+        echo '<input type="hidden" name="action" value="upload_photos">';
+        
+        echo '<div class="photo-upload-fields">';
+        echo '<div class="photo-field" style="margin: 15px 0;">';
+        echo '<label style="display: block; margin-bottom: 5px; font-weight: bold;">選擇照片：</label>';
+        echo '<input type="file" name="photos[]" accept="image/*" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">';
+        echo '</div>';
+        echo '<div class="photo-field" style="margin: 15px 0;">';
+        echo '<label style="display: block; margin-bottom: 5px; font-weight: bold;">照片說明（選填）：</label>';
+        echo '<input type="text" name="photo_description" placeholder="例如：餐廳用餐區域" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">';
+        echo '</div>';
+        echo '</div>';
+        
+        echo '<button type="submit" class="upload-button" style="background: rgba(139, 38, 53, 0.7); color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">上傳照片</button>';
+        echo '</form>';
+    } else {
+        // 已達上限時顯示狀態訊息
+        echo '<div class="upload-limit-reached" style="background: #e7f3ff; border: 1px solid #b3d9ff; padding: 15px; border-radius: 5px; color: #0066cc; margin: 10px 0; display: flex; align-items: center;">';
+        echo '<p style="margin: 0;"><strong>目前狀態：</strong>您已達到照片數量上限（' . $max_photos . '張）。如需上傳新照片，請先刪除現有照片。</p>';
+        echo '</div>';
+    }
+    echo '</div>';
+    
+    // 現有照片管理
+    echo '<div class="existing-photos-section" style="background: #f9f9f9; padding: 20px; margin: 20px 0; border-radius: 8px;">';
+    echo '<h3>現有照片（' . $photo_count . '/' . $max_photos . '）</h3>';
+    
+    if (empty($existing_photos)) {
+        echo '<p>目前還沒有上傳任何照片。</p>';
+    } else {
+        echo '<div class="photos-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 300px)); gap: 20px; margin-top: 20px; justify-content: start;">';
+        foreach ($existing_photos as $index => $photo) {
+            // 統一處理圖片資料結構
+            $attachment_id = null;
+            $image_data = null;
+            
+            if (is_numeric($photo['photo'])) {
+                // 如果 photo 是數字 ID
+                $attachment_id = $photo['photo'];
+                $image_data = array(
+                    'ID' => $attachment_id,
+                    'sizes' => array(),
+                    'url' => wp_get_attachment_url($attachment_id)
+                );
+            } else {
+                // 如果 photo 是陣列
+                $attachment_id = $photo['photo']['ID'];
+                $image_data = $photo['photo'];
+            }
+            
+            // 獲取圖片 URL
+            $image_url = '';
+            if (isset($image_data['sizes']['thumbnail']) && !empty($image_data['sizes']['thumbnail'])) {
+                $image_url = $image_data['sizes']['thumbnail'];
+            } elseif (isset($image_data['sizes']['medium']) && !empty($image_data['sizes']['medium'])) {
+                $image_url = $image_data['sizes']['medium'];
+            } elseif (isset($image_data['url']) && !empty($image_data['url'])) {
+                $image_url = $image_data['url'];
+            } else {
+                // 如果都沒有，嘗試從附件 ID 獲取
+                $image_url = wp_get_attachment_image_url($attachment_id, 'thumbnail');
+                if (!$image_url) {
+                    $image_url = wp_get_attachment_image_url($attachment_id, 'medium');
+                }
+                if (!$image_url) {
+                    $image_url = wp_get_attachment_url($attachment_id);
+                }
+            }
+            
+            echo '<div class="photo-item" style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
+            echo '<div class="photo-preview">';
+            if ($image_url) {
+                echo '<img src="' . esc_url($image_url) . '" alt="' . esc_attr($photo['description'] ?: '餐廳環境照片') . '" style="width: 100%; height: 150px; object-fit: cover; border-radius: 4px;">';
+            } else {
+                echo '<div style="width: 100%; height: 150px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; border-radius: 4px; color: #666;">圖片載入失敗</div>';
+            }
+            echo '</div>';
+            echo '<div class="photo-info" style="margin-top: 10px;">';
+            if ($photo['description']) {
+                echo '<p class="photo-description" style="margin: 5px 0; font-style: italic; color: #666;">' . esc_html($photo['description']) . '</p>';
+            }
+            echo '<form method="post" class="delete-photo-form">';
+            echo '<input type="hidden" name="action" value="delete_photo">';
+            echo '<input type="hidden" name="photo_id" value="' . $photo['photo']['ID'] . '">';
+            echo '<button type="submit" class="delete-button" onclick="return confirm(\'確定要刪除這張照片嗎？\')" style="background: #dc3232; color: white; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">刪除</button>';
+            echo '</form>';
+            echo '</div>';
+            echo '</div>';
+        }
+        echo '</div>';
+    }
+    echo '</div>';
     echo '</div>';
 }
 
@@ -1863,6 +2096,173 @@ function byob_check_rewrite_rules() {
     }
     
     error_log('=== BYOB 重寫規則檢查結束 ===');
+}
+
+/**
+ * 處理餐廳照片上傳
+ */
+function byob_handle_photo_upload($restaurant_id, $files) {
+    // 檢查用戶是否為餐廳業者
+    $user_id = get_current_user_id();
+    if (!$user_id) {
+        return new WP_Error('permission_denied', '請先登入');
+    }
+    
+    $user = get_user_by('id', $user_id);
+    if (!in_array('restaurant_owner', $user->roles)) {
+        return new WP_Error('permission_denied', '只有餐廳業者才能上傳照片');
+    }
+    
+    // 檢查用戶是否擁有該餐廳
+    $owner_restaurant_id = get_post_meta($restaurant_id, '_restaurant_owner_id', true);
+    if ($owner_restaurant_id != $user_id) {
+        return new WP_Error('permission_denied', '您沒有權限上傳照片到此餐廳');
+    }
+    
+    // 檢查照片數量限制
+    $photo_1 = get_field('restaurant_photo_1', $restaurant_id);
+    $photo_2 = get_field('restaurant_photo_2', $restaurant_id);
+    $photo_3 = get_field('restaurant_photo_3', $restaurant_id);
+    
+    $existing_count = 0;
+    if ($photo_1 && !empty($photo_1['photo'])) $existing_count++;
+    if ($photo_2 && !empty($photo_2['photo'])) $existing_count++;
+    if ($photo_3 && !empty($photo_3['photo'])) $existing_count++;
+    
+    if ($existing_count >= 3) {
+        return new WP_Error('limit_reached', '已達到照片數量上限（3張）');
+    }
+    
+    // 處理上傳的檔案
+    if (!isset($files['name'][0]) || empty($files['name'][0])) {
+        return new WP_Error('no_file', '請選擇要上傳的照片');
+    }
+    
+    // 檢查檔案類型
+    $file_type = wp_check_filetype($files['name'][0]);
+    if (!in_array($file_type['type'], array('image/jpeg', 'image/png', 'image/webp'))) {
+        return new WP_Error('invalid_type', '只支援 JPG、PNG 和 WebP 格式的圖片');
+    }
+    
+    // 檢查檔案大小（2MB限制）
+    if ($files['size'][0] > 2 * 1024 * 1024) {
+        return new WP_Error('file_too_large', '檔案大小不能超過 2MB');
+    }
+    
+    // 準備檔案上傳參數
+    $file = array(
+        'name' => $files['name'][0],
+        'type' => $files['type'][0],
+        'tmp_name' => $files['tmp_name'][0],
+        'error' => $files['error'][0],
+        'size' => $files['size'][0]
+    );
+    
+    // 上傳檔案
+    $upload = wp_handle_upload($file, array('test_form' => false));
+    
+    if (isset($upload['error'])) {
+        return new WP_Error('upload_failed', '檔案上傳失敗：' . $upload['error']);
+    }
+    
+    // 建立附件
+    $attachment = array(
+        'post_mime_type' => $upload['type'],
+        'post_title' => sanitize_file_name($files['name'][0]),
+        'post_content' => '',
+        'post_status' => 'inherit'
+    );
+    
+    $attachment_id = wp_insert_attachment($attachment, $upload['file'], $restaurant_id);
+    
+    if (is_wp_error($attachment_id)) {
+        return new WP_Error('attachment_failed', '建立附件失敗');
+    }
+    
+    // 更新附件元數據
+    wp_update_attachment_metadata($attachment_id, wp_generate_attachment_metadata($attachment_id, $upload['file']));
+    
+    // 新增到餐廳照片欄位（使用群組欄位）
+    $new_photo = array(
+        'photo' => $attachment_id,
+        'description' => sanitize_text_field($_POST['photo_description'] ?? '')
+    );
+    
+    // 找到第一個空的群組欄位
+    if (!$photo_1 || empty($photo_1['photo'])) {
+        update_field('restaurant_photo_1', $new_photo, $restaurant_id);
+    } elseif (!$photo_2 || empty($photo_2['photo'])) {
+        update_field('restaurant_photo_2', $new_photo, $restaurant_id);
+    } elseif (!$photo_3 || empty($photo_3['photo'])) {
+        update_field('restaurant_photo_3', $new_photo, $restaurant_id);
+    }
+    
+    return array(
+        'success' => true,
+        'message' => '照片上傳成功',
+        'attachment_id' => $attachment_id
+    );
+}
+
+/**
+ * 刪除餐廳照片
+ */
+function byob_delete_restaurant_photo($restaurant_id, $photo_id) {
+    // 檢查用戶是否為餐廳業者
+    $user_id = get_current_user_id();
+    if (!$user_id) {
+        return new WP_Error('permission_denied', '請先登入');
+    }
+    
+    $user = get_user_by('id', $user_id);
+    if (!in_array('restaurant_owner', $user->roles)) {
+        return new WP_Error('permission_denied', '只有餐廳業者才能刪除照片');
+    }
+    
+    // 檢查用戶是否擁有該餐廳
+    $owner_restaurant_id = get_post_meta($restaurant_id, '_restaurant_owner_id', true);
+    if ($owner_restaurant_id != $user_id) {
+        return new WP_Error('permission_denied', '您沒有權限刪除此照片');
+    }
+    
+    // 檢查三個群組欄位，找到要刪除的照片
+    $photo_1 = get_field('restaurant_photo_1', $restaurant_id);
+    $photo_2 = get_field('restaurant_photo_2', $restaurant_id);
+    $photo_3 = get_field('restaurant_photo_3', $restaurant_id);
+    
+    $found = false;
+    $field_to_clear = '';
+    
+    // 檢查第一個群組
+    if ($photo_1 && $photo_1['photo']['ID'] == $photo_id) {
+        $field_to_clear = 'restaurant_photo_1';
+        $found = true;
+    }
+    // 檢查第二個群組
+    elseif ($photo_2 && $photo_2['photo']['ID'] == $photo_id) {
+        $field_to_clear = 'restaurant_photo_2';
+        $found = true;
+    }
+    // 檢查第三個群組
+    elseif ($photo_3 && $photo_3['photo']['ID'] == $photo_id) {
+        $field_to_clear = 'restaurant_photo_3';
+        $found = true;
+    }
+    
+    if (!$found) {
+        return new WP_Error('photo_not_found', '沒有找到指定的照片');
+    }
+    
+    // 清空對應的群組欄位
+    update_field($field_to_clear, array(), $restaurant_id);
+    
+    // 刪除附件（可選，如果您希望保留附件）
+    // wp_delete_attachment($photo_id, true);
+    
+    return array(
+        'success' => true,
+        'message' => '照片刪除成功'
+    );
 }
 
 // 初始化系統
