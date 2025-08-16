@@ -209,6 +209,7 @@ else: ?>
 - ✅ 解決照片上傳權限和技術問題
 - ✅ 優化照片管理頁面使用者體驗和樣式
 - ✅ 建立完整的餐廳環境照片管理系統
+- ✅ **重要里程碑：成功解決舊照片格式兼容性問題**
 
 #### 技術突破
 
@@ -307,6 +308,91 @@ function byob_handle_photo_upload($restaurant_id) {
 **狀態訊息對齊：**
 - 使用 `display: flex; align-items: center` 實現垂直置中，靠左對齊
 
+##### 7. **重要里程碑：舊照片格式兼容性問題解決**
+**問題描述：**
+- 舊照片無法刪除，出現「沒有找到指定的照片」錯誤
+- 從後台刪除附件後，ACF 欄位資料未同步更新，造成「幽靈照片」
+
+**根本原因：**
+- 舊照片資料格式（簡單數字）與新程式碼期望格式（陣列）不匹配
+- 舊格式：`photo['photo'] = 123`
+- 新格式：`photo['photo'] = {'ID': 123, ...}
+
+**解決方案：**
+```php
+// 新增統一的照片 ID 獲取函數
+function byob_get_photo_id($photo_data) {
+    if (empty($photo_data) || !is_array($photo_data)) {
+        return null;
+    }
+    
+    if (isset($photo_data['photo'])) {
+        if (is_numeric($photo_data['photo'])) {
+            // 舊格式：photo['photo'] = 123
+            return intval($photo_data['photo']);
+        } elseif (is_array($photo_data['photo']) && isset($photo_data['photo']['ID'])) {
+            // 新格式：photo['photo'] = {'ID': 123, ...}
+            return intval($photo_data['photo']['ID']);
+        }
+    }
+    
+    return null;
+}
+
+// 新增照片有效性檢查函數
+function byob_is_photo_valid($photo_id) {
+    if (!$photo_id) {
+        return false;
+    }
+    
+    $attachment = get_post($photo_id);
+    if (!$attachment || $attachment->post_type !== 'attachment') {
+        return false;
+    }
+    
+    // 檢查檔案是否存在
+    $file_path = get_attached_file($photo_id);
+    if (!$file_path || !file_exists($file_path)) {
+        return false;
+    }
+    
+    return true;
+}
+
+// 新增自動清理無效照片函數
+function byob_cleanup_invalid_photos($restaurant_id) {
+    $photo_1 = get_field('restaurant_photo_1', $restaurant_id);
+    $photo_2 = get_field('restaurant_photo_2', $restaurant_id);
+    $photo_3 = get_field('restaurant_photo_3', $restaurant_id);
+    
+    $cleaned = false;
+    
+    // 檢查並清理無效照片
+    if ($photo_1 && !byob_is_photo_valid(byob_get_photo_id($photo_1))) {
+        update_field('restaurant_photo_1', array(), $restaurant_id);
+        $cleaned = true;
+    }
+    
+    if ($photo_2 && !byob_is_photo_valid(byob_get_photo_id($photo_2))) {
+        update_field('restaurant_photo_2', array(), $restaurant_id);
+        $cleaned = true;
+    }
+    
+    if ($photo_3 && !byob_is_photo_valid(byob_get_photo_id($photo_3))) {
+        update_field('restaurant_photo_3', array(), $restaurant_id);
+        $cleaned = true;
+    }
+    
+    return $cleaned;
+}
+```
+
+**技術突破：**
+- 成功解決舊照片格式兼容性問題
+- 實作自動資料清理機制
+- 建立統一的照片 ID 處理邏輯
+- 支援舊格式和新格式的照片操作
+
 #### 解決的技術問題
 
 ##### 1. 權限檢查問題
@@ -329,6 +415,16 @@ function byob_handle_photo_upload($restaurant_id) {
 - **原因**：`wp_generate_attachment_metadata` 函數調用錯誤
 - **解決**：移除有問題的函數調用
 
+##### 5. **舊照片格式兼容性問題**
+- **問題**：舊照片無法刪除，出現「沒有找到指定的照片」錯誤
+- **原因**：舊照片資料格式與新程式碼不匹配
+- **解決**：建立統一的照片 ID 處理邏輯，支援舊格式和新格式
+
+##### 6. **幽靈照片問題**
+- **問題**：從後台刪除附件後，ACF 欄位資料未同步更新
+- **原因**：WordPress 附件刪除與 ACF 欄位不同步
+- **解決**：實作自動資料清理機制，定期檢查和清理無效資料
+
 #### 技術架構改進
 
 ##### 1. 照片管理系統
@@ -346,42 +442,54 @@ function byob_handle_photo_upload($restaurant_id) {
 - 詳細的錯誤原因說明
 - 友善的用戶提示
 
+##### 4. **照片格式兼容性系統**
+- 統一的照片 ID 獲取邏輯
+- 自動的照片有效性檢查
+- 智能的資料清理機制
+
 #### 測試和驗證
 - ✅ 照片上傳、預覽、刪除功能正常
 - ✅ JPG、PNG、WebP 格式支援，響應式設計正常
 - ✅ 權限檢查、錯誤處理、檔案格式驗證正常
+- ✅ **舊照片格式兼容性問題完全解決**
+- ✅ 自動資料清理功能正常運作
 
 #### 重要里程碑
 
 ##### 2025-08-16 里程碑
-*重要里程碑：成功開發完整的照片管理頁面，解決複雜的技術問題，建立穩定的餐廳環境照片管理系統*
+*重要里程碑：成功開發完整的照片管理頁面，解決複雜的技術問題，建立穩定的餐廳環境照片管理系統，並成功解決舊照片格式兼容性問題*
 
 **技術成就：**
 - 解決 ACF 免費版限制，實作多照片管理
 - 優化權限檢查和檔案上傳機制
 - 建立統一的錯誤處理和樣式系統
 - 實作響應式照片預覽和管理介面
+- **成功解決舊照片格式兼容性問題，建立統一的照片處理邏輯**
+- **實作自動資料清理機制，解決幽靈照片問題**
 
 **業務價值：**
 - 提供完整的餐廳環境照片管理功能
 - 改善業者操作體驗和視覺效果
 - 增強系統穩定性和可用性
 - 為前台照片展示奠定基礎
+- **解決歷史遺留問題，提升系統整體穩定性**
+- **建立可擴展的照片管理架構**
 
 #### 下一步計劃
 
 ##### 短期目標（明天）
-1. 完成照片說明文字編輯功能
-2. 開始菜單管理頁面開發
+1. 進行前台的餐廳照片顯示程式設計
+2. 回來進行業者後台的「餐廳環境照片管理」頁面微調
 
 ##### 中期目標（本週）
-1. 完成菜單管理頁面
-2. 進行業者註冊流程測試與UX改善
+1. 完成前台餐廳照片顯示功能
+2. 完成後台照片管理頁面微調
+3. 開始菜單管理頁面開發
 
 ##### 長期目標（下週）
-1. 前台頁面整合測試
-2. 系統穩定性檢查
-3. 效能優化
+1. 完成菜單管理頁面
+2. 前台頁面整合測試
+3. 系統穩定性檢查
 
 ---
 
@@ -392,21 +500,27 @@ function byob_handle_photo_upload($restaurant_id) {
 - 實作完整的雙重LOGO管理系統
 - 開發完整的照片管理頁面功能
 - 建立可擴展的圖片管理架構
+- **成功解決舊照片格式兼容性問題，建立統一的照片處理邏輯**
+- **實作自動資料清理機制，解決幽靈照片問題**
 
 ### 業務價值
 - 提高LOGO顯示品質和一致性
 - 提供管理員緊急介入能力
 - 建立完整的餐廳環境照片管理系統
 - 改善業者操作體驗和系統穩定性
+- **解決歷史遺留問題，提升系統整體穩定性**
+- **建立可擴展的照片管理架構，為未來功能擴展奠定基礎**
 
 ### 開發效率
 - 解決複雜的技術問題
 - 建立可重複使用的解決方案
 - 優化程式碼結構和維護性
 - 為未來功能擴展奠定基礎
+- **成功解決舊照片兼容性問題，避免重複開發**
+- **建立統一的照片處理邏輯，提高開發效率**
 
 ---
 
 *最後更新：2025-08-16*
 *負責人：AI Assistant*
-*下次重點：完成照片說明編輯功能，開始菜單管理頁面開發*
+*下次重點：進行前台的餐廳照片顯示程式設計，回來進行業者後台的「餐廳環境照片管理」頁面微調*
