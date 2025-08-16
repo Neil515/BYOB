@@ -1578,6 +1578,19 @@ function byob_restaurant_photos_content() {
         }
     }
     
+    // 處理照片說明更新
+    if ($_POST['action'] === 'update_photo_description') {
+        $photo_id = intval($_POST['photo_id']);
+        $new_description = sanitize_text_field($_POST['photo_description'] ?? '');
+        
+        $result = byob_update_photo_description($restaurant_id, $photo_id, $new_description);
+        if (is_wp_error($result)) {
+            echo '<div class="error" style="background: #e7f3ff; border: 1px solid #b3d9ff; padding: 15px; border-radius: 5px; color: #0066cc; margin: 10px 0;">' . $result->get_error_message() . '</div>';
+        } else {
+            echo '<div class="success" style="background: #e7f3ff; border: 1px solid #b3d9ff; padding: 15px; border-radius: 5px; color: #0066cc; margin: 10px 0;">照片說明更新成功！</div>';
+        }
+    }
+    
     // 獲取現有照片（讀取三個群組欄位）
     $photo_1 = get_field('restaurant_photo_1', $restaurant_id);
     $photo_2 = get_field('restaurant_photo_2', $restaurant_id);
@@ -1647,27 +1660,30 @@ function byob_restaurant_photos_content() {
     echo '<div class="existing-photos-section" style="background: #f9f9f9; padding: 20px; margin: 20px 0; border-radius: 8px;">';
     echo '<h3>現有照片（' . $photo_count . '/' . $max_photos . '）</h3>';
     
+    // 自動清理無效照片
+    byob_cleanup_invalid_photos($restaurant_id);
+    
     if (empty($existing_photos)) {
         echo '<p>目前還沒有上傳任何照片。</p>';
     } else {
         echo '<div class="photos-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 300px)); gap: 20px; margin-top: 20px; justify-content: start;">';
         foreach ($existing_photos as $index => $photo) {
-            // 統一處理圖片資料結構
-            $attachment_id = null;
+            // 統一處理圖片資料結構，使用新的輔助函數
+            $attachment_id = byob_get_photo_id($photo);
             $image_data = null;
             
-            if (is_numeric($photo['photo'])) {
-                // 如果 photo 是數字 ID
-                $attachment_id = $photo['photo'];
-                $image_data = array(
-                    'ID' => $attachment_id,
-                    'sizes' => array(),
-                    'url' => wp_get_attachment_url($attachment_id)
-                );
-            } else {
-                // 如果 photo 是陣列
-                $attachment_id = $photo['photo']['ID'];
-                $image_data = $photo['photo'];
+            if ($attachment_id) {
+                // 檢查照片是否有效
+                if (byob_is_photo_valid($attachment_id)) {
+                    $image_data = array(
+                        'ID' => $attachment_id,
+                        'sizes' => array(),
+                        'url' => wp_get_attachment_url($attachment_id)
+                    );
+                } else {
+                    // 照片無效，標記為需要清理
+                    $attachment_id = null;
+                }
             }
             
             // 獲取圖片 URL
@@ -1689,25 +1705,36 @@ function byob_restaurant_photos_content() {
                 }
             }
             
-            echo '<div class="photo-item" style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
-            echo '<div class="photo-preview">';
-            if ($image_url) {
-                echo '<img src="' . esc_url($image_url) . '" alt="' . esc_attr($photo['description'] ?: '餐廳環境照片') . '" style="width: 100%; height: 150px; object-fit: cover; border-radius: 4px;">';
-            } else {
-                echo '<div style="width: 100%; height: 150px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; border-radius: 4px; color: #666;">圖片載入失敗</div>';
+            // 只顯示有效的照片
+            if ($attachment_id && $image_data) {
+                echo '<div class="photo-item" style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
+                echo '<div class="photo-preview">';
+                if ($image_url) {
+                    echo '<img src="' . esc_url($image_url) . '" alt="' . esc_attr($photo['description'] ?: '餐廳環境照片') . '" style="width: 100%; height: 150px; object-fit: cover; border-radius: 4px;">';
+                } else {
+                    echo '<div style="width: 100%; height: 150px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; border-radius: 4px; color: #666;">圖片載入失敗</div>';
+                }
+                echo '</div>';
+                echo '<div class="photo-info" style="margin-top: 10px;">';
+                echo '<form method="post" class="photo-description-form">';
+                echo '<input type="hidden" name="action" value="update_photo_description">';
+                echo '<input type="hidden" name="photo_id" value="' . $attachment_id . '">';
+                echo '<div class="description-field" style="margin: 10px 0;">';
+                echo '<label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px;">照片說明：</label>';
+                echo '<input type="text" name="photo_description" value="' . esc_attr($photo['description'] ?: '') . '" placeholder="例如：餐廳用餐區域" style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px;">';
+                echo '</div>';
+                echo '<div class="photo-actions" style="display: flex; gap: 10px;">';
+                echo '<button type="submit" class="save-button" style="background: #46b450; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">儲存照片說明</button>';
+                echo '</div>';
+                echo '</form>';
+                echo '<form method="post" class="delete-photo-form" style="margin-top: 10px;">';
+                echo '<input type="hidden" name="action" value="delete_photo">';
+                echo '<input type="hidden" name="photo_id" value="' . $attachment_id . '">';
+                echo '<button type="submit" class="delete-button" onclick="return confirm(\'確定要刪除這張照片嗎？\')" style="background: #dc3232; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">刪除照片</button>';
+                echo '</form>';
+                echo '</div>';
+                echo '</div>';
             }
-            echo '</div>';
-            echo '<div class="photo-info" style="margin-top: 10px;">';
-            if ($photo['description']) {
-                echo '<p class="photo-description" style="margin: 5px 0; font-style: italic; color: #666;">' . esc_html($photo['description']) . '</p>';
-            }
-            echo '<form method="post" class="delete-photo-form">';
-            echo '<input type="hidden" name="action" value="delete_photo">';
-            echo '<input type="hidden" name="photo_id" value="' . $photo['photo']['ID'] . '">';
-            echo '<button type="submit" class="delete-button" onclick="return confirm(\'確定要刪除這張照片嗎？\')" style="background: #dc3232; color: white; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">刪除</button>';
-            echo '</form>';
-            echo '</div>';
-            echo '</div>';
         }
         echo '</div>';
     }
@@ -2234,17 +2261,17 @@ function byob_delete_restaurant_photo($restaurant_id, $photo_id) {
     $field_to_clear = '';
     
     // 檢查第一個群組
-    if ($photo_1 && $photo_1['photo']['ID'] == $photo_id) {
+    if ($photo_1 && byob_get_photo_id($photo_1) == $photo_id) {
         $field_to_clear = 'restaurant_photo_1';
         $found = true;
     }
     // 檢查第二個群組
-    elseif ($photo_2 && $photo_2['photo']['ID'] == $photo_id) {
+    elseif ($photo_2 && byob_get_photo_id($photo_2) == $photo_id) {
         $field_to_clear = 'restaurant_photo_2';
         $found = true;
     }
     // 檢查第三個群組
-    elseif ($photo_3 && $photo_3['photo']['ID'] == $photo_id) {
+    elseif ($photo_3 && byob_get_photo_id($photo_3) == $photo_id) {
         $field_to_clear = 'restaurant_photo_3';
         $found = true;
     }
@@ -2263,6 +2290,149 @@ function byob_delete_restaurant_photo($restaurant_id, $photo_id) {
         'success' => true,
         'message' => '照片刪除成功'
     );
+}
+
+/**
+ * 更新照片說明
+ */
+function byob_update_photo_description($restaurant_id, $photo_id, $new_description) {
+    // 檢查用戶是否為餐廳業者
+    $user_id = get_current_user_id();
+    if (!$user_id) {
+        return new WP_Error('permission_denied', '請先登入');
+    }
+    
+    $user = get_user_by('id', $user_id);
+    if (!in_array('restaurant_owner', $user->roles)) {
+        return new WP_Error('permission_denied', '只有餐廳業者才能更新照片說明');
+    }
+    
+    // 檢查用戶是否擁有該餐廳
+    $owner_restaurant_id = get_post_meta($restaurant_id, '_restaurant_owner_id', true);
+    if ($owner_restaurant_id != $user_id) {
+        return new WP_Error('permission_denied', '您沒有權限更新此照片的說明');
+    }
+    
+    // 檢查三個群組欄位，找到要更新說明的照片
+    $photo_1 = get_field('restaurant_photo_1', $restaurant_id);
+    $photo_2 = get_field('restaurant_photo_2', $restaurant_id);
+    $photo_3 = get_field('restaurant_photo_3', $restaurant_id);
+    
+    $found = false;
+    $field_to_update = '';
+    
+    // 檢查第一個群組
+    if ($photo_1 && byob_get_photo_id($photo_1) == $photo_id) {
+        $field_to_update = 'restaurant_photo_1';
+        $found = true;
+    }
+    // 檢查第二個群組
+    elseif ($photo_2 && byob_get_photo_id($photo_2) == $photo_id) {
+        $field_to_update = 'restaurant_photo_2';
+        $found = true;
+    }
+    // 檢查第三個群組
+    elseif ($photo_3 && byob_get_photo_id($photo_3) == $photo_id) {
+        $field_to_update = 'restaurant_photo_3';
+        $found = true;
+    }
+    
+    if (!$found) {
+        return new WP_Error('photo_not_found', '沒有找到指定的照片');
+    }
+    
+         // 更新說明，保持原有的照片資料結構
+     $current_photo = get_field($field_to_update, $restaurant_id);
+     if ($current_photo && is_array($current_photo)) {
+         $current_photo['description'] = $new_description;
+         update_field($field_to_update, $current_photo, $restaurant_id);
+     }
+    
+    return array(
+        'success' => true,
+        'message' => '照片說明更新成功'
+    );
+}
+
+/**
+ * 獲取照片 ID，支援舊格式和新格式
+ * 舊格式：photo['photo'] = 123
+ * 新格式：photo['photo'] = {'ID': 123, 'description': '...'}
+ */
+function byob_get_photo_id($photo_data) {
+    if (empty($photo_data) || !is_array($photo_data)) {
+        return null;
+    }
+    
+    if (isset($photo_data['photo'])) {
+        if (is_numeric($photo_data['photo'])) {
+            // 舊格式：photo['photo'] = 123
+            return intval($photo_data['photo']);
+        } elseif (is_array($photo_data['photo']) && isset($photo_data['photo']['ID'])) {
+            // 新格式：photo['photo'] = {'ID': 123, ...}
+            return intval($photo_data['photo']['ID']);
+        }
+    }
+    
+    return null;
+}
+
+/**
+ * 檢查照片是否存在且有效
+ */
+function byob_is_photo_valid($photo_id) {
+    if (!$photo_id) {
+        return false;
+    }
+    
+    $attachment = get_post($photo_id);
+    if (!$attachment || $attachment->post_type !== 'attachment') {
+        return false;
+    }
+    
+    // 檢查檔案是否存在
+    $file_path = get_attached_file($photo_id);
+    if (!$file_path || !file_exists($file_path)) {
+        return false;
+    }
+    
+    return true;
+}
+
+/**
+ * 自動清理無效的照片資料
+ */
+function byob_cleanup_invalid_photos($restaurant_id) {
+    $photo_1 = get_field('restaurant_photo_1', $restaurant_id);
+    $photo_2 = get_field('restaurant_photo_2', $restaurant_id);
+    $photo_3 = get_field('restaurant_photo_3', $restaurant_id);
+    
+    $cleaned = false;
+    
+    // 檢查並清理第一個群組
+    if ($photo_1 && !byob_is_photo_valid(byob_get_photo_id($photo_1))) {
+        update_field('restaurant_photo_1', array(), $restaurant_id);
+        $cleaned = true;
+    }
+    
+    // 檢查並清理第二個群組
+    if ($photo_2 && !byob_is_photo_valid(byob_get_photo_id($photo_2))) {
+        update_field('restaurant_photo_2', array(), $restaurant_id);
+        $cleaned = true;
+    }
+    
+    // 檢查並清理第三個群組
+    if ($photo_3 && !byob_is_photo_valid(byob_get_photo_id($photo_3))) {
+        update_field('restaurant_photo_3', array(), $restaurant_id);
+        $cleaned = true;
+    }
+    
+    // 如果有清理，顯示訊息
+    if ($cleaned) {
+        echo '<div class="notice" style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; color: #856404; margin: 10px 0;">';
+        echo '<p><strong>系統通知：</strong>已自動清理無效的照片資料。</p>';
+        echo '</div>';
+    }
 }
 
 // 初始化系統
