@@ -1334,7 +1334,8 @@ function byob_restaurant_owner_dashboard() {
         echo '<p><strong>狀態：</strong>已上架</p>';
         echo '<div class="restaurant-actions">';
         echo '<a href="' . admin_url('post.php?post=' . $restaurant->ID . '&action=edit') . '" class="button">編輯餐廳資料</a> ';
-        echo '<a href="' . get_permalink($restaurant->ID) . '" class="button" target="_blank">查看餐廳頁面</a>';
+        echo '<a href="' . get_permalink($restaurant->ID) . '" class="button" target="_blank">查看餐廳頁面</a> ';
+        echo '<a href="' . get_permalink($restaurant->ID) . '" class="button" target="_blank" style="background-color: rgba(139, 38, 53, 0.8); color: white;">👁️ 預覽餐廳</a>';
         echo '</div>';
         echo '</div>';
     }
@@ -1375,6 +1376,11 @@ function byob_restaurant_profile_content() {
     $restaurant = $user_restaurants[0]; // 取第一個餐廳
     $restaurant_id = $restaurant->ID;
     
+    // 預覽餐廳按鈕
+    echo '<div style="text-align: right; margin-bottom: 20px;">';
+    echo '<a href="' . get_permalink($restaurant_id) . '" class="button" target="_blank" style="background-color: rgba(139, 38, 53, 0.8); border-radius: 5px; padding: 10px 20px; font-size: 14px; display: inline-block; text-decoration: none; color: white; border: none;">👁️ 預覽餐廳</a>';
+    echo '</div>';
+    
     // 獲取當前餐廳資料
     $current_logo_id = get_post_meta($restaurant_id, '_restaurant_logo', true);
     $current_logo_url = $current_logo_id ? wp_get_attachment_image_url($current_logo_id, 'thumbnail') : '';
@@ -1387,6 +1393,11 @@ function byob_restaurant_profile_content() {
     echo '<div class="restaurant-profile" style="max-width: 800px;">';
     echo '<h2>餐廳資料編輯</h2>';
     echo '<p>編輯您的餐廳基本資料和 LOGO。</p>';
+    
+    // 預覽餐廳按鈕
+    echo '<div style="text-align: right; margin-bottom: 20px;">';
+    echo '<a href="' . get_permalink($restaurant_id) . '" class="button" target="_blank" style="background-color: rgba(139, 38, 53, 0.8); border-radius: 5px; padding: 10px 20px; font-size: 14px; display: inline-block; text-decoration: none; color: white; border: none;">👁️ 預覽餐廳</a>';
+    echo '</div>';
     
     // 顯示成功/失敗訊息
     if (isset($_GET['message'])) {
@@ -1612,7 +1623,13 @@ function byob_restaurant_photos_content() {
     $can_upload = $photo_count < $max_photos;
     
     echo '<div class="restaurant-photos-management" style="max-width: 800px;">';
-    echo '<h2>餐廳環境照片管理</h2>';
+    echo '<h2>餐廳照片管理</h2>';
+    
+    // 預覽餐廳按鈕
+    echo '<div style="text-align: center; margin: 20px 0; padding: 15px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px;">';
+    echo '<a href="' . get_permalink($restaurant_id) . '" target="_blank" style="background-color: #8b2635; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">👁️ 預覽餐廳</a>';
+    echo '<p style="margin: 10px 0 0 0; color: #666; font-size: 14px;">點擊按鈕在新分頁中預覽您的餐廳前台頁面</p>';
+    echo '</div>';
     
     // 照片上傳區域（永久顯示）
     echo '<div class="photo-upload-section" style="background: #f9f9f9; padding: 20px; margin: 20px 0; border-radius: 8px;">';
@@ -1710,7 +1727,7 @@ function byob_restaurant_photos_content() {
                 echo '<div class="photo-item" style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
                 echo '<div class="photo-preview">';
                 if ($image_url) {
-                    echo '<img src="' . esc_url($image_url) . '" alt="' . esc_attr($photo['description'] ?: '餐廳環境照片') . '" style="width: 100%; height: 150px; object-fit: cover; border-radius: 4px;">';
+                    echo '<img src="' . esc_url($image_url) . '" alt="' . esc_attr($photo['description'] ?: '餐廳照片') . '" style="width: 100%; height: 150px; object-fit: cover; border-radius: 4px;">';
                 } else {
                     echo '<div style="width: 100%; height: 150px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; border-radius: 4px; color: #666;">圖片載入失敗</div>';
                 }
@@ -1854,7 +1871,8 @@ function byob_override_dashboard_content() {
         echo '<h3>快速操作</h3>';
         echo '<a href="' . wc_get_account_endpoint_url('restaurant-profile') . '" class="button" style="margin-right: 10px; background-color: rgba(139, 38, 53, 0.8); border-radius: 5px; padding: 12px 20px; font-size: 16px; display: inline-block; text-decoration: none; color: white;">編輯餐廳資料</a> ';
         echo '<a href="' . wc_get_account_endpoint_url('restaurant-photos') . '" class="button" style="margin-right: 10px; background-color: rgba(139, 38, 53, 0.8); border-radius: 5px; padding: 12px 20px; font-size: 16px; display: inline-block; text-decoration: none; color: white;">管理照片</a> ';
-        echo '<a href="' . wc_get_account_endpoint_url('restaurant-menu') . '" class="button" style="background-color: rgba(139, 38, 53, 0.8); border-radius: 5px; padding: 12px 20px; font-size: 16px; display: inline-block; text-decoration: none; color: white;">管理菜單</a>';
+        echo '<a href="' . wc_get_account_endpoint_url('restaurant-menu') . '" class="button" style="margin-right: 10px; background-color: rgba(139, 38, 53, 0.8); border-radius: 5px; padding: 12px 20px; font-size: 16px; display: inline-block; text-decoration: none; color: white;">管理菜單</a> ';
+        echo '<a href="' . get_permalink($restaurant->ID) . '" class="button" target="_blank" style="background-color: rgba(139, 38, 53, 0.8); border-radius: 5px; padding: 12px 20px; font-size: 16px; display: inline-block; text-decoration: none; color: white;">預覽餐廳</a>';
         echo '</div>';
         
         echo '<div class="restaurant-stats-main" style="background: #f9f9f9; padding: 20px; border-radius: 5px;">';
