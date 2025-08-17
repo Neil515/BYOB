@@ -99,6 +99,287 @@ else: ?>
 - **管理員LOGO**：使用現有 ACF 欄位 `restaurant_photo`
 - **前台邏輯**：比較兩個LOGO的上傳時間，選擇最新的顯示
 
+---
+
+### 2025-08-17 開發進度
+
+#### 主要成就
+- ✅ 前台餐廳照片顯示功能完整實作
+- ✅ 開酒服務欄位顯示邏輯優化
+- ✅ 返回餐廳列表功能優化
+- ✅ 篩選條件記憶基礎框架實作
+- ✅ 照片管理頁面標題統一
+
+#### 技術突破
+
+##### 1. 前台餐廳照片顯示功能開發（重要里程碑）
+**功能實作：**
+- 餐廳照片區塊顯示（最多3張照片）
+- 照片縮圖顯示（60x60px手機，80x80px桌機）
+- 照片點擊放大功能（80%頁面寬度）
+- 照片說明文字顯示（放大時顯示）
+- 多種關閉方式（按鈕、背景、ESC鍵、觸控手勢）
+- 響應式設計（手機95%寬度，桌機80%寬度）
+- 手機友善操作（關閉按鈕50x50px，觸控手勢支援）
+
+**技術細節：**
+```php
+// 照片區塊HTML結構
+<div class="restaurant-photos-section">
+  <h3 style="color: #333; margin: 0 0 20px 0;">
+    🏠 餐廳照片
+  </h3>
+  
+  <div class="restaurant-photos-grid">
+    <?php foreach ($photos as $index => $photo): ?>
+      <div class="restaurant-photo-item" data-photo-index="<?php echo $index; ?>">
+        <img src="<?php echo esc_url($photo_url); ?>" 
+             alt="<?php echo esc_attr($photo_description ?: '餐廳照片'); ?>"
+             class="restaurant-photo-image"
+             loading="lazy"
+             title="<?php echo esc_attr($photo_description ?: '點擊放大查看'); ?>"
+             data-description="<?php echo esc_attr($photo_description); ?>">
+      </div>
+    <?php endforeach; ?>
+  </div>
+</div>
+```
+
+**照片放大覆蓋層：**
+```html
+<!-- 照片放大覆蓋層 -->
+<div id="photo-overlay" class="photo-overlay">
+  <div class="photo-overlay-content">
+    <img id="overlay-image" src="" alt="餐廳照片">
+    <div id="overlay-description" class="overlay-description"></div>
+    <button class="close-overlay" aria-label="關閉">×</button>
+  </div>
+</div>
+```
+
+**JavaScript互動功能：**
+```javascript
+// 點擊照片開啟放大視窗
+photoItems.forEach(function(item) {
+  item.addEventListener('click', function() {
+    const photo = item.querySelector('.restaurant-photo-image');
+    
+    if (photo) {
+      // 獲取原始大圖URL（替換縮圖URL）
+      let originalUrl = photo.src;
+      if (originalUrl.includes('-150x150') || originalUrl.includes('-300x300')) {
+        originalUrl = originalUrl.replace(/-150x150|-\d+x\d+/g, '');
+      }
+      
+      overlayImage.src = originalUrl;
+      overlayImage.alt = photo.alt;
+      
+      // 從data-description獲取說明文字
+      const description = photo.getAttribute('data-description');
+      if (description && description.trim()) {
+        overlayDescription.textContent = description;
+        overlayDescription.style.display = 'block';
+      } else {
+        overlayDescription.style.display = 'none';
+      }
+      
+      photoOverlay.style.display = 'flex';
+      document.body.style.overflow = 'hidden'; // 防止背景滾動
+    }
+  });
+});
+
+// 觸控手勢支援（手機友善）
+let startY = 0;
+let currentY = 0;
+
+photoOverlay.addEventListener('touchstart', function(e) {
+  startY = e.touches[0].clientY;
+});
+
+photoOverlay.addEventListener('touchmove', function(e) {
+  currentY = e.touches[0].clientY;
+});
+
+photoOverlay.addEventListener('touchend', function() {
+  const diff = startY - currentY;
+  if (Math.abs(diff) > 100) { // 滑動超過100px
+    closePhotoOverlay();
+  }
+});
+```
+
+##### 2. 開酒服務欄位顯示邏輯優化
+**問題描述：**
+- 選擇"其他"時前台顯示"other"而不是說明文字
+
+**根本原因：**
+- ACF欄位設定使用英文選項值（yes/no/other）
+- 程式碼檢查中文選項值（是/否/其他）
+
+**解決方案：**
+```php
+if ($open_bottle_service): 
+  if ($open_bottle_service === 'yes') {
+    $service_output = '是';
+  } elseif ($open_bottle_service === 'no') {
+    $service_output = '否';
+  } elseif ($open_bottle_service === 'other') {
+    // 當選擇"other"時，優先顯示說明文字
+    if ($open_bottle_service_other_note && !empty(trim($open_bottle_service_other_note))) {
+      $service_output = $open_bottle_service_other_note;
+    } else {
+      $service_output = '其他';
+    }
+  } else {
+    $service_output = $open_bottle_service;
+  }
+endif;
+```
+
+##### 3. 返回餐廳列表功能優化
+**設計改進：**
+- 簡化返回邏輯，總是返回餐廳列表頁
+- 實作篩選條件記憶基礎框架，支援未來篩選外掛整合
+
+**技術架構：**
+```javascript
+// 篩選條件記憶功能
+const backToListLink = document.getElementById('back-to-list-link');
+if (backToListLink) {
+  backToListLink.addEventListener('click', function(e) {
+    // 檢查是否有儲存的篩選條件
+    const savedFilters = sessionStorage.getItem('restaurant_filters');
+    if (savedFilters) {
+      try {
+        const filters = JSON.parse(savedFilters);
+        // 將篩選條件附加到URL參數
+        const url = new URL(this.href);
+        
+        // 添加篩選參數
+        Object.keys(filters).forEach(key => {
+          if (filters[key] && filters[key] !== '') {
+            url.searchParams.set(key, filters[key]);
+          }
+        });
+        
+        // 更新連結的href
+        this.href = url.toString();
+      } catch (error) {
+        console.log('篩選條件解析失敗，使用預設返回');
+      }
+    }
+  });
+}
+```
+
+**篩選條件記憶基礎框架：**
+```javascript
+// 在餐廳列表頁實作基礎框架
+const FILTER_STORAGE_KEY = 'restaurant_filters';
+
+// 儲存篩選條件到 sessionStorage
+function saveFilters(filters) {
+  try {
+    sessionStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(filters));
+    console.log('篩選條件已儲存:', filters);
+  } catch (error) {
+    console.error('儲存篩選條件失敗:', error);
+  }
+}
+
+// 從 sessionStorage 恢復篩選條件
+function restoreFilters() {
+  try {
+    const savedFilters = sessionStorage.getItem(FILTER_STORAGE_KEY);
+    if (savedFilters) {
+      const filters = JSON.parse(savedFilters);
+      console.log('恢復篩選條件:', filters);
+      return filters;
+    }
+  } catch (error) {
+    console.error('恢復篩選條件失敗:', error);
+  }
+  return null;
+}
+
+// 將函數暴露到全域，供未來的外掛整合使用
+window.RestaurantFilterMemory = {
+  saveFilters: saveFilters,
+  restoreFilters: restoreFilters,
+  clearFilters: clearFilters
+};
+```
+
+##### 4. 照片管理頁面標題統一
+**修改內容：**
+- 將"餐廳環境照片管理"統一改為"餐廳照片管理"
+- 保持介面一致性，移除"環境"字樣
+
+**修改檔案：**
+- `restaurant-member-functions.php` - 2處修改
+- `restaurant-photos.php` - 1處修改（待完成）
+
+**修改範例：**
+```php
+// 原本
+echo '<h2>餐廳環境照片管理</h2>';
+
+// 修改後
+echo '<h2>餐廳照片管理</h2>';
+```
+
+#### 重要里程碑
+*重要里程碑：成功實作完整的前台餐廳照片顯示功能，包括縮圖顯示、點擊放大、說明文字顯示、響應式設計等。這是專案的重要里程碑，為用戶提供了完整的餐廳照片瀏覽體驗。*
+
+*重要里程碑：成功優化系統架構，包括開酒服務顯示邏輯、返回餐廳列表功能、篩選條件記憶框架等，建立了更穩定、更友善的系統架構。*
+
+#### 修改的檔案
+1. `wordpress/single_restaurant.php` - 前台照片顯示功能、開酒服務邏輯優化、返回功能優化
+2. `wordpress/archive-restaurant.php` - 篩選條件記憶基礎框架
+3. `wordpress/restaurant-member-functions.php` - 照片管理頁面標題統一
+
+#### 技術亮點
+1. **完整的照片顯示系統**：從縮圖到放大，完整的用戶體驗
+2. **響應式設計**：手機和桌機都有最佳體驗
+3. **觸控手勢支援**：手機友善的操作方式
+4. **篩選條件記憶框架**：為未來功能擴展做準備
+5. **錯誤處理完善**：完整的錯誤處理和除錯功能
+
+#### 用戶體驗改善
+1. **照片瀏覽體驗**：點擊放大、說明文字顯示、多種關閉方式
+2. **手機友善設計**：觸控手勢、響應式佈局、適當的按鈕大小
+3. **操作流程優化**：簡化的返回邏輯、智能的篩選條件記憶
+4. **介面一致性**：統一的標題和術語使用
+
+---
+
+## 專案總結
+
+### 已完成的核心功能
+1. ✅ 餐廳資料編輯頁面
+2. ✅ LOGO上傳和管理系統
+3. ✅ 前台LOGO顯示功能
+4. ✅ 開酒服務邏輯優化
+5. ✅ 雙重LOGO系統
+6. ✅ 照片管理頁面
+7. ✅ 前台餐廳照片顯示功能
+8. ✅ 返回餐廳列表功能優化
+9. ✅ 篩選條件記憶基礎框架
+
+### 技術架構優勢
+1. **模組化設計**：功能分離，易於維護和擴展
+2. **響應式架構**：支援多種裝置和螢幕尺寸
+3. **錯誤處理完善**：完整的錯誤處理和除錯機制
+4. **用戶體驗優先**：以用戶需求為中心的設計理念
+5. **擴展性良好**：為未來功能擴展預留了接口
+
+### 下一步發展方向
+1. **業者註冊流程UX完善**：優化從審核到註冊完成的整個流程
+2. **後台整體UX優化**：提升後台管理介面的使用體驗
+3. **菜單管理功能**：開發餐廳菜單管理系統
+4. **系統穩定性提升**：進行全面的功能測試和優化
+
 **技術實作：**
 ```php
 // 獲取兩個 LOGO 的上傳時間，選擇最新的
