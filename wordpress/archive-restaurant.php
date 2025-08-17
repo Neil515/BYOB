@@ -25,6 +25,64 @@
 <div class="page-header">
   <h1 class="page-title">所有餐廳列表</h1>
 </div>
+
+<!-- 篩選條件記憶功能 -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // 篩選條件記憶功能
+  const FILTER_STORAGE_KEY = 'restaurant_filters';
+  
+  // 儲存篩選條件到 sessionStorage
+  function saveFilters(filters) {
+    try {
+      sessionStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(filters));
+      console.log('篩選條件已儲存:', filters);
+    } catch (error) {
+      console.error('儲存篩選條件失敗:', error);
+    }
+  }
+  
+  // 從 sessionStorage 恢復篩選條件
+  function restoreFilters() {
+    try {
+      const savedFilters = sessionStorage.getItem(FILTER_STORAGE_KEY);
+      if (savedFilters) {
+        const filters = JSON.parse(savedFilters);
+        console.log('恢復篩選條件:', filters);
+        return filters;
+      }
+    } catch (error) {
+      console.error('恢復篩選條件失敗:', error);
+    }
+    return null;
+  }
+  
+  // 清除篩選條件
+  function clearFilters() {
+    try {
+      sessionStorage.removeItem(FILTER_STORAGE_KEY);
+      console.log('篩選條件已清除');
+    } catch (error) {
+      console.error('清除篩選條件失敗:', error);
+    }
+  }
+  
+  // 頁面載入時嘗試恢復篩選條件
+  const savedFilters = restoreFilters();
+  if (savedFilters) {
+    console.log('發現儲存的篩選條件，等待外掛整合...');
+    // 這裡未來會與您購買的篩選外掛整合
+  }
+  
+  // 將函數暴露到全域，供未來的外掛整合使用
+  window.RestaurantFilterMemory = {
+    saveFilters: saveFilters,
+    restoreFilters: restoreFilters,
+    clearFilters: clearFilters
+  };
+});
+</script>
+
 <div class="restaurant-archive-list">
   
   <?php if ( have_posts() ) : while ( have_posts() ) : the_post(); ?>
