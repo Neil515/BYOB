@@ -170,21 +170,21 @@
          echo '<!-- DEBUG: open_bottle_service_other_note = ' . var_export($open_bottle_service_other_note, true) . ' -->';
        }
 
-       if ($open_bottle_service): 
-         if ($open_bottle_service === '是') {
-           $service_output = '是';
-         } elseif ($open_bottle_service === '否') {
-           $service_output = '否';
-         } elseif ($open_bottle_service === '其他') {
-           // 當選擇"其他"時，優先顯示說明文字
-           if ($open_bottle_service_other_note && !empty(trim($open_bottle_service_other_note))) {
-             $service_output = $open_bottle_service_other_note;
-           } else {
-             $service_output = '其他';
-           }
-         } else {
-           $service_output = $open_bottle_service;
-         }
+               if ($open_bottle_service): 
+          if ($open_bottle_service === 'yes') {
+            $service_output = '是';
+          } elseif ($open_bottle_service === 'no') {
+            $service_output = '否';
+          } elseif ($open_bottle_service === 'other') {
+            // 當選擇"other"時，優先顯示說明文字
+            if ($open_bottle_service_other_note && !empty(trim($open_bottle_service_other_note))) {
+              $service_output = $open_bottle_service_other_note;
+            } else {
+              $service_output = '其他';
+            }
+          } else {
+            $service_output = $open_bottle_service;
+          }
        ?>
          <div class="field"><strong>是否提供開酒服務：</strong><?php echo esc_html($service_output); ?></div>
        <?php else: ?>
@@ -304,25 +304,14 @@
   <!-- 底部操作按鈕 -->
   <div class="single-page-actions">
     <div class="back-to-list">
-      <?php
-      // 智能返回邏輯
-      $referer = wp_get_referer();
-      $archive_url = get_post_type_archive_link('restaurant');
-      $home_url = home_url();
-      
-      // 檢查是否有有效的來源頁面
-      if ($referer && $referer !== get_permalink() && strpos($referer, $home_url) === 0) {
-        // 有有效來源頁面，返回上一頁
-        $back_url = $referer;
-      } else {
-        // 沒有有效來源頁面，返回餐廳列表總表
-        $back_url = $archive_url;
-      }
-      ?>
-      
-      <a href="<?php echo esc_url($back_url); ?>" class="back-link">
-        << 返回餐廳列表
-      </a>
+             <?php
+       // 簡化返回邏輯：總是返回餐廳列表頁
+       $archive_url = get_post_type_archive_link('restaurant');
+       ?>
+       
+       <a href="<?php echo esc_url($archive_url); ?>" class="back-link" id="back-to-list-link">
+         << 返回餐廳列表
+       </a>
     </div>
     
     <div class="contact-restaurant">
@@ -422,25 +411,53 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
   
-  // 觸控手勢支援（手機友善）
-  let startY = 0;
-  let currentY = 0;
-  
-  photoOverlay.addEventListener('touchstart', function(e) {
-    startY = e.touches[0].clientY;
-  });
-  
-  photoOverlay.addEventListener('touchmove', function(e) {
-    currentY = e.touches[0].clientY;
-  });
-  
-  photoOverlay.addEventListener('touchend', function() {
-    const diff = startY - currentY;
-    if (Math.abs(diff) > 100) { // 滑動超過100px
-      closePhotoOverlay();
-    }
-  });
-});
+     // 觸控手勢支援（手機友善）
+   let startY = 0;
+   let currentY = 0;
+   
+   photoOverlay.addEventListener('touchstart', function(e) {
+     startY = e.touches[0].clientY;
+   });
+   
+   photoOverlay.addEventListener('touchmove', function(e) {
+     currentY = e.touches[0].clientY;
+   });
+   
+   photoOverlay.addEventListener('touchend', function() {
+     const diff = startY - currentY;
+     if (Math.abs(diff) > 100) { // 滑動超過100px
+       closePhotoOverlay();
+     }
+   });
+   
+   // 篩選條件記憶功能
+   const backToListLink = document.getElementById('back-to-list-link');
+   if (backToListLink) {
+     backToListLink.addEventListener('click', function(e) {
+       // 檢查是否有儲存的篩選條件
+       const savedFilters = sessionStorage.getItem('restaurant_filters');
+       if (savedFilters) {
+         try {
+           const filters = JSON.parse(savedFilters);
+           // 將篩選條件附加到URL參數
+           const url = new URL(this.href);
+           
+           // 添加篩選參數
+           Object.keys(filters).forEach(key => {
+             if (filters[key] && filters[key] !== '') {
+               url.searchParams.set(key, filters[key]);
+             }
+           });
+           
+           // 更新連結的href
+           this.href = url.toString();
+         } catch (error) {
+           console.log('篩選條件解析失敗，使用預設返回');
+         }
+       }
+     });
+   }
+ });
 </script>
 
 <?php get_footer(); ?>
