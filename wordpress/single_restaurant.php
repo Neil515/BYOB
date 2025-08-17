@@ -160,31 +160,36 @@
         <div class="field"><strong>提供酒器設備：</strong>暫無資料</div>
       <?php endif; ?>
 
-      <?php 
-      $open_bottle_service = get_field('open_bottle_service');
-      $open_bottle_service_other_note = get_field('open_bottle_service_other_note');
-      
-      // 除錯：顯示原始值和類型
-      if (current_user_can('administrator')) {
-        echo '<!-- DEBUG: open_bottle_service = ' . var_export($open_bottle_service, true) . ' -->';
-        echo '<!-- DEBUG: open_bottle_service_other_note = ' . var_export($open_bottle_service_other_note, true) . ' -->';
-      }
+                    <?php 
+       $open_bottle_service = get_field('open_bottle_service');
+       $open_bottle_service_other_note = get_field('open_bottle_service_other_note');
+       
+       // 除錯：顯示原始值和類型
+       if (current_user_can('administrator')) {
+         echo '<!-- DEBUG: open_bottle_service = ' . var_export($open_bottle_service, true) . ' -->';
+         echo '<!-- DEBUG: open_bottle_service_other_note = ' . var_export($open_bottle_service_other_note, true) . ' -->';
+       }
 
-      if ($open_bottle_service): 
-        if ($open_bottle_service === '是') {
-          $service_output = '是';
-        } elseif ($open_bottle_service === '否') {
-          $service_output = '否';
-        } elseif ($open_bottle_service === '其他') {
-          $service_output = '其他：' . ($open_bottle_service_other_note ?: '無說明');
-        } else {
-          $service_output = $open_bottle_service;
-        }
-      ?>
-        <div class="field"><strong>是否提供開酒服務：</strong><?php echo esc_html($service_output); ?></div>
-      <?php else: ?>
-        <div class="field"><strong>是否提供開酒服務：</strong>暫無資料</div>
-      <?php endif; ?>
+       if ($open_bottle_service): 
+         if ($open_bottle_service === '是') {
+           $service_output = '是';
+         } elseif ($open_bottle_service === '否') {
+           $service_output = '否';
+         } elseif ($open_bottle_service === '其他') {
+           // 當選擇"其他"時，優先顯示說明文字
+           if ($open_bottle_service_other_note && !empty(trim($open_bottle_service_other_note))) {
+             $service_output = $open_bottle_service_other_note;
+           } else {
+             $service_output = '其他';
+           }
+         } else {
+           $service_output = $open_bottle_service;
+         }
+       ?>
+         <div class="field"><strong>是否提供開酒服務：</strong><?php echo esc_html($service_output); ?></div>
+       <?php else: ?>
+         <div class="field"><strong>是否提供開酒服務：</strong>暫無資料</div>
+       <?php endif; ?>
     </div>
 
 	<!-- 連結資訊（合併官網與社群連結） -->
@@ -222,6 +227,79 @@
       <?php endif; ?>
     </div>
   </div>
+  
+  <!-- 餐廳照片區塊 -->
+  <?php
+  // 獲取餐廳照片
+  $photo_1 = get_field('restaurant_photo_1', get_the_ID());
+  $photo_2 = get_field('restaurant_photo_2', get_the_ID());
+  $photo_3 = get_field('restaurant_photo_3', get_the_ID());
+  
+  $photos = array();
+  
+  // 檢查照片是否有效並添加到陣列
+  if ($photo_1 && !empty($photo_1['photo'])) {
+    $photos[] = $photo_1;
+  }
+  if ($photo_2 && !empty($photo_2['photo'])) {
+    $photos[] = $photo_2;
+  }
+  if ($photo_3 && !empty($photo_3['photo'])) {
+    $photos[] = $photo_3;
+  }
+  
+  // 如果有照片才顯示區塊
+  if (!empty($photos)): ?>
+    <div class="restaurant-photos-section">
+      <h3 style="color: #333; margin: 0 0 20px 0;">
+        🏠 餐廳照片
+      </h3>
+      
+      <div class="restaurant-photos-grid">
+        <?php foreach ($photos as $index => $photo): 
+          $photo_id = null;
+          $photo_url = '';
+          $photo_description = '';
+          
+          // 正確獲取照片說明
+          if (isset($photo['description']) && !empty($photo['description'])) {
+            $photo_description = $photo['description'];
+          }
+          
+          // 獲取照片ID
+          if (isset($photo['photo'])) {
+            if (is_numeric($photo['photo'])) {
+              $photo_id = intval($photo['photo']);
+            } elseif (is_array($photo['photo']) && isset($photo['photo']['ID'])) {
+              $photo_id = intval($photo['photo']['ID']);
+            }
+          }
+          
+          // 獲取照片URL - 使用縮圖尺寸
+          if ($photo_id) {
+            $photo_url = wp_get_attachment_image_url($photo_id, 'thumbnail');
+            if (!$photo_url) {
+              $photo_url = wp_get_attachment_image_url($photo_id, 'medium');
+            }
+            if (!$photo_url) {
+              $photo_url = wp_get_attachment_url($photo_id);
+            }
+          }
+          
+          if ($photo_url): ?>
+            <div class="restaurant-photo-item" data-photo-index="<?php echo $index; ?>">
+              <img src="<?php echo esc_url($photo_url); ?>" 
+                   alt="<?php echo esc_attr($photo_description ?: '餐廳照片'); ?>"
+                   class="restaurant-photo-image"
+                   loading="lazy"
+                   title="<?php echo esc_attr($photo_description ?: '點擊放大查看'); ?>"
+                   data-description="<?php echo esc_attr($photo_description); ?>">
+            </div>
+          <?php endif;
+        endforeach; ?>
+      </div>
+    </div>
+  <?php endif; ?>
   
   <!-- 底部操作按鈕 -->
   <div class="single-page-actions">
@@ -272,5 +350,97 @@
     </div>
   </div>
 </div>
+
+<!-- 照片放大覆蓋層 -->
+<div id="photo-overlay" class="photo-overlay">
+  <div class="photo-overlay-content">
+    <img id="overlay-image" src="" alt="餐廳照片">
+    <div id="overlay-description" class="overlay-description"></div>
+    <button class="close-overlay" aria-label="關閉">×</button>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const photoItems = document.querySelectorAll('.restaurant-photo-item');
+  const photoOverlay = document.getElementById('photo-overlay');
+  const overlayImage = document.getElementById('overlay-image');
+  const overlayDescription = document.getElementById('overlay-description');
+  const closeOverlay = document.querySelector('.close-overlay');
+  
+  // 點擊照片開啟放大視窗
+  photoItems.forEach(function(item) {
+    item.addEventListener('click', function() {
+      const photo = item.querySelector('.restaurant-photo-image');
+      
+      if (photo) {
+        // 獲取原始大圖URL（替換縮圖URL）
+        let originalUrl = photo.src;
+        if (originalUrl.includes('-150x150') || originalUrl.includes('-300x300')) {
+          // 如果是縮圖，嘗試獲取原始圖
+          originalUrl = originalUrl.replace(/-150x150|-\d+x\d+/g, '');
+        }
+        
+        overlayImage.src = originalUrl;
+        overlayImage.alt = photo.alt;
+        
+        // 從data-description獲取說明文字
+        const description = photo.getAttribute('data-description');
+        if (description && description.trim()) {
+          overlayDescription.textContent = description;
+          overlayDescription.style.display = 'block';
+        } else {
+          overlayDescription.style.display = 'none';
+        }
+        
+        photoOverlay.style.display = 'flex';
+        document.body.style.overflow = 'hidden'; // 防止背景滾動
+      }
+    });
+  });
+  
+  // 關閉放大視窗
+  function closePhotoOverlay() {
+    photoOverlay.style.display = 'none';
+    document.body.style.overflow = ''; // 恢復背景滾動
+  }
+  
+  // 點擊關閉按鈕
+  closeOverlay.addEventListener('click', closePhotoOverlay);
+  
+  // 點擊背景關閉
+  photoOverlay.addEventListener('click', function(e) {
+    if (e.target === photoOverlay) {
+      closePhotoOverlay();
+    }
+  });
+  
+  // ESC鍵關閉
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && photoOverlay.style.display === 'flex') {
+      closePhotoOverlay();
+    }
+  });
+  
+  // 觸控手勢支援（手機友善）
+  let startY = 0;
+  let currentY = 0;
+  
+  photoOverlay.addEventListener('touchstart', function(e) {
+    startY = e.touches[0].clientY;
+  });
+  
+  photoOverlay.addEventListener('touchmove', function(e) {
+    currentY = e.touches[0].clientY;
+  });
+  
+  photoOverlay.addEventListener('touchend', function() {
+    const diff = startY - currentY;
+    if (Math.abs(diff) > 100) { // 滑動超過100px
+      closePhotoOverlay();
+    }
+  });
+});
+</script>
 
 <?php get_footer(); ?>
