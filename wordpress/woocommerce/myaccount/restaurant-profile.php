@@ -266,6 +266,12 @@ if ($message_to_show) {
 echo '<div class="restaurant-profile-header" style="margin-bottom: 30px;">';
 echo '<h1 style="color: #333; margin-bottom: 10px; text-align: center;">餐廳資料編輯</h1>';
 echo '<p style="color: #666; font-size: 16px; text-align: left;">編輯您的餐廳基本資料和 LOGO</p>';
+
+// 預覽餐廳按鈕
+echo '<div style="text-align: right; margin-top: 15px;">';
+echo '<a href="' . get_permalink($restaurant_id) . '" class="button" target="_blank" style="background-color: rgba(139, 38, 53, 0.8); border-radius: 5px; padding: 10px 20px; font-size: 14px; display: inline-block; text-decoration: none; color: white; border: none;">👁️ 預覽餐廳</a>';
+echo '</div>';
+
 echo '</div>';
 
 // 主要表單
