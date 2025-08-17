@@ -8,46 +8,37 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-// 除錯：顯示基本資訊
-echo '<div style="background: #f0f0f0; padding: 20px; margin: 20px; border: 2px solid #333;">';
-echo '<h3>除錯資訊</h3>';
-
 // 檢查用戶權限
 $user_id = get_current_user_id();
-echo '<p>用戶ID: ' . ($user_id ? $user_id : '未登入') . '</p>';
-
 if (!$user_id) {
-    echo '<p>錯誤：用戶未登入</p>';
+    echo '<div style="background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 20px; border-radius: 8px; text-align: center;">';
+    echo '<h3>❌ 請先登入</h3>';
+    echo '<p>您需要登入才能管理餐廳照片。</p>';
     echo '</div>';
     return;
 }
 
 // 檢查用戶角色
 $user = get_user_by('id', $user_id);
-$roles = $user ? $user->roles : array();
-echo '<p>用戶角色: ' . implode(', ', $roles) . '</p>';
-
-if (!in_array('restaurant_owner', $roles)) {
-    echo '<p>錯誤：用戶不是餐廳業者</p>';
+if (!in_array('restaurant_owner', $user->roles)) {
+    echo '<div style="background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 20px; border-radius: 8px; text-align: center;">';
+    echo '<h3>❌ 權限不足</h3>';
+    echo '<p>只有餐廳業者才能存取此頁面。</p>';
     echo '</div>';
     return;
 }
 
 // 獲取用戶的餐廳
-echo '<p>正在獲取用戶餐廳...</p>';
 $user_restaurants = byob_get_user_restaurants($user_id);
-echo '<p>餐廳數量: ' . count($user_restaurants) . '</p>';
-
 if (empty($user_restaurants)) {
-    echo '<p>錯誤：用戶沒有關聯的餐廳</p>';
+    echo '<div style="background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; padding: 20px; border-radius: 8px; text-align: center;">';
+    echo '<h3>⚠️ 注意</h3>';
+    echo '<p>您目前沒有關聯的餐廳。請聯絡管理員。</p>';
     echo '</div>';
     return;
 }
 
 $restaurant_id = $user_restaurants[0]->ID;
-echo '<p>餐廳ID: ' . $restaurant_id . '</p>';
-echo '<p>餐廳名稱: ' . $user_restaurants[0]->post_title . '</p>';
-echo '</div>';
 
 // 處理照片上傳
 if ($_POST['action'] === 'upload_photos') {
@@ -92,7 +83,14 @@ $can_upload = $photo_count < $max_photos;
 ?>
 
 <div class="restaurant-photos-management">
-    <h2>餐廳環境照片管理</h2>
+    <h2>餐廳照片管理</h2>
+    
+    <!-- 預覽餐廳按鈕 -->
+    <div style="text-align: center; margin: 20px 0; padding: 15px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px;">
+        <a href="<?php echo get_permalink($restaurant_id); ?>" target="_blank" style="background-color: #8b2635; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">👁️ 預覽餐廳</a>
+        <p style="margin: 10px 0 0 0; color: #666; font-size: 14px;">點擊按鈕在新分頁中預覽您的餐廳前台頁面</p>
+        <p style="margin: 5px 0 0 0; color: #999; font-size: 12px;">餐廳ID: <?php echo $restaurant_id; ?> | 連結: <?php echo get_permalink($restaurant_id); ?></p>
+    </div>
     
     <!-- 照片上傳區域 -->
     <?php if ($can_upload): ?>
@@ -143,7 +141,7 @@ $can_upload = $photo_count < $max_photos;
                     <div class="photo-item">
                         <div class="photo-preview">
                             <img src="<?php echo esc_url($photo['photo']['sizes']['thumbnail']); ?>" 
-                                 alt="<?php echo esc_attr($photo['description'] ?: '餐廳環境照片'); ?>">
+                                 alt="<?php echo esc_attr($photo['description'] ?: '餐廳照片'); ?>">
                         </div>
                         <div class="photo-info">
                             <?php if ($photo['description']): ?>
