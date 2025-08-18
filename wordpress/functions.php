@@ -1496,3 +1496,322 @@ function byob_load_restaurant_profile_content() {
 
 // 使用 WooCommerce 內容鉤子
 add_action('woocommerce_account_content', 'byob_load_restaurant_profile_content', 5);
+
+// 載入餐廳註冊功能（安全載入）
+$restaurant_registration_file = get_template_directory() . '/restaurant-registration-functions.php';
+if (file_exists($restaurant_registration_file)) {
+    require_once $restaurant_registration_file;
+} else {
+    // 記錄錯誤但不中斷網站
+    error_log('BYOB: 餐廳註冊功能檔案不存在: ' . $restaurant_registration_file);
+}
+
+// 餐廳註冊短代碼函數（直接嵌入，確保功能正常）
+function byob_restaurant_registration_shortcode($atts) {
+    $atts = shortcode_atts(array(
+        'show_title' => 'true',
+        'theme' => 'default'
+    ), $atts);
+    
+    ob_start();
+    
+    // 載入JavaScript檔案（修正路徑）
+    $js_file = get_template_directory_uri() . '/restaurant-registration.js';
+    $js_file_alt = get_stylesheet_directory_uri() . '/restaurant-registration.js';
+    
+    // 檢查檔案是否存在，優先使用子主題路徑
+    if (file_exists(get_stylesheet_directory() . '/restaurant-registration.js')) {
+        wp_enqueue_script('restaurant-registration', $js_file_alt, array('jquery'), '1.0.0', true);
+    } elseif (file_exists(get_template_directory() . '/restaurant-registration.js')) {
+        wp_enqueue_script('restaurant-registration', $js_file, array('jquery'), '1.0.0', true);
+    } else {
+        // 如果檔案都不存在，記錄錯誤
+        error_log('BYOB: restaurant-registration.js 檔案不存在於以下路徑：');
+        error_log('BYOB: 子主題路徑：' . get_stylesheet_directory() . '/restaurant-registration.js');
+        error_log('BYOB: 父主題路徑：' . get_template_directory() . '/restaurant-registration.js');
+    }
+    
+    // 顯示註冊表單
+    ?>
+    <div class="restaurant-registration-container">
+
+        
+        <?php
+        // 檢查是否為成功狀態
+        if (isset($_GET['registration']) && $_GET['registration'] === 'success') {
+            // 獲取餐廳ID和名稱
+            $restaurant_id = isset($_GET['restaurant_id']) ? intval($_GET['restaurant_id']) : 0;
+            
+            // 調試信息（暫時顯示）
+            echo '<!-- 調試信息: restaurant_id = ' . $restaurant_id . ' -->';
+            
+            // 建立單一餐廳頁面連結
+            if ($restaurant_id) {
+                $restaurant = get_post($restaurant_id);
+                if ($restaurant && $restaurant->post_type === 'restaurant') {
+                    // 使用餐廳的 slug 建立正確的單一餐廳頁面連結
+                    $restaurant_slug = $restaurant->post_name;
+                    $restaurant_permalink = home_url('/byob-restaurant/' . $restaurant_slug . '/');
+                    echo '<!-- 調試信息: restaurant_slug = ' . $restaurant_slug . ' -->';
+                    echo '<!-- 調試信息: restaurant_permalink = ' . $restaurant_permalink . ' -->';
+                } else {
+                    $restaurant_permalink = home_url('/byob-restaurant/');
+                    echo '<!-- 調試信息: 無法獲取餐廳資訊或類型不正確 -->';
+                }
+            } else {
+                $restaurant_permalink = home_url('/byob-restaurant/');
+                echo '<!-- 調試信息: 沒有餐廳ID -->';
+            }
+            
+            // 顯示成功訊息
+            echo '<div class="success-message">';
+            echo '<h3>🎉 餐廳上架成功！</h3>';
+            echo '<p>恭喜！您的餐廳已經成功上架並出現在網站上。</p>';
+            echo '<div class="success-actions">';
+            echo '<h4>🚀 立即開始使用</h4>';
+            echo '<div class="action-buttons">';
+            echo '<a href="https://byobmap.com/my-account/" class="btn btn-primary">立即登入</a>';
+            echo '<a href="' . $restaurant_permalink . '" class="btn btn-primary">查看餐廳</a>';
+            echo '</div>';
+            echo '</div>';
+            echo '<div class="success-info">';
+            echo '<h4>✨ 您現在可以：</h4>';
+            echo '<ul>';
+            echo '<li>✅ 登入後台管理餐廳資訊</li>';
+            echo '<li>✅ 上傳餐廳照片</li>';
+            echo '<li>✅ 更新BYOB政策</li>';
+            echo '<li>✅ 查看餐廳瀏覽統計</li>';
+            echo '</ul>';
+            echo '</div>';
+            echo '<div class="next-steps">';
+            echo '<h4>📋 下一步操作：</h4>';
+            echo '<ol>';
+            echo '<li>點擊上方「立即登入」按鈕</li>';
+            echo '<li>使用剛才填寫的Email登入帳號</li>';
+            echo '<li>登入後即可開始管理餐廳</li>';
+            echo '</ol>';
+            echo '</div>';
+            echo '</div>';
+        } else {
+            // 顯示註冊表單
+            ?>
+            <form id="restaurant-registration-form" class="registration-form" method="post">
+            <?php wp_nonce_field('restaurant_registration', 'registration_nonce'); ?>
+            
+            <!-- 基本資訊 -->
+            <div class="form-section">
+                <h3>基本資訊</h3>
+                
+                <div class="form-group">
+                    <label for="restaurant_name">餐廳名稱 *</label>
+                    <input type="text" id="restaurant_name" name="restaurant_name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="contact_person">聯絡人姓名 *</label>
+                    <input type="text" id="contact_person" name="contact_person" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">聯絡Email *</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="phone">聯絡電話 *</label>
+                    <input type="tel" id="phone" name="phone" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="is_owner">您是否為餐廳業者？</label>
+                    <select id="is_owner" name="is_owner">
+                        <option value="是">是</option>
+                        <option value="否">否</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- 餐廳詳情 -->
+            <div class="form-section">
+                <h3>餐廳詳情</h3>
+                
+                <div class="form-group">
+                    <label for="restaurant_type">餐廳類型 *</label>
+                    <select id="restaurant_type" name="restaurant_type" required>
+                        <option value="">請選擇</option>
+                        <option value="牛排">牛排</option>
+                        <option value="燒烤">燒烤</option>
+                        <option value="火鍋">火鍋</option>
+                        <option value="其他">其他</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="district">行政區 *</label>
+                    <select id="district" name="district" required>
+                        <option value="">請選擇</option>
+                        <option value="中正區">中正區</option>
+                        <option value="大同區">大同區</option>
+                        <option value="中山區">中山區</option>
+                        <option value="松山區">松山區</option>
+                        <option value="大安區">大安區</option>
+                        <option value="萬華區">萬華區</option>
+                        <option value="信義區">信義區</option>
+                        <option value="士林區">士林區</option>
+                        <option value="北投區">北投區</option>
+                        <option value="內湖區">內湖區</option>
+                        <option value="南港區">南港區</option>
+                        <option value="文山區">文山區</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="address">餐廳地址 *</label>
+                    <textarea id="address" name="address" rows="3" required></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="website">餐廳網站</label>
+                    <input type="url" id="website" name="website" placeholder="https://">
+                </div>
+                
+                <div class="form-group">
+                    <label for="social_media">社群媒體連結</label>
+                    <input type="text" id="social_media" name="social_media" placeholder="Instagram 或 Facebook 連結">
+                </div>
+            </div>
+            
+            <!-- BYOB政策 -->
+            <div class="form-section">
+                <h3>BYOB政策</h3>
+                
+                <div class="form-group">
+                    <label for="is_charged">是否酌收開瓶費？ *</label>
+                    <select id="is_charged" name="is_charged" required>
+                        <option value="">請選擇</option>
+                        <option value="酌收">酌收</option>
+                        <option value="不收">不收</option>
+                        <option value="其他">其他</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="corkage_fee_group" style="display: none;">
+                    <label for="corkage_fee">開瓶費金額</label>
+                    <input type="text" id="corkage_fee" name="corkage_fee" placeholder="例：100元/瓶">
+                </div>
+                
+                <div class="form-group">
+                    <label for="equipment">提供哪些開瓶設備？</label>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" name="equipment[]" value="開瓶器"> 開瓶器</label>
+                        <label><input type="checkbox" name="equipment[]" value="醒酒器"> 醒酒器</label>
+                        <label><input type="checkbox" name="equipment[]" value="冰桶"> 冰桶</label>
+                        <label><input type="checkbox" name="equipment[]" value="酒杯"> 酒杯</label>
+                        <label><input type="checkbox" name="equipment[]" value="其他"> 其他</label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="open_bottle_service">是否提供開瓶服務？</label>
+                    <select id="open_bottle_service" name="open_bottle_service">
+                        <option value="">請選擇</option>
+                        <option value="是">是</option>
+                        <option value="否">否</option>
+                        <option value="其他">其他</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="notes">其他備註</label>
+                    <textarea id="notes" name="notes" rows="4" placeholder="請描述您的餐廳特色、BYOB政策細節或其他重要資訊"></textarea>
+                </div>
+            </div>
+            
+            <!-- 同意條款 -->
+            <div class="form-section">
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="agree_terms" name="agree_terms" required>
+                        我同意遵守BYOB平台的使用條款和隱私政策
+                    </label>
+                </div>
+            </div>
+            
+            <!-- 提交按鈕 -->
+            <div class="form-submit">
+                <button type="submit" class="btn btn-success">立即上架餐廳</button>
+            </div>
+        </form>
+        
+        <!-- 載入中提示 -->
+        <div id="loading" class="loading-overlay" style="display: none;">
+            <div class="loading-spinner"></div>
+            <p>正在處理您的申請...</p>
+        </div>
+        <?php
+        } // 關閉 else 條件語句
+        ?>
+    </div>
+    <?php
+    
+    return ob_get_clean();
+}
+
+// 註冊短代碼
+add_shortcode('restaurant_registration_form', 'byob_restaurant_registration_shortcode');
+
+// 處理表單提交
+add_action('init', 'byob_handle_restaurant_registration');
+
+function byob_handle_restaurant_registration() {
+    // 檢查是否為表單提交
+    if (!isset($_POST['registration_nonce']) || !wp_verify_nonce($_POST['registration_nonce'], 'restaurant_registration')) {
+        return;
+    }
+    
+    // 處理表單資料
+    $restaurant_name = sanitize_text_field($_POST['restaurant_name']);
+    $contact_person = sanitize_text_field($_POST['contact_person']);
+    $email = sanitize_email($_POST['email']);
+    $phone = sanitize_text_field($_POST['phone']);
+    
+    // 建立餐廳文章（直接發布狀態）
+    $post_data = array(
+        'post_title' => $restaurant_name,
+        'post_content' => sanitize_textarea_field($_POST['notes']),
+        'post_status' => 'publish',  // 改為直接發布
+        'post_type' => 'restaurant',
+        'post_author' => 1,
+    );
+    
+    $post_id = wp_insert_post($post_data);
+    
+    if (is_wp_error($post_id)) {
+        wp_die('建立餐廳文章失敗：' . $post_id->get_error_message());
+    }
+    
+    // 更新ACF欄位
+    if (function_exists('update_field')) {
+        update_field('contact_person', $contact_person, $post_id);
+        update_field('email', $email, $post_id);
+        update_field('phone', $phone, $post_id);
+        update_field('restaurant_type', $_POST['restaurant_type'], $post_id);
+        update_field('district', $_POST['district'], $post_id);
+        update_field('address', sanitize_textarea_field($_POST['address']), $post_id);
+        update_field('is_charged', $_POST['is_charged'], $post_id);
+        update_field('corkage_fee', sanitize_text_field($_POST['corkage_fee']), $post_id);
+        update_field('equipment', $_POST['equipment'], $post_id);
+        update_field('open_bottle_service', $_POST['open_bottle_service'], $post_id);
+        update_field('website', esc_url_raw($_POST['website']), $post_id);
+        update_field('social_links', sanitize_text_field($_POST['social_media']), $post_id);
+        update_field('notes', sanitize_textarea_field($_POST['notes']), $post_id);
+        update_field('is_owner', $_POST['is_owner'], $post_id);
+        update_field('source', '網站直接註冊', $post_id);
+        update_field('submitted_date', current_time('mysql'), $post_id);
+        update_field('review_status', 'pending', $post_id);
+    }
+    
+    // 重導向到成功頁面，包含餐廳ID
+    wp_redirect(add_query_arg(array('registration' => 'success', 'restaurant_id' => $post_id), wp_get_referer()));
+    exit;
+}
