@@ -1563,10 +1563,32 @@ function byob_restaurant_registration_shortcode($atts) {
                 echo '<!-- 調試信息: 沒有餐廳ID -->';
             }
             
+            // 獲取業者登入資訊
+            $owner_id = get_post_meta($restaurant_id, '_restaurant_owner_id', true);
+            $login_info = '';
+            
+            if ($owner_id) {
+                $user = get_user_by('id', $owner_id);
+                if ($user) {
+                    $login_info = '<div class="login-info" style="background: #e8f5e8; border: 1px solid #4caf50; padding: 20px; margin: 20px 0; border-radius: 8px;">';
+                    $login_info .= '<h4 style="margin: 0 0 15px 0; color: #2e7d32;">🔐 您的登入資訊</h4>';
+                    $login_info .= '<p style="margin: 0 0 10px 0;"><strong>登入網址：</strong> <a href="https://byobmap.com/my-account/" target="_blank">https://byobmap.com/my-account/</a></p>';
+                    $login_info .= '<p style="margin: 0 0 10px 0;"><strong>用戶名稱：</strong> ' . esc_html($user->user_email) . '</p>';
+                    $login_info .= '<p style="margin: 0; font-size: 14px; color: #666;"><strong>✅ 登入提醒：</strong>您已成功設定密碼，請使用剛才填寫的密碼登入。</p>';
+                    $login_info .= '</div>';
+                }
+            }
+            
             // 顯示成功訊息
             echo '<div class="success-message">';
             echo '<h3>🎉 餐廳上架成功！</h3>';
             echo '<p>恭喜！您的餐廳已經成功上架並出現在網站上。</p>';
+            
+            // 顯示登入資訊
+            if ($login_info) {
+                echo $login_info;
+            }
+            
             echo '<div class="success-actions">';
             echo '<h4>🚀 立即開始使用</h4>';
             echo '<div class="action-buttons">';
@@ -1620,6 +1642,17 @@ function byob_restaurant_registration_shortcode($atts) {
                 <div class="form-group">
                     <label for="phone">聯絡電話 *</label>
                     <input type="tel" id="phone" name="phone" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">設定密碼 *</label>
+                    <input type="password" id="password" name="password" required minlength="6" placeholder="請設定6位以上密碼">
+                    <small class="form-text">此密碼將用於登入後台管理餐廳</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="confirm_password">確認密碼 *</label>
+                    <input type="password" id="confirm_password" name="confirm_password" required minlength="6" placeholder="請再次輸入密碼">
                 </div>
                 
                 <div class="form-group">
@@ -1809,6 +1842,63 @@ function byob_handle_restaurant_registration() {
         update_field('source', '網站直接註冊', $post_id);
         update_field('submitted_date', current_time('mysql'), $post_id);
         update_field('review_status', 'pending', $post_id);
+    }
+    
+    // 新增：自動為所有註冊者建立業者帳號
+    $user_id = email_exists($email);
+    
+    // 驗證密碼
+    $password = sanitize_text_field($_POST['password']);
+    $confirm_password = sanitize_text_field($_POST['confirm_password']);
+    
+    if ($password !== $confirm_password) {
+        wp_die('密碼與確認密碼不一致，請重新填寫。');
+    }
+    
+    if (strlen($password) < 6) {
+        wp_die('密碼長度至少需要6位，請重新設定。');
+    }
+    
+    if (!$user_id) {
+        // 建立新用戶
+        $user_data = array(
+            'user_login' => $email,
+            'user_email' => $email,
+            'user_pass' => $password, // 使用業者自訂的密碼
+            'display_name' => $contact_person,
+            'role' => 'restaurant_owner'
+        );
+        $user_id = wp_insert_user($user_data);
+        
+        if (is_wp_error($user_id)) {
+            error_log('BYOB: 建立餐廳業者用戶失敗: ' . $user_id->get_error_message());
+        } else {
+            error_log("BYOB: 餐廳業者用戶建立成功 - 用戶ID: {$user_id}, Email: {$email}");
+        }
+    } else {
+        // 現有用戶，更新密碼並設定為餐廳業者角色
+        $user = get_user_by('id', $user_id);
+        if ($user) {
+            // 更新密碼
+            wp_set_password($password, $user_id);
+            // 設定為餐廳業者角色
+            if (!in_array('restaurant_owner', $user->roles)) {
+                $user->add_role('restaurant_owner');
+            }
+            error_log("BYOB: 現有用戶密碼更新成功 - 用戶ID: {$user_id}, Email: {$email}");
+        }
+    }
+    
+    // 關聯餐廳與業者
+    if ($user_id && !is_wp_error($user_id)) {
+        update_post_meta($post_id, '_restaurant_owner_id', $user_id);
+        update_user_meta($user_id, '_owned_restaurant_id', $post_id);
+        
+        // 記錄註冊時間和類型
+        update_user_meta($user_id, '_byob_registered_at', current_time('mysql'));
+        update_user_meta($user_id, '_byob_registration_type', 'direct_website');
+        
+        error_log("BYOB: 餐廳業者關聯成功 - 用戶ID: {$user_id}, 餐廳ID: {$post_id}");
     }
     
     // 重導向到成功頁面，包含餐廳ID
