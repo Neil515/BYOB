@@ -36,61 +36,280 @@ function byob_display_registration_form($atts = array()) {
         <form method="post" action="" id="restaurant-registration-form" enctype="multipart/form-data">
             <?php wp_nonce_field('restaurant_registration_nonce', 'registration_nonce'); ?>
             
-            <!-- 步驟指示器 -->
-            <div class="registration-steps">
-                <div class="step active" data-step="1">
-                    <span class="step-number">1</span>
-                    <span class="step-title">基本資訊</span>
-                </div>
-                <div class="step" data-step="2">
-                    <span class="step-number">2</span>
-                    <span class="step-title">餐廳詳情</span>
-                </div>
-                <div class="step" data-step="3">
-                    <span class="step-number">3</span>
-                    <span class="step-title">聯絡資訊</span>
-                </div>
-                <div class="step" data-step="4">
-                    <span class="step-number">4</span>
-                    <span class="step-title">確認提交</span>
-                </div>
+            <!-- Email -->
+            <div class="form-group">
+                <label>Email(必填)</label>
+                <input type="email" name="restaurant_registration[email]" 
+                       value="<?php echo esc_attr($form_data['email'] ?? ''); ?>" required>
+                <?php if (isset($errors['email'])): ?>
+                    <span class="error-message"><?php echo esc_html($errors['email']); ?></span>
+                <?php endif; ?>
             </div>
             
-            <!-- 步驟1：基本資訊 -->
-            <div class="form-step active" data-step="1">
-                <h3>餐廳基本資訊</h3>
-                
-                <div class="form-row">
+            <!-- 餐廳名稱 -->
                     <div class="form-group">
-                        <label for="restaurant_name">餐廳名稱 *</label>
-                        <input type="text" id="restaurant_name" name="restaurant_registration[restaurant_name]" 
-                               value="<?php echo esc_attr($form_data['restaurant_name'] ?? ''); ?>" required>
+                <label>餐廳名稱(必填)</label>
+                <input type="text" name="restaurant_registration[restaurant_name]" 
+                       value="<?php echo esc_attr($form_data['restaurant_name'] ?? ''); ?>" 
+                       minlength="2" maxlength="30" required>
                         <?php if (isset($errors['restaurant_name'])): ?>
                             <span class="error-message"><?php echo esc_html($errors['restaurant_name']); ?></span>
                         <?php endif; ?>
-                    </div>
                 </div>
                 
-                <div class="form-row">
+            <!-- 餐廳類型 -->
                     <div class="form-group">
-                        <label for="restaurant_type">餐廳類型 *</label>
-                        <select id="restaurant_type" name="restaurant_registration[restaurant_type]" required>
-                            <option value="">請選擇餐廳類型</option>
-                            <option value="中式餐廳" <?php selected($form_data['restaurant_type'] ?? '', '中式餐廳'); ?>>中式餐廳</option>
-                            <option value="西式餐廳" <?php selected($form_data['restaurant_type'] ?? '', '西式餐廳'); ?>>西式餐廳</option>
-                            <option value="日式餐廳" <?php selected($form_data['restaurant_type'] ?? '', '日式餐廳'); ?>>日式餐廳</option>
-                            <option value="韓式餐廳" <?php selected($form_data['restaurant_type'] ?? '', '韓式餐廳'); ?>>韓式餐廳</option>
-                            <option value="泰式餐廳" <?php selected($form_data['restaurant_type'] ?? '', '泰式餐廳'); ?>>泰式餐廳</option>
-                            <option value="火鍋店" <?php selected($form_data['restaurant_type'] ?? '', '火鍋店'); ?>>火鍋店</option>
-                            <option value="燒烤店" <?php selected($form_data['restaurant_type'] ?? '', '燒烤店'); ?>>燒烤店</option>
-                            <option value="牛排館" <?php selected($form_data['restaurant_type'] ?? '', '牛排館'); ?>>牛排館</option>
-                            <option value="其他" <?php selected($form_data['restaurant_type'] ?? '', '其他'); ?>>其他</option>
-                        </select>
+                <label>餐廳類型(必填)</label>
+                <div class="checkbox-group">
+                    <?php
+                    $restaurant_types = array("台式", "法式", "義式", "日式", "美式", "熱炒", "小酒館", "咖啡廳", "私廚", "異國料理", "燒烤", "火鍋", "牛排", "Lounge Bar", "Buffet", "Fine dining");
+                    $selected_types = $form_data['restaurant_type'] ?? array();
+                    foreach ($restaurant_types as $type) {
+                        $checked = in_array($type, $selected_types) ? 'checked' : '';
+                        echo '<label><input type="checkbox" name="restaurant_registration[restaurant_type][]" value="' . esc_attr($type) . '" ' . $checked . '> ' . esc_html($type) . '</label>';
+                    }
+                    ?>
+                </div>
                         <?php if (isset($errors['restaurant_type'])): ?>
                             <span class="error-message"><?php echo esc_html($errors['restaurant_type']); ?></span>
                         <?php endif; ?>
                     </div>
+            
+            <!-- 其他類型說明 -->
+            <div class="form-group">
+                <label>其他類型說明</label>
+                <input type="text" name="restaurant_registration[restaurant_type_other]" 
+                       value="<?php echo esc_attr($form_data['restaurant_type_other'] ?? ''); ?>"
+                       placeholder="如果選擇其他，請說明餐廳類型">
+            </div>
+            
+            <!-- 行政區 -->
+            <div class="form-group">
+                <label>行政區(必填)</label>
+                <select name="restaurant_registration[district]" required>
+                    <option value="">請選擇行政區</option>
+                    <?php
+                    $districts = array("中山區", "中正區", "大同區", "松山區", "大安區", "萬華區", "信義區", "士林區", "北投區", "內湖區", "南港區", "文山區");
+                    $selected_district = $form_data['district'] ?? '';
+                    foreach ($districts as $district) {
+                        $selected = ($selected_district === $district) ? 'selected' : '';
+                        echo '<option value="' . esc_attr($district) . '" ' . $selected . '>' . esc_html($district) . '</option>';
+                    }
+                    ?>
+                </select>
+                <?php if (isset($errors['district'])): ?>
+                    <span class="error-message"><?php echo esc_html($errors['district']); ?></span>
+                <?php endif; ?>
+            </div>
+            
+            <!-- 地址 -->
+            <div class="form-group">
+                <label>地址(必填)</label>
+                <input type="text" name="restaurant_registration[address]" 
+                       value="<?php echo esc_attr($form_data['address'] ?? ''); ?>" 
+                       minlength="8" maxlength="200" 
+                       placeholder="請填完整地址：例如「台北市松山區民生東路三段100號」" required>
+                <?php if (isset($errors['address'])): ?>
+                    <span class="error-message"><?php echo esc_html($errors['address']); ?></span>
+                <?php endif; ?>
+            </div>
+            
+            <!-- 是否收開瓶費 -->
+            <div class="form-group">
+                <label>是否收開瓶費(必填)</label>
+                <div class="radio-group">
+                    <?php
+                    $is_charged_options = array(
+                        'yes' => '酌收',
+                        'no' => '不收費',
+                        'other' => '其他'
+                    );
+                    $selected_charged = $form_data['is_charged'] ?? '';
+                    foreach ($is_charged_options as $value => $label) {
+                        $checked = ($selected_charged === $value) ? 'checked' : '';
+                        echo '<label><input type="radio" name="restaurant_registration[is_charged]" value="' . esc_attr($value) . '" ' . $checked . '> ' . esc_html($label) . '</label>';
+                    }
+                    ?>
                 </div>
+                <?php if (isset($errors['is_charged'])): ?>
+                    <span class="error-message"><?php echo esc_html($errors['is_charged']); ?></span>
+                <?php endif; ?>
+            </div>
+            
+            <!-- 開瓶費說明（條件式顯示） -->
+            <div class="form-group" id="corkage-fee-group" style="display: none;">
+                <label>開瓶費說明</label>
+                <input type="text" name="restaurant_registration[corkage_fee]" 
+                       value="<?php echo esc_attr($form_data['corkage_fee'] ?? ''); ?>" 
+                       minlength="1" maxlength="100" 
+                       placeholder="請說明開瓶費收費方式或金額">
+                <?php if (isset($errors['corkage_fee'])): ?>
+                    <span class="error-message"><?php echo esc_html($errors['corkage_fee']); ?></span>
+                <?php endif; ?>
+            </div>
+            
+            <!-- 提供酒器設備 -->
+            <div class="form-group">
+                <label>提供酒器設備</label>
+                <div class="checkbox-group">
+                    <?php
+                    $equipment_options = array("酒杯", "開瓶器", "冰桶", "醒酒器", "酒塞/瓶塞", "酒架/酒櫃", "溫度計", "濾酒器", "其他", "無提供");
+                    $selected_equipment = $form_data['equipment'] ?? array();
+                    foreach ($equipment_options as $equipment) {
+                        $checked = in_array($equipment, $selected_equipment) ? 'checked' : '';
+                        echo '<label><input type="checkbox" name="restaurant_registration[equipment][]" value="' . esc_attr($equipment) . '" ' . $checked . '> ' . esc_html($equipment) . '</label>';
+                    }
+                    ?>
+                </div>
+            </div>
+            
+            <!-- 是否提供開酒服務 -->
+            <div class="form-group">
+                <label>是否提供開酒服務？</label>
+                <select name="restaurant_registration[open_bottle_service]">
+                    <option value="">請選擇</option>
+                    <?php
+                    $open_bottle_options = array(
+                        'yes' => '是',
+                        'no' => '否',
+                        'other' => '其他'
+                    );
+                    $selected_open_bottle = $form_data['open_bottle_service'] ?? '';
+                    foreach ($open_bottle_options as $value => $label) {
+                        $selected = ($selected_open_bottle === $value) ? 'selected' : '';
+                        echo '<option value="' . esc_attr($value) . '" ' . $selected . '>' . esc_html($label) . '</option>';
+                    }
+                    ?>
+                </select>
+            </div>
+            
+            <!-- 開酒服務其他說明（條件式顯示） -->
+            <div class="form-group" id="open-bottle-service-note-group" style="display: none;">
+                <label>開酒服務其他說明</label>
+                <input type="text" name="restaurant_registration[open_bottle_service_other_note]" 
+                       value="<?php echo esc_attr($form_data['open_bottle_service_other_note'] ?? ''); ?>" 
+                       maxlength="60" 
+                       placeholder="請說明其他開酒服務方式">
+            </div>
+            
+            <!-- 官網/訂位網站 -->
+            <div class="form-group">
+                <label>官網/訂位網站</label>
+                <input type="url" name="restaurant_registration[website]" 
+                       value="<?php echo esc_url($form_data['website'] ?? ''); ?>" 
+                       minlength="10" maxlength="255" 
+                       placeholder="請輸入餐廳官網或訂位網站網址">
+            </div>
+            
+            <!-- 社群連結 -->
+            <div class="form-group">
+                <label>社群連結</label>
+                <input type="url" name="restaurant_registration[social_links]" 
+                       value="<?php echo esc_url($form_data['social_links'] ?? ''); ?>" 
+                       minlength="10" maxlength="255" 
+                       placeholder="請輸入社群媒體連結，例如：Facebook、Instagram 等">
+            </div>
+            
+            <!-- 您是餐廳負責人嗎 -->
+            <div class="form-group">
+                <label>您是餐廳負責人嗎？(必填)</label>
+                <select name="restaurant_registration[source]" required>
+                    <option value="">請選擇</option>
+                    <?php
+                    $source_options = array("是", "否（我是協助填寫）");
+                    $selected_source = $form_data['source'] ?? '';
+                    foreach ($source_options as $value => $label) {
+                        $selected = ($selected_source === $value) ? 'selected' : '';
+                        echo '<option value="' . esc_attr($value) . '" ' . $selected . '>' . esc_html($label) . '</option>';
+                    }
+                    ?>
+                </select>
+                <?php if (isset($errors['source'])): ?>
+                    <span class="error-message"><?php echo esc_html($errors['source']); ?></span>
+                <?php endif; ?>
+            </div>
+            
+            <!-- 您的稱呼 -->
+            <div class="form-group">
+                <label>您的稱呼是？(必填)</label>
+                <input type="text" name="restaurant_registration[contact_person]" 
+                       value="<?php echo esc_attr($form_data['contact_person'] ?? ''); ?>" required>
+                <?php if (isset($errors['contact_person'])): ?>
+                    <span class="error-message"><?php echo esc_html($errors['contact_person']); ?></span>
+                <?php endif; ?>
+            </div>
+            
+            <!-- 餐廳聯絡電話 -->
+            <div class="form-group">
+                <label>餐廳聯絡電話</label>
+                <input type="tel" name="restaurant_registration[phone]" 
+                       value="<?php echo esc_attr($form_data['phone'] ?? ''); ?>" 
+                       minlength="8" maxlength="16" 
+                       placeholder="請輸入餐廳聯絡電話" required>
+                <?php if (isset($errors['phone'])): ?>
+                    <span class="error-message"><?php echo esc_html($errors['phone']); ?></span>
+                <?php endif; ?>
+            </div>
+            
+            <!-- 提交按鈕 -->
+            <div class="form-group">
+                <button type="submit" class="submit-button">送出</button>
+            </div>
+        </form>
+                </div>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('BYOB PHP: 表單JavaScript已載入');
+        
+        // 開瓶費條件邏輯
+        const isChargedRadios = document.querySelectorAll('input[name="restaurant_registration[is_charged]"]');
+        const corkageFeeGroup = document.getElementById('corkage-fee-group');
+        
+        isChargedRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                console.log('BYOB PHP: 開瓶費選擇變更為:', this.value);
+                if (this.value === 'yes' || this.value === 'other') {
+                    corkageFeeGroup.style.display = 'block';
+                } else {
+                    corkageFeeGroup.style.display = 'none';
+                }
+            });
+        });
+        
+        // 開酒服務條件邏輯
+        const openBottleServiceSelect = document.querySelector('select[name="restaurant_registration[open_bottle_service]"]');
+        const openBottleServiceNoteGroup = document.getElementById('open-bottle-service-note-group');
+        
+        openBottleServiceSelect.addEventListener('change', function() {
+            console.log('BYOB PHP: 開酒服務選擇變更為:', this.value);
+            if (this.value === 'other') {
+                openBottleServiceNoteGroup.style.display = 'block';
+            } else {
+                openBottleServiceNoteGroup.style.display = 'none';
+            }
+        });
+        
+        // 初始化狀態
+        initConditionalFields();
+    });
+    
+    function initConditionalFields() {
+        // 檢查開瓶費選擇
+        const checkedChargedRadio = document.querySelector('input[name="restaurant_registration[is_charged]"]:checked');
+        if (checkedChargedRadio && (checkedChargedRadio.value === 'yes' || checkedChargedRadio.value === 'other')) {
+            document.getElementById('corkage-fee-group').style.display = 'block';
+        }
+        
+        // 檢查開酒服務選擇
+        const openBottleServiceSelect = document.querySelector('select[name="restaurant_registration[open_bottle_service]"]');
+        if (openBottleServiceSelect.value === 'other') {
+            document.getElementById('open-bottle-service-note-group').style.display = 'block';
+        }
+    }
+    </script>
+    <?php
+}
                 
                 <div class="form-row">
                     <div class="form-group">
