@@ -109,7 +109,155 @@ function byob_verify_api_key($request) {
     return true;
 }
 
-// 建立餐廳文章
+// =============================================================================
+// 🔄 兩種註冊流程的共用函數
+// =============================================================================
+// 
+// 以下函數被兩種註冊流程共同使用：
+// 1. Google表單註冊流程（透過邀請碼）
+// 2. 餐廳直接加入流程（網站直接註冊）
+// 
+// 共用原因：避免重複程式碼，確保資料處理邏輯一致
+// =============================================================================
+
+/**
+ * 建立餐廳文章的核心共用函數
+ * 
+ * 此函數被兩種註冊流程共同調用：
+ * - Google表單流程：建立草稿狀態餐廳文章，等待審核
+ * - 直接加入流程：建立發布狀態餐廳文章，立即上架
+ * 
+ * @param array $restaurant_data 餐廳資料陣列
+ * @param string $source 註冊來源 ('google_form', 'direct', 'invitation')
+ * @return array|WP_Error 成功返回文章資訊，失敗返回錯誤
+ */
+function byob_create_restaurant_article($restaurant_data, $source = 'direct') {
+    try {
+        // 檢查必填欄位
+        $required_fields = array('restaurant_name', 'contact_person', 'email', 'restaurant_type', 'district', 'address', 'is_charged', 'phone');
+        $missing_fields = array();
+        
+        foreach ($required_fields as $field) {
+            if (empty($restaurant_data[$field])) {
+                $missing_fields[] = $field;
+            }
+        }
+        
+        if (!empty($missing_fields)) {
+            return new WP_Error('missing_required_fields', '缺少必填欄位: ' . implode(', ', $missing_fields), array('status' => 400));
+        }
+        
+        // 決定文章狀態
+        $post_status = ($source === 'google_form') ? 'draft' : 'publish';
+        
+        // 建立餐廳文章
+        $post_data = array(
+            'post_title' => sanitize_text_field($restaurant_data['restaurant_name']),
+            'post_content' => sanitize_textarea_field($restaurant_data['notes'] ?? ''),
+            'post_status' => $post_status,
+            'post_type' => 'restaurant',
+            'post_author' => $restaurant_data['user_id'] ?? 1,
+        );
+        
+        $post_id = wp_insert_post($post_data);
+        if (is_wp_error($post_id)) {
+            throw new Exception('Failed to create post: ' . $post_id->get_error_message());
+        }
+        
+        // 處理餐廳類型
+        $types = $restaurant_data['restaurant_type'];
+        if (!empty($types) && !is_array($types)) {
+            $types = array_map('trim', explode(',', $types));
+        }
+        
+        // 處理設備
+        $equipment = $restaurant_data['equipment'];
+        if (!empty($equipment) && !is_array($equipment)) {
+            $equipment = array_map('trim', explode(',', $equipment));
+        }
+        
+        // 處理社群連結
+        $social_media = $restaurant_data['social_media'] ?? '';
+        $social_media_primary = '';
+        if (!empty($social_media)) {
+            $social_links_array = array_map('trim', explode(',', $social_media));
+            $social_media_primary = $social_links_array[0];
+        }
+        
+        // 更新 ACF 欄位
+        if (function_exists('update_field')) {
+            $acf_updates = array(
+                'contact_person' => sanitize_text_field($restaurant_data['contact_person']),
+                'email' => sanitize_email($restaurant_data['email']),
+                'restaurant_type' => $types ?: array(),
+                'address' => sanitize_text_field($restaurant_data['address']),
+                'is_charged' => sanitize_text_field($restaurant_data['is_charged']),
+                'corkage_fee' => sanitize_text_field($restaurant_data['corkage_fee'] ?? ''),
+                'equipment' => $equipment ?: array(),
+                'open_bottle_service' => sanitize_text_field($restaurant_data['open_bottle_service'] ?? ''),
+                'open_bottle_service_other_note' => sanitize_textarea_field($restaurant_data['open_bottle_service_other_note'] ?? ''),
+                'phone' => sanitize_text_field($restaurant_data['phone']),
+                'website' => esc_url_raw($restaurant_data['website'] ?? ''),
+                'social_links' => $social_media_primary,
+                'notes' => sanitize_textarea_field($restaurant_data['notes'] ?? ''),
+                'last_updated' => current_time('Y-m-d'),
+                'source' => $restaurant_data['is_owner'] === '是' ? '店主' : '表單填寫者',
+                'is_owner' => sanitize_text_field($restaurant_data['is_owner'] ?? ''),
+                'review_status' => ($source === 'google_form') ? 'pending' : 'approved',
+                'submitted_date' => current_time('mysql'),
+                'review_date' => ($source === 'google_form') ? '' : current_time('mysql'),
+                'review_notes' => ''
+            );
+            
+            foreach ($acf_updates as $field_name => $field_value) {
+                update_field($field_name, $field_value, $post_id);
+            }
+        }
+        
+        // 記錄註冊來源
+        update_post_meta($post_id, '_byob_registration_source', $source);
+        
+        // 記錄建立時間
+        update_post_meta($post_id, '_byob_created_at', current_time('mysql'));
+        
+        return array(
+            'success' => true,
+            'post_id' => $post_id,
+            'post_url' => get_edit_post_link($post_id, ''),
+            'post_status' => $post_status,
+            'message' => ($source === 'google_form') ? '餐廳資料已建立為草稿，等待審核' : '餐廳資料已建立並發布'
+        );
+        
+    } catch (Exception $e) {
+        return new WP_Error('restaurant_creation_failed', $e->getMessage(), array('status' => 500));
+    }
+}
+
+// =============================================================================
+// 📝 註冊流程1：Google表單註冊流程（獨立函數）
+// =============================================================================
+// 
+// 此函數專門處理Google表單的註冊流程：
+// - 接收Google表單自動提交的資料
+// - 處理REST API請求、參數映射、資料轉換
+// - 調用共用函數建立草稿狀態餐廳文章
+// - 等待管理員審核後發布
+// 
+// 註冊流程：Google表單 → 自動建立草稿 → 管理員審核 → 發送邀請碼 → 業者註冊
+// =============================================================================
+
+/**
+ * 處理Google表單API請求，建立餐廳草稿
+ * 
+ * 此函數專門處理Google表單註冊流程：
+ * - 接收Google表單資料（透過REST API）
+ * - 處理參數映射和資料轉換
+ * - 調用共用函數建立草稿狀態餐廳文章
+ * - 餐廳狀態：草稿（等待審核）
+ * 
+ * @param WP_REST_Request $request REST API請求物件
+ * @return array|WP_Error 成功返回文章資訊，失敗返回錯誤
+ */
 function byob_create_restaurant_post($request) {
     try {
         // 除錯：記錄接收到的所有參數
@@ -137,7 +285,7 @@ function byob_create_restaurant_post($request) {
         );
         
         // 獲取參數值（支援多種名稱）
-        function get_param_value($request, $param_names) {
+        $get_param_value = function($request, $param_names) {
             foreach ($param_names as $name) {
                 $value = $request->get_param($name);
                 if (!empty($value)) {
@@ -145,7 +293,7 @@ function byob_create_restaurant_post($request) {
                 }
             }
             return '';
-        }
+        };
         
         // 檢查必填參數
         $required_params = array(
@@ -155,7 +303,7 @@ function byob_create_restaurant_post($request) {
         
         $missing_params = array();
         foreach ($required_params as $param) {
-            if (empty(get_param_value($request, $param_mapping[$param]))) {
+            if (empty($get_param_value($request, $param_mapping[$param]))) {
                 $missing_params[] = $param;
             }
         }
@@ -165,110 +313,100 @@ function byob_create_restaurant_post($request) {
             return new WP_Error('missing_required_params', '缺少必填參數: ' . implode(', ', $missing_params), array('status' => 400));
         }
         
-        // 建立新文章 - 改為草稿狀態
-        $post_data = array(
-            'post_title' => get_param_value($request, $param_mapping['restaurant_name']),
-            'post_content' => get_param_value($request, $param_mapping['notes']) ?: '',
-            'post_status' => 'draft', // 改為草稿狀態，等待審核
-            'post_type' => 'restaurant',
-            'post_author' => 1,
+        // 轉換API請求為標準資料格式
+        $restaurant_data = array(
+            'restaurant_name' => $get_param_value($request, $param_mapping['restaurant_name']),
+            'contact_person' => $get_param_value($request, $param_mapping['contact_person']),
+            'email' => $get_param_value($request, $param_mapping['email']),
+            'restaurant_type' => $get_param_value($request, $param_mapping['restaurant_type']),
+            'district' => $get_param_value($request, $param_mapping['district']),
+            'address' => $get_param_value($request, $param_mapping['address']),
+            'is_charged' => $get_param_value($request, $param_mapping['is_charged']),
+            'phone' => $get_param_value($request, $param_mapping['phone']),
+            'corkage_fee' => $get_param_value($request, $param_mapping['corkage_fee']),
+            'equipment' => $get_param_value($request, $param_mapping['equipment']),
+            'open_bottle_service' => $get_param_value($request, $param_mapping['open_bottle_service']),
+            'open_bottle_service_other_note' => $get_param_value($request, $param_mapping['open_bottle_service_other_note']),
+            'website' => $get_param_value($request, $param_mapping['website']),
+            'social_media' => $get_param_value($request, $param_mapping['social_media']),
+            'notes' => $get_param_value($request, $param_mapping['notes']),
+            'is_owner' => $get_param_value($request, $param_mapping['is_owner'])
         );
         
-        $post_id = wp_insert_post($post_data);
-        if (is_wp_error($post_id)) {
-            throw new Exception('Failed to create post: ' . $post_id->get_error_message());
-        }
-
-        // 處理餐廳類型
-        $types = get_param_value($request, $param_mapping['restaurant_type']);
-        if (!empty($types) && !is_array($types)) {
-            $types = array_map('trim', explode(',', $types));
-        }
-
-        // 處理設備
-        $equipment = get_param_value($request, $param_mapping['equipment']);
-        if (!empty($equipment) && !is_array($equipment)) {
-            $equipment = array_map('trim', explode(',', $equipment));
-        }
-        
-        // 處理社群連結
-        $social_media = get_param_value($request, $param_mapping['social_media']);
-        if (!empty($social_media)) {
-            $social_links_array = array_map('trim', explode(',', $social_media));
-            $social_media_primary = $social_links_array[0];
-        } else {
-            $social_media_primary = '';
-        }
-
         // 處理 ACF 欄位值格式轉換
-        $is_charged_raw = get_param_value($request, $param_mapping['is_charged']);
-        $is_charged_converted = '';
+        $is_charged_raw = $restaurant_data['is_charged'];
         if (strpos($is_charged_raw, '酌收') !== false) {
-            $is_charged_converted = 'yes';
+            $restaurant_data['is_charged'] = 'yes';
         } elseif (strpos($is_charged_raw, '不收') !== false) {
-            $is_charged_converted = 'no';
+            $restaurant_data['is_charged'] = 'no';
         } elseif (strpos($is_charged_raw, '其他') !== false) {
-            $is_charged_converted = 'other';
-        } else {
-            $is_charged_converted = $is_charged_raw; // 保持原值
+            $restaurant_data['is_charged'] = 'other';
         }
         
-        $open_bottle_service_raw = get_param_value($request, $param_mapping['open_bottle_service']);
-        $open_bottle_service_converted = '';
+        $open_bottle_service_raw = $restaurant_data['open_bottle_service'];
         if (strpos($open_bottle_service_raw, '是') !== false) {
-            $open_bottle_service_converted = 'yes';
+            $restaurant_data['open_bottle_service'] = 'yes';
         } elseif (strpos($open_bottle_service_raw, '否') !== false) {
-            $open_bottle_service_converted = 'no';
+            $restaurant_data['open_bottle_service'] = 'no';
         } elseif (strpos($open_bottle_service_raw, '其他') !== false) {
-            $open_bottle_service_converted = 'other';
-        } else {
-            $open_bottle_service_converted = $open_bottle_service_raw; // 保持原值
+            $restaurant_data['open_bottle_service'] = 'other';
         }
-
-        // 更新 ACF 欄位
-        if (function_exists('update_field')) {
-            $acf_updates = array(
-                'contact_person' => get_param_value($request, $param_mapping['contact_person']) ?: '',
-                'email' => get_param_value($request, $param_mapping['email']) ?: '',
-                'restaurant_type' => $types ?: array(),
-                'address' => get_param_value($request, $param_mapping['address']) ?: '',
-                'is_charged' => $is_charged_converted ?: '',
-                'corkage_fee' => get_param_value($request, $param_mapping['corkage_fee']) ?: '',
-                'equipment' => $equipment ?: array(),
-                'open_bottle_service' => $open_bottle_service_converted ?: '',
-                'open_bottle_service_other_note' => get_param_value($request, $param_mapping['open_bottle_service_other_note']) ?: '',
-                'phone' => get_param_value($request, $param_mapping['phone']) ?: '',
-                'website' => get_param_value($request, $param_mapping['website']) ?: '',
-                'social_links' => $social_media_primary ?: '', // 修正欄位名稱
-                'notes' => get_param_value($request, $param_mapping['notes']) ?: '',
-                'last_updated' => current_time('Y-m-d'),
-                'source' => get_param_value($request, $param_mapping['is_owner']) === '是' ? '店主' : '表單填寫者',
-                'is_owner' => get_param_value($request, $param_mapping['is_owner']) ?: '',
-                'review_status' => 'pending', // 新增審核狀態
-                'submitted_date' => current_time('mysql'), // 新增提交日期
-                'review_date' => '', // 新增審核日期（初始為空）
-                'review_notes' => '' // 新增審核備註（初始為空）
-            );
-            
-            foreach ($acf_updates as $field_name => $field_value) {
-                update_field($field_name, $field_value, $post_id);
-            }
+        
+        // 調用共用函數建立餐廳文章
+        // 注意：這裡調用的是兩種註冊流程的共用函數
+        $result = byob_create_restaurant_article($restaurant_data, 'google_form');
+        
+        if (is_wp_error($result)) {
+            return $result;
         }
         
         // 記錄 API 呼叫
-        byob_log_api_call($post_id, $request->get_params(), 'draft_created');
+        byob_log_api_call($result['post_id'], $request->get_params(), 'draft_created');
         
-        return array(
-            'success' => true,
-            'post_id' => $post_id,
-            'post_url' => get_edit_post_link($post_id, ''),
-            'message' => '餐廳資料已建立為草稿，等待審核'
-        );
-
+        return $result;
+        
     } catch (Exception $e) {
-        byob_log_api_call($post_id ?? 0, $request->get_params(), 'error: ' . $e->getMessage());
+        byob_log_api_call(0, $request->get_params(), 'error: ' . $e->getMessage());
         return new WP_Error('restaurant_creation_failed', $e->getMessage(), array('status' => 500));
     }
+}
+
+// =============================================================================
+// 🚀 註冊流程2：餐廳直接加入流程（未來開發）
+// =============================================================================
+// 
+// 此函數將專門處理餐廳直接加入的註冊流程：
+// - 接收網站表單直接提交的資料
+// - 處理用戶帳號建立、權限驗證
+// - 調用共用函數建立發布狀態餐廳文章
+// - 立即上架，無需審核
+// 
+// 註冊流程：網站表單 → 建立用戶帳號 → 立即建立發布狀態餐廳 → 自動上架
+// 
+// 注意：此函數尚未實作，將在後續開發中建立
+// =============================================================================
+
+/**
+ * 處理餐廳直接加入請求，建立發布狀態餐廳文章
+ * 
+ * 此函數將專門處理直接加入註冊流程：
+ * - 接收網站表單資料
+ * - 建立用戶帳號和權限
+ * - 調用共用函數建立發布狀態餐廳文章
+ * - 餐廳狀態：發布（立即上架）
+ * 
+ * @param array $form_data 表單提交的資料
+ * @return array|WP_Error 成功返回文章資訊，失敗返回錯誤
+ */
+function byob_create_direct_restaurant($form_data) {
+    // TODO: 此函數將在後續開發中實作
+    // 目前返回錯誤，表示功能尚未完成
+    
+    return new WP_Error(
+        'function_not_implemented', 
+        '餐廳直接加入功能尚未實作，將在後續開發中完成', 
+        array('status' => 501)
+    );
 }
 
 // 記錄 API 呼叫
@@ -1497,11 +1635,7 @@ function byob_load_restaurant_profile_content() {
 // 使用 WooCommerce 內容鉤子
 add_action('woocommerce_account_content', 'byob_load_restaurant_profile_content', 5);
 
-// 載入餐廳註冊功能（安全載入）
-$restaurant_registration_file = get_template_directory() . '/restaurant-registration-functions.php';
-if (file_exists($restaurant_registration_file)) {
-    require_once $restaurant_registration_file;
-} else {
-    // 記錄錯誤但不中斷網站
-    error_log('BYOB: 餐廳註冊功能檔案不存在: ' . $restaurant_registration_file);
-}
+// 載入餐廳直接加入功能（暫時停用）
+// require_once get_template_directory() . '/direct-restaurant-registration.php';
+
+?>
