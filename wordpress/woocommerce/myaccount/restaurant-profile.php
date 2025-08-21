@@ -311,7 +311,8 @@ $restaurant_types = array(
     '火鍋' => '火鍋',
     '牛排' => '牛排',
     'Lounge Bar' => 'Lounge Bar',
-    'Buffet' => 'Buffet'
+    'Buffet' => 'Buffet',
+	'Fine Dining' => 'Fine Dining'
 );
 
 $current_types = get_field('restaurant_type', $restaurant_id);
@@ -357,18 +358,18 @@ echo '</div>';
 // 是否收開瓶費
 echo '<div class="form-group" style="margin-bottom: 25px;">';
 echo '<label for="is_charged" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">是否收開瓶費</label>';
-echo '<div class="radio-group" style="display: flex; gap: 20px; align-items: center;">';
-echo '<label style="display: flex; align-items: center; cursor: pointer; font-weight: normal;">';
+echo '<div class="radio-group" style="display: flex; gap: 20px; align-items: center; flex-wrap: nowrap;">';
+echo '<label style="display: flex; align-items: center; cursor: pointer; font-weight: normal; white-space: nowrap; writing-mode: horizontal-tb; text-orientation: mixed;">';
 echo '<input type="radio" name="is_charged" value="yes" ' . (get_field('is_charged', $restaurant_id) === 'yes' ? 'checked' : '') . ' style="margin-right: 8px;">';
-echo '酌收';
+echo '<span style="display: inline-block; white-space: nowrap;">酌收</span>';
 echo '</label>';
-echo '<label style="display: flex; align-items: center; cursor: pointer; font-weight: normal;">';
+echo '<label style="display: flex; align-items: center; cursor: pointer; font-weight: normal; white-space: nowrap; writing-mode: horizontal-tb; text-orientation: mixed;">';
 echo '<input type="radio" name="is_charged" value="no" ' . (get_field('is_charged', $restaurant_id) === 'no' ? 'checked' : '') . ' style="margin-right: 8px;">';
-echo '不收費';
+echo '<span style="display: inline-block; white-space: nowrap;">不收費</span>';
 echo '</label>';
-echo '<label style="display: flex; align-items: center; cursor: pointer; font-weight: normal;">';
+echo '<label style="display: flex; align-items: center; cursor: pointer; font-weight: normal; white-space: nowrap; writing-mode: horizontal-tb; text-orientation: mixed;">';
 echo '<input type="radio" name="is_charged" value="other" ' . (get_field('is_charged', $restaurant_id) === 'other' ? 'checked' : '') . ' style="margin-right: 8px;">';
-echo '其他';
+echo '<span style="display: inline-block; white-space: nowrap;">其他</span>';
 echo '</label>';
 echo '</div>';
 echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">請選擇您的開瓶費政策</p>';
