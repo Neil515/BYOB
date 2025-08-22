@@ -115,6 +115,51 @@ function parseLatestSpreadsheetData() {
           } else {
             parsedData[wordpressField] = value || '';
           }
+        } else if (wordpressField === 'restaurant_type') {
+          // 特殊處理餐廳類型，檢查是否包含「其他」選項
+          var restaurantTypes = value || '';
+          Logger.log('🔍 處理餐廳類型: "' + restaurantTypes + '"');
+          
+          if (restaurantTypes.indexOf('其他') !== -1) {
+            Logger.log('✅ 檢測到「其他」選項');
+            
+            // 如果包含「其他」，需要從餐廳類型中提取說明文字
+            var typesArray = restaurantTypes.split(',').map(function(type) {
+              return type.trim();
+            });
+            Logger.log('📋 分割後的類型陣列: [' + typesArray.join(', ') + ']');
+            
+            // 分離「其他」和其說明文字
+            var otherIndex = typesArray.indexOf('其他');
+            var otherNote = '';
+            Logger.log('📍 「其他」在陣列中的位置: ' + otherIndex);
+            
+            if (otherIndex !== -1 && otherIndex + 1 < typesArray.length) {
+              // 提取「其他」後面的說明文字
+              otherNote = typesArray[otherIndex + 1];
+              Logger.log('📝 提取到的說明文字: "' + otherNote + '"');
+              
+              // 從類型陣列中移除說明文字
+              typesArray.splice(otherIndex + 1, 1);
+              Logger.log('🗑️ 移除說明文字後的類型陣列: [' + typesArray.join(', ') + ']');
+            }
+            
+            // 重新組合餐廳類型（不包含說明文字）
+            var cleanTypes = typesArray.join(', ');
+            parsedData[wordpressField] = cleanTypes;
+            Logger.log('🏷️ 最終餐廳類型: "' + cleanTypes + '"');
+            
+            // 設定其他類型說明
+            if (otherNote && otherNote !== '其他') {
+              parsedData['restaurant_type_other_note'] = otherNote;
+              Logger.log('✅ 設定其他類型說明: "' + otherNote + '"');
+            } else {
+              Logger.log('⚠️ 沒有有效的其他類型說明');
+            }
+          } else {
+            Logger.log('❌ 未檢測到「其他」選項');
+            parsedData[wordpressField] = restaurantTypes;
+          }
         } else {
           parsedData[wordpressField] = value || '';
         }
