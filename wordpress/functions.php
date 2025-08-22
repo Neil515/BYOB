@@ -170,7 +170,7 @@ function byob_create_restaurant_article($restaurant_data, $source = 'direct') {
             if (!is_array($types)) {
                 // 如果是字串，嘗試用逗號分割，如果沒有逗號就直接轉為陣列
                 if (strpos($types, ',') !== false) {
-                    $types = array_map('trim', explode(',', $types));
+            $types = array_map('trim', explode(',', $types));
                 } else {
                     $types = array(trim($types));
                 }
