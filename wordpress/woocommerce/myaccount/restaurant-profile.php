@@ -312,7 +312,7 @@ $restaurant_types = array(
     '牛排' => '牛排',
     'Lounge Bar' => 'Lounge Bar',
     'Buffet' => 'Buffet',
-	'Fine Dining' => 'Fine Dining'
+    'Fine dining' => 'Fine dining'
 );
 
 $current_types = get_field('restaurant_type', $restaurant_id);
