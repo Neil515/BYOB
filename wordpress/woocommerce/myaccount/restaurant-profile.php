@@ -330,22 +330,46 @@ echo '</div>';
 echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">請選擇您的餐廳類型（最多3個）</p>';
 echo '</div>';
 
-// 其他BYOB規定或備註
-echo '<div class="form-group" style="margin-bottom: 25px;">';
-echo '<label for="restaurant_description" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">其他BYOB規定或備註</label>';
-echo '<textarea id="restaurant_description" name="restaurant_description" rows="5" placeholder="請描述您的餐廳特色、風格、服務等..." style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; resize: vertical; transition: border-color 0.3s;">' . esc_textarea($restaurant->post_content) . '</textarea>';
-echo '</div>';
+
 
 // 聯絡電話
 echo '<div class="form-group" style="margin-bottom: 25px;">';
-echo '<label for="restaurant_phone" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">聯絡電話</label>';
-echo '<input type="tel" id="restaurant_phone" name="restaurant_phone" value="' . esc_attr(get_field('phone', $restaurant_id)) . '" placeholder="例：02-1234-5678" style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; transition: border-color 0.3s;">';
+echo '<label for="restaurant_phone" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">聯絡電話 *</label>';
+echo '<input type="tel" id="restaurant_phone" name="restaurant_phone" value="' . esc_attr(get_field('phone', $restaurant_id)) . '" placeholder="例：02-1234-5678" required style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; transition: border-color 0.3s;">';
+echo '</div>';
+
+// 聯絡人姓名
+echo '<div class="form-group" style="margin-bottom: 25px;">';
+echo '<label for="contact_person" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">聯絡人姓名 *</label>';
+echo '<input type="text" id="contact_person" name="contact_person" value="' . esc_attr(get_field('contact_person', $restaurant_id)) . '" placeholder="聯絡人姓名供平台聯絡用，不會出現在前台" required style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; transition: border-color 0.3s;">';
+echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">聯絡人姓名僅供平台聯絡，不會顯示於前台</p>';
+echo '</div>';
+
+// 行政區
+echo '<div class="form-group" style="margin-bottom: 25px;">';
+echo '<label for="district" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">行政區 *</label>';
+echo '<select id="district" name="district" required style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; transition: border-color 0.3s;">';
+echo '<option value="">請選擇行政區</option>';
+echo '<option value="中正區" ' . (get_field('district', $restaurant_id) === '中正區' ? 'selected' : '') . '>中正區</option>';
+echo '<option value="大同區" ' . (get_field('district', $restaurant_id) === '大同區' ? 'selected' : '') . '>大同區</option>';
+echo '<option value="中山區" ' . (get_field('district', $restaurant_id) === '中山區' ? 'selected' : '') . '>中山區</option>';
+echo '<option value="松山區" ' . (get_field('district', $restaurant_id) === '松山區' ? 'selected' : '') . '>松山區</option>';
+echo '<option value="大安區" ' . (get_field('district', $restaurant_id) === '大安區' ? 'selected' : '') . '>大安區</option>';
+echo '<option value="萬華區" ' . (get_field('district', $restaurant_id) === '萬華區' ? 'selected' : '') . '>萬華區</option>';
+echo '<option value="信義區" ' . (get_field('district', $restaurant_id) === '信義區' ? 'selected' : '') . '>信義區</option>';
+echo '<option value="士林區" ' . (get_field('district', $restaurant_id) === '士林區' ? 'selected' : '') . '>士林區</option>';
+echo '<option value="北投區" ' . (get_field('district', $restaurant_id) === '北投區' ? 'selected' : '') . '>北投區</option>';
+echo '<option value="內湖區" ' . (get_field('district', $restaurant_id) === '內湖區' ? 'selected' : '') . '>內湖區</option>';
+echo '<option value="南港區" ' . (get_field('district', $restaurant_id) === '南港區' ? 'selected' : '') . '>南港區</option>';
+echo '<option value="文山區" ' . (get_field('district', $restaurant_id) === '文山區' ? 'selected' : '') . '>文山區</option>';
+echo '</select>';
+echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">請選擇餐廳所在的行政區</p>';
 echo '</div>';
 
 // 地址
 echo '<div class="form-group" style="margin-bottom: 25px;">';
-echo '<label for="restaurant_address" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">地址</label>';
-echo '<textarea id="restaurant_address" name="restaurant_address" rows="3" placeholder="請輸入完整地址..." style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; resize: vertical; transition: border-color 0.3s;">' . esc_textarea(get_field('address', $restaurant_id)) . '</textarea>';
+echo '<label for="restaurant_address" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">地址 *</label>';
+echo '<textarea id="restaurant_address" name="restaurant_address" rows="3" placeholder="請輸入完整地址..." required style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; resize: vertical; transition: border-color 0.3s;">' . esc_textarea(get_field('address', $restaurant_id)) . '</textarea>';
 echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">請填完整地址，包括縣市及行政區，方便您被顧客搜尋</p>';
 echo '</div>';
 
@@ -449,7 +473,13 @@ echo '</div>';
 echo '<div id="other_note_field" class="form-group" style="margin-bottom: 25px; display: ' . ($open_bottle_service_value === 'other' ? 'block' : 'none') . ';">';
 echo '<label for="open_bottle_service_other_note" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">其他說明</label>';
 echo '<input type="text" id="open_bottle_service_other_note" name="open_bottle_service_other_note" value="' . esc_attr(get_field('open_bottle_service_other_note', $restaurant_id)) . '" placeholder="請說明您提供的開酒服務內容..." style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; transition: border-color 0.3s;">';
-echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">請詳細說明您提供的開酒服務內容（選填）</p>';
+echo '<p style="font-size: 14px; color: 666; margin-top: 5px;">請詳細說明您提供的開酒服務內容（選填）</p>';
+echo '</div>';
+
+// 其他BYOB規定或備註
+echo '<div class="form-group" style="margin-bottom: 25px;">';
+echo '<label for="restaurant_description" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">其他BYOB規定或備註</label>';
+echo '<textarea id="restaurant_description" name="restaurant_description" rows="5" placeholder="請描述您的餐廳特色、風格、服務等..." style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; resize: vertical; transition: border-color 0.3s;">' . esc_textarea($restaurant->post_content) . '</textarea>';
 echo '</div>';
 
 // 官方網站/社群連結
@@ -466,6 +496,14 @@ echo '<input type="url" id="social_links" name="social_links" value="' . esc_att
 echo '</div>';
 echo '</div>';
 echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">請輸入您的官方網站和社群媒體連結（選填）</p>';
+echo '</div>';
+
+// 聯絡人Email
+echo '<div class="form-group" style="margin-bottom: 25px;">';
+echo '<label for="contact_email" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">餐廳Email *</label>';
+$current_user_email = wp_get_current_user()->user_email;
+echo '<input type="email" id="contact_email" name="contact_email" value="' . esc_attr($current_user_email) . '" readonly style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; background-color: #f8f9fa; color: #6c757d; cursor: not-allowed;">';
+echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">此Email與登入帳號同步</p>';
 echo '</div>';
 
 echo '</div>';
