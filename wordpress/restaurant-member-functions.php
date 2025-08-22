@@ -1971,6 +1971,11 @@ function byob_handle_restaurant_profile_submit($restaurant_id) {
             update_field('restaurant_type', $restaurant_types, $restaurant_id);
         }
         
+        // 新增欄位：其他類型說明（單行文字）
+        if (isset($_POST['restaurant_type_other_note'])) {
+            update_field('restaurant_type_other_note', sanitize_text_field($_POST['restaurant_type_other_note']), $restaurant_id);
+        }
+        
         // 新增欄位：是否收開瓶費（選項按鈕）
         if (isset($_POST['is_charged'])) {
             update_field('is_charged', sanitize_text_field($_POST['is_charged']), $restaurant_id);
