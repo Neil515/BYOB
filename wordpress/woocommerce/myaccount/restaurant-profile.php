@@ -320,6 +320,11 @@ $restaurant_types = array(
 
 $current_types = get_field('restaurant_type', $restaurant_id);
 $current_types = is_array($current_types) ? $current_types : array();
+        
+        // 除錯：檢查餐廳類型和其他類型說明
+        $other_note = get_field('restaurant_type_other_note', $restaurant_id);
+        echo '<!-- DEBUG: restaurant_type = ' . print_r($current_types, true) . ' -->';
+        echo '<!-- DEBUG: restaurant_type_other_note = ' . $other_note . ' -->';
 
 foreach ($restaurant_types as $value => $label) {
     $checked = in_array($value, $current_types) ? 'checked' : '';
@@ -686,8 +691,16 @@ document.addEventListener(\'DOMContentLoaded\', function() {
     var otherCheckbox = document.querySelector(\'input[name="restaurant_type[]"][value="其他"]\');
     var otherTypeNoteField = document.getElementById(\'other_type_note_field\');
     
+    // 除錯：檢查「其他」選項的狀態
+    console.log(\'DEBUG: otherCheckbox = \', otherCheckbox);
+    console.log(\'DEBUG: otherCheckbox.checked = \', otherCheckbox ? otherCheckbox.checked : \'N/A\');
+    console.log(\'DEBUG: otherTypeNoteField = \', otherTypeNoteField);
+    
     if (otherCheckbox && otherCheckbox.checked) {
         otherTypeNoteField.style.display = \'block\';
+        console.log(\'DEBUG: 顯示其他類型說明欄位\');
+    } else {
+        console.log(\'DEBUG: 隱藏其他類型說明欄位\');
     }
 });
 
