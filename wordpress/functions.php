@@ -166,8 +166,17 @@ function byob_create_restaurant_article($restaurant_data, $source = 'direct') {
         
         // 處理餐廳類型
         $types = $restaurant_data['restaurant_type'];
-        if (!empty($types) && !is_array($types)) {
-            $types = array_map('trim', explode(',', $types));
+        if (!empty($types)) {
+            if (!is_array($types)) {
+                // 如果是字串，嘗試用逗號分割，如果沒有逗號就直接轉為陣列
+                if (strpos($types, ',') !== false) {
+                    $types = array_map('trim', explode(',', $types));
+                } else {
+                    $types = array(trim($types));
+                }
+            }
+        } else {
+            $types = array();
         }
         
         // 處理設備
@@ -189,7 +198,9 @@ function byob_create_restaurant_article($restaurant_data, $source = 'direct') {
             $acf_updates = array(
                 'contact_person' => sanitize_text_field($restaurant_data['contact_person']),
                 'email' => sanitize_email($restaurant_data['email']),
+                'district' => sanitize_text_field($restaurant_data['district']),
                 'restaurant_type' => $types ?: array(),
+                'restaurant_type_other_note' => sanitize_text_field($restaurant_data['restaurant_type_other_note'] ?? ''),
                 'address' => sanitize_text_field($restaurant_data['address']),
                 'is_charged' => sanitize_text_field($restaurant_data['is_charged']),
                 'corkage_fee' => sanitize_text_field($restaurant_data['corkage_fee'] ?? ''),
@@ -270,6 +281,7 @@ function byob_create_restaurant_post($request) {
             'contact_person' => array('contact_person', 'contact', 'contact_name'),
             'email' => array('email', 'contact_email', 'email_address'),
             'restaurant_type' => array('restaurant_type', 'type', 'category'),
+            'restaurant_type_other_note' => array('restaurant_type_other_note', 'other_type_note', 'other_note'),
             'district' => array('district', 'area', 'region'),
             'address' => array('address', 'restaurant_address', 'location'),
             'is_charged' => array('is_charged', 'charged', 'corkage_charged'),
@@ -319,6 +331,7 @@ function byob_create_restaurant_post($request) {
             'contact_person' => $get_param_value($request, $param_mapping['contact_person']),
             'email' => $get_param_value($request, $param_mapping['email']),
             'restaurant_type' => $get_param_value($request, $param_mapping['restaurant_type']),
+            'restaurant_type_other_note' => $get_param_value($request, $param_mapping['restaurant_type_other_note']),
             'district' => $get_param_value($request, $param_mapping['district']),
             'address' => $get_param_value($request, $param_mapping['address']),
             'is_charged' => $get_param_value($request, $param_mapping['is_charged']),
