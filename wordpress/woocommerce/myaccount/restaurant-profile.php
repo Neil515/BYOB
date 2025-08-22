@@ -316,11 +316,16 @@ $restaurant_types = array(
     '其他' => '其他'
 );
 
+
+
 $current_types = get_field('restaurant_type', $restaurant_id);
 $current_types = is_array($current_types) ? $current_types : array();
 
 foreach ($restaurant_types as $value => $label) {
     $checked = in_array($value, $current_types) ? 'checked' : '';
+    
+
+    
     echo '<label style="display: flex; align-items: center; cursor: pointer; font-weight: normal; padding: 10px; border: 1px solid #ddd; border-radius: 6px; transition: all 0.3s;">';
     echo '<input type="checkbox" name="restaurant_type[]" value="' . $value . '" ' . $checked . ' style="margin-right: 8px;" onchange="limitCheckboxes(this, 3, \'restaurant_type\')">';
     echo $label;
@@ -333,9 +338,9 @@ echo '</div>';
 
 // 其他類型說明（條件式顯示）
 echo '<div id="other_type_note_field" class="form-group" style="margin-bottom: 25px; display: none;">';
-echo '<label for="restaurant_type_other_note" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">其他類型說明 *</label>';
-echo '<textarea id="restaurant_type_other_note" name="restaurant_type_other_note" rows="3" placeholder="請說明您的餐廳類型..." style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; resize: vertical; transition: border-color 0.3s;">' . esc_textarea(get_field('restaurant_type_other_note', $restaurant_id)) . '</textarea>';
-echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">請詳細說明您的餐廳類型（必填）</p>';
+echo '<label for="restaurant_type_other_note" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">其他類型說明</label>';
+echo '<input type="text" id="restaurant_type_other_note" name="restaurant_type_other_note" value="' . esc_attr(get_field('restaurant_type_other_note', $restaurant_id)) . '" placeholder="請說明您的餐廳類型..." style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; transition: border-color 0.3s;">';
+echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">請說明您的餐廳類型（選填）</p>';
 echo '</div>';
 
 
@@ -635,12 +640,8 @@ function limitCheckboxes(checkbox, maxCount, groupName) {
     var otherCheckbox = document.querySelector(\'input[name="\' + groupName + \'[]"][value="其他"]\');
     if (otherCheckbox && otherCheckbox.checked) {
         otherTypeNoteField.style.display = \'block\';
-        // 設定為必填
-        document.getElementById(\'restaurant_type_other_note\').required = true;
     } else {
         otherTypeNoteField.style.display = \'none\';
-        // 移除必填
-        document.getElementById(\'restaurant_type_other_note\').required = false;
         // 清空內容
         document.getElementById(\'restaurant_type_other_note\').value = \'\';
     }
@@ -687,7 +688,6 @@ document.addEventListener(\'DOMContentLoaded\', function() {
     
     if (otherCheckbox && otherCheckbox.checked) {
         otherTypeNoteField.style.display = \'block\';
-        document.getElementById(\'restaurant_type_other_note\').required = true;
     }
 });
 
