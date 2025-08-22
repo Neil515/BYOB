@@ -1,1487 +1,181 @@
-# BYOB 專案 AI 開發進度記錄
+# BYOB 專案開發進度記錄
 
-## 專案概述
-BYOB (Bring Your Own Bottle) 是一個餐廳資訊平台，讓消費者可以找到支援自帶酒水的餐廳。本專案使用 WordPress + WooCommerce 作為後端，並整合自定義的餐廳業者會員系統。
+## 📅 專案概覽
+- **專案名稱**：BYOB (Bring Your Own Bottle) 餐廳平台
+- **開發階段**：餐廳註冊系統開發
+- **主要功能**：餐廳業者註冊、資料管理、BYOB 服務設定
+- **技術架構**：WordPress + ACF + WooCommerce + Google Apps Script
 
-## 技術架構
-- **後端**: WordPress 6.4.2 + WooCommerce 8.5.2
-- **主題**: Flatsome Child Theme
-- **外掛**: Advanced Custom Fields (ACF) Pro
-- **自定義功能**: 餐廳業者會員系統、餐廳資料管理、LOGO上傳等
+## 🚀 開發里程碑
 
-## 開發進度記錄
+### 第一階段：基礎架構建立 ✅
+- [x] WordPress 主題設定
+- [x] ACF 自訂欄位建立
+- [x] 餐廳自訂文章類型建立
+- [x] 基本會員系統架構
 
-### 2025-08-15 開發進度
+### 第二階段：Google 表單整合 ✅
+- [x] Google 表單建立
+- [x] Apps Script 自動化處理
+- [x] WordPress REST API 整合
+- [x] 餐廳資料自動建立
 
-#### 主要成就
-- ✅ 前台LOGO顯示功能完全修復
-- ✅ 實作雙重LOGO系統（業者 + 管理員備用）
-- ✅ 後台編輯頁面優化和UX改善
-- ✅ 前台開酒服務顯示邏輯優化
+### 第三階段：餐廳資料編輯系統 ✅
+- [x] WooCommerce My Account 整合
+- [x] 餐廳資料編輯頁面
+- [x] LOGO 上傳功能
+- [x] 資料驗證和儲存
 
-#### 技術突破
+### 第四階段：功能擴充和優化 🔄
+- [x] 新增餐廳類型「其他」選項
+- [x] 新增聯絡人姓名、行政區、餐廳Email欄位
+- [x] 頁面結構和欄位順序調整
+- [x] 條件式欄位顯示邏輯
 
-##### 1. 前台LOGO顯示功能修復
-**問題描述：**
-- 前台頁面顯示的LOGO被裁切填滿
-- 長方形圖片左右兩端消失
+## 📝 詳細開發記錄
 
-**根本原因：**
-- WordPress 自動生成 `thumbnail` 尺寸會強制裁切圖片
-- 前台讀取的是已裁切的圖片版本
+### 2025年8月22日 - 餐廳類型「其他」選項實作
 
-**解決方案：**
-```php
-// 修改圖片上傳函數，禁用自動生成 thumbnail 尺寸
-function byob_handle_logo_upload($restaurant_id) {
-    // 生成附件元數據，但不生成預設的 thumbnail 尺寸
-    $attachment_data = wp_generate_attachment_metadata($attachment_id, $uploaded_file['file']);
-    
-    // 移除預設的 thumbnail 尺寸，避免裁切
-    if (isset($attachment_data['sizes']['thumbnail'])) {
-        unset($attachment_data['sizes']['thumbnail']);
-    }
-    
-    wp_update_attachment_metadata($attachment_id, $attachment_data);
-}
-```
+#### 🎯 主要目標
+實作餐廳類型「其他」選項，讓業者可以選擇「其他」並提供說明文字。
 
-**前台讀取邏輯：**
-```php
-// 強制讀取原始圖片，避免使用任何預處理的尺寸
-$logo_url = wp_get_attachment_url($logo_id);
-```
+#### ✅ 已完成工作
 
-##### 2. 雙重LOGO系統實作
-**需求分析：**
-- 業者正常情況：透過會員系統上傳LOGO
-- 管理員緊急情況：業者遇到困難時可以介入
+**1. 前端 UI 實作**
+- 在餐廳資料編輯頁面新增「其他」餐廳類型選項
+- 新增「其他類型說明」文字輸入欄位
+- 實作條件式顯示邏輯（選擇「其他」時顯示說明欄位）
+- 修改 JavaScript 控制邏輯，處理「其他」選項的顯示/隱藏
 
-**實作方案：**
-- **業者LOGO**：儲存到 `_restaurant_logo` meta 欄位
-- **管理員LOGO**：使用現有 ACF 欄位 `restaurant_photo`
-- **前台邏輯**：比較兩個LOGO的上傳時間，選擇最新的顯示
+**2. 後端資料處理**
+- 修改 `restaurant-member-functions.php` 處理新欄位
+- 修改 `functions.php` 的 `byob_create_restaurant_article` 函數
+- 修改 `functions.php` 的 `byob_create_restaurant_post` 函數
+- 新增 `restaurant_type_other_note` 欄位映射和處理
 
-##### 3. 前台開酒服務顯示邏輯優化
-**問題描述：**
-- 選擇"其他"時前台顯示"other"而不是說明內容
+**3. Google Apps Script 修改**
+- 修改 `parseLatestSpreadsheetData` 函數
+- 新增「其他」餐廳類型的特殊處理邏輯
+- 實作從餐廳類型中提取說明文字的功能
+- 新增詳細的除錯日誌
 
-**解決方案：**
-```php
-// 餐廳列表頁面（archive-restaurant.php）
-$open_bottle_service = get_field('open_bottle_service');
-$open_bottle_service_other_note = get_field('open_bottle_service_other_note');
+**4. 欄位擴充和調整**
+- 新增「聯絡人姓名」欄位（必填）
+- 新增「行政區」下拉選單（台北市12區，必填）
+- 新增「餐廳Email」欄位（與登入帳號同步）
+- 調整欄位順序和頁面結構
+- 修正「Fine dining」餐廳類型的大小寫問題
 
-if ($open_bottle_service): 
-    if ($open_bottle_service === 'other' && $open_bottle_service_other_note): ?>
-        <div class="field"><strong>是否提供開酒服務？：</strong><?php echo esc_html($open_bottle_service_other_note); ?></div>
-    <?php else: ?>
-        <div class="field"><strong>是否提供開酒服務？：</strong><?php echo esc_html($open_bottle_service); ?></div>
-    <?php endif;
-else: ?>
-    <div class="field"><strong>是否提供開酒服務？：</strong>暫無資料</div>
-<?php endif; ?>
-```
+#### 🔴 遇到的問題
 
-#### 重要里程碑
-*重要里程碑：成功實作雙重LOGO系統，解決前台圖片顯示問題，建立完整的餐廳業者LOGO管理解決方案*
+**餐廳類型「其他」資料傳遞問題**
+- **問題描述**：Google 表單中的「其他」餐廳類型選項無法正確傳遞到 WordPress
+- **問題分析**：
+  - 資料流程：Google 表單 → Apps Script → WordPress API → ACF 儲存 → 餐廳資料編輯頁面
+  - 資料格式：表單提交的餐廳類型格式為 `"Fine dining, 美式, 其他, 路邊攤"`
+  - 問題點：需要從餐廳類型中分離出「其他」和其說明文字「路邊攤」
+- **已嘗試的解決方案**：
+  - ✅ 修改 Apps Script 邏輯，從餐廳類型中提取「其他」說明文字
+  - ✅ 在 WordPress 中新增 `restaurant_type_other_note` 欄位處理
+  - ✅ 在前端新增「其他」選項和說明欄位的 UI
+  - ❌ 遇到語法錯誤，需要進一步除錯
 
----
+#### 📋 待處理工作
 
-##### 2. 雙重LOGO系統實作
-**需求分析：**
-- 業者正常情況：透過會員系統上傳LOGO
-- 管理員緊急情況：業者遇到困難時可以介入
-- 需要兩套系統並存，不是統一為一套
+**優先級 1：解決「其他」餐廳類型問題**
+- [ ] 檢查 `functions.php` 語法錯誤
+- [ ] 測試 Google 表單到 WordPress 的完整資料流程
+- [ ] 驗證 Apps Script 的除錯日誌
+- [ ] 確認 WordPress 正確接收和儲存資料
+- [ ] 測試餐廳資料編輯頁面的顯示
 
-**實作方案：**
-- **業者LOGO**：儲存到 `_restaurant_logo` meta 欄位
-- **管理員LOGO**：使用現有 ACF 欄位 `restaurant_photo`
-- **前台邏輯**：比較兩個LOGO的上傳時間，選擇最新的顯示
+**優先級 2：CSS 下拉選單問題**
+- [ ] 解決下拉選單文字被截斷的問題
+- [ ] 檢查 CSS 樣式和欄位高度設定
 
----
+**優先級 3：功能完善**
+- [ ] 測試所有新欄位的功能
+- [ ] 驗證資料編輯和儲存流程
+- [ ] 檢查錯誤處理和用戶體驗
 
-### 2025-08-17 開發進度
+#### 🔧 修改的檔案
+1. `wordpress/Apps script - 純淨版.js` - 新增「其他」餐廳類型處理邏輯
+2. `wordpress/functions.php` - 新增 `restaurant_type_other_note` 欄位處理
+3. `wordpress/restaurant-member-functions.php` - 新增新欄位處理邏輯
+4. `wordpress/woocommerce/myaccount/restaurant-profile.php` - 新增「其他」選項和說明欄位
 
-#### 主要成就
-- ✅ 前台餐廳照片顯示功能完整實作
-- ✅ 開酒服務欄位顯示邏輯優化
-- ✅ 返回餐廳列表功能優化
-- ✅ 篩選條件記憶基礎框架實作
-- ✅ 照片管理頁面標題統一
+#### 📊 技術實現細節
 
-#### 技術突破
+**餐廳類型「其他」的處理邏輯**
+1. **Apps Script**：檢測餐廳類型是否包含「其他」，提取說明文字
+2. **WordPress API**：接收並處理兩個獨立欄位
+3. **ACF 儲存**：分別儲存餐廳類型和說明文字
+4. **前端顯示**：條件式顯示說明欄位
 
-##### 1. 前台餐廳照片顯示功能開發（重要里程碑）
-**功能實作：**
-- 餐廳照片區塊顯示（最多3張照片）
-- 照片縮圖顯示（60x60px手機，80x80px桌機）
-- 照片點擊放大功能（80%頁面寬度）
-- 照片說明文字顯示（放大時顯示）
-- 多種關閉方式（按鈕、背景、ESC鍵、觸控手勢）
-- 響應式設計（手機95%寬度，桌機80%寬度）
-- 手機友善操作（關閉按鈕50x50px，觸控手勢支援）
+**資料格式範例**
+- **輸入**：`"Fine dining, 美式, 其他, 路邊攤"`
+- **處理後**：
+  - `restaurant_type`: `"Fine dining, 美式, 其他"`
+  - `restaurant_type_other_note`: `"路邊攤"`
 
-**技術細節：**
-```php
-// 照片區塊HTML結構
-<div class="restaurant-photos-section">
-  <h3 style="color: #333; margin: 0 0 20px 0;">
-    🏠 餐廳照片
-  </h3>
-  
-  <div class="restaurant-photos-grid">
-    <?php foreach ($photos as $index => $photo): ?>
-      <div class="restaurant-photo-item" data-photo-index="<?php echo $index; ?>">
-        <img src="<?php echo esc_url($photo_url); ?>" 
-             alt="<?php echo esc_attr($photo_description ?: '餐廳照片'); ?>"
-             class="restaurant-photo-image"
-             loading="lazy"
-             title="<?php echo esc_attr($photo_description ?: '點擊放大查看'); ?>"
-             data-description="<?php echo esc_attr($photo_description); ?>">
-      </div>
-    <?php endforeach; ?>
-  </div>
-</div>
-```
+#### 🎯 成功標準
+- [ ] Google 表單提交「其他」類型時，說明文字正確傳遞
+- [ ] WordPress 正確儲存 `restaurant_type` 和 `restaurant_type_other_note`
+- [ ] 餐廳資料編輯頁面正確顯示「其他」選項和說明文字
+- [ ] 整個資料流程無錯誤，用戶體驗流暢
 
-**照片放大覆蓋層：**
-```html
-<!-- 照片放大覆蓋層 -->
-<div id="photo-overlay" class="photo-overlay">
-  <div class="photo-overlay-content">
-    <img id="overlay-image" src="" alt="餐廳照片">
-    <div id="overlay-description" class="overlay-description"></div>
-    <button class="close-overlay" aria-label="關閉">×</button>
-  </div>
-</div>
-```
-
-**JavaScript互動功能：**
-```javascript
-// 點擊照片開啟放大視窗
-photoItems.forEach(function(item) {
-  item.addEventListener('click', function() {
-    const photo = item.querySelector('.restaurant-photo-image');
-    
-    if (photo) {
-      // 獲取原始大圖URL（替換縮圖URL）
-      let originalUrl = photo.src;
-      if (originalUrl.includes('-150x150') || originalUrl.includes('-300x300')) {
-        originalUrl = originalUrl.replace(/-150x150|-\d+x\d+/g, '');
-      }
-      
-      overlayImage.src = originalUrl;
-      overlayImage.alt = photo.alt;
-      
-      // 從data-description獲取說明文字
-      const description = photo.getAttribute('data-description');
-      if (description && description.trim()) {
-        overlayDescription.textContent = description;
-        overlayDescription.style.display = 'block';
-      } else {
-        overlayDescription.style.display = 'none';
-      }
-      
-      photoOverlay.style.display = 'flex';
-      document.body.style.overflow = 'hidden'; // 防止背景滾動
-    }
-  });
-});
-
-// 觸控手勢支援（手機友善）
-let startY = 0;
-let currentY = 0;
-
-photoOverlay.addEventListener('touchstart', function(e) {
-  startY = e.touches[0].clientY;
-});
-
-photoOverlay.addEventListener('touchmove', function(e) {
-  currentY = e.touches[0].clientY;
-});
-
-photoOverlay.addEventListener('touchend', function() {
-  const diff = startY - currentY;
-  if (Math.abs(diff) > 100) { // 滑動超過100px
-    closePhotoOverlay();
-  }
-});
-```
-
-##### 2. 開酒服務欄位顯示邏輯優化
-**問題描述：**
-- 選擇"其他"時前台顯示"other"而不是說明文字
-
-**根本原因：**
-- ACF欄位設定使用英文選項值（yes/no/other）
-- 程式碼檢查中文選項值（是/否/其他）
-
-**解決方案：**
-```php
-if ($open_bottle_service): 
-  if ($open_bottle_service === 'yes') {
-    $service_output = '是';
-  } elseif ($open_bottle_service === 'no') {
-    $service_output = '否';
-  } elseif ($open_bottle_service === 'other') {
-    // 當選擇"other"時，優先顯示說明文字
-    if ($open_bottle_service_other_note && !empty(trim($open_bottle_service_other_note))) {
-      $service_output = $open_bottle_service_other_note;
-    } else {
-      $service_output = '其他';
-    }
-  } else {
-    $service_output = $open_bottle_service;
-  }
-endif;
-```
-
-##### 3. 返回餐廳列表功能優化
-**設計改進：**
-- 簡化返回邏輯，總是返回餐廳列表頁
-- 實作篩選條件記憶基礎框架，支援未來篩選外掛整合
-
-**技術架構：**
-```javascript
-// 篩選條件記憶功能
-const backToListLink = document.getElementById('back-to-list-link');
-if (backToListLink) {
-  backToListLink.addEventListener('click', function(e) {
-    // 檢查是否有儲存的篩選條件
-    const savedFilters = sessionStorage.getItem('restaurant_filters');
-    if (savedFilters) {
-      try {
-        const filters = JSON.parse(savedFilters);
-        // 將篩選條件附加到URL參數
-        const url = new URL(this.href);
-        
-        // 添加篩選參數
-        Object.keys(filters).forEach(key => {
-          if (filters[key] && filters[key] !== '') {
-            url.searchParams.set(key, filters[key]);
-          }
-        });
-        
-        // 更新連結的href
-        this.href = url.toString();
-      } catch (error) {
-        console.log('篩選條件解析失敗，使用預設返回');
-      }
-    }
-  });
-}
-```
-
-**篩選條件記憶基礎框架：**
-```javascript
-// 在餐廳列表頁實作基礎框架
-const FILTER_STORAGE_KEY = 'restaurant_filters';
-
-// 儲存篩選條件到 sessionStorage
-function saveFilters(filters) {
-  try {
-    sessionStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(filters));
-    console.log('篩選條件已儲存:', filters);
-  } catch (error) {
-    console.error('儲存篩選條件失敗:', error);
-  }
-}
-
-// 從 sessionStorage 恢復篩選條件
-function restoreFilters() {
-  try {
-    const savedFilters = sessionStorage.getItem(FILTER_STORAGE_KEY);
-    if (savedFilters) {
-      const filters = JSON.parse(savedFilters);
-      console.log('恢復篩選條件:', filters);
-      return filters;
-    }
-  } catch (error) {
-    console.error('恢復篩選條件失敗:', error);
-  }
-  return null;
-}
-
-// 將函數暴露到全域，供未來的外掛整合使用
-window.RestaurantFilterMemory = {
-  saveFilters: saveFilters,
-  restoreFilters: restoreFilters,
-  clearFilters: clearFilters
-};
-```
-
-##### 4. 照片管理頁面標題統一
-**修改內容：**
-- 將"餐廳環境照片管理"統一改為"餐廳照片管理"
-- 保持介面一致性，移除"環境"字樣
-
-**修改檔案：**
-- `restaurant-member-functions.php` - 2處修改
-- `restaurant-photos.php` - 1處修改（待完成）
-
-**修改範例：**
-```php
-// 原本
-echo '<h2>餐廳環境照片管理</h2>';
-
-// 修改後
-echo '<h2>餐廳照片管理</h2>';
-```
-
-#### 重要里程碑
-*重要里程碑：成功實作完整的前台餐廳照片顯示功能，包括縮圖顯示、點擊放大、說明文字顯示、響應式設計等。這是專案的重要里程碑，為用戶提供了完整的餐廳照片瀏覽體驗。*
-
-*重要里程碑：成功優化系統架構，包括開酒服務顯示邏輯、返回餐廳列表功能、篩選條件記憶框架等，建立了更穩定、更友善的系統架構。*
-
-#### 修改的檔案
-1. `wordpress/single_restaurant.php` - 前台照片顯示功能、開酒服務邏輯優化、返回功能優化
-2. `wordpress/archive-restaurant.php` - 篩選條件記憶基礎框架
-3. `wordpress/restaurant-member-functions.php` - 照片管理頁面標題統一
-
-#### 技術亮點
-1. **完整的照片顯示系統**：從縮圖到放大，完整的用戶體驗
-2. **響應式設計**：手機和桌機都有最佳體驗
-3. **觸控手勢支援**：手機友善的操作方式
-4. **篩選條件記憶框架**：為未來功能擴展做準備
-5. **錯誤處理完善**：完整的錯誤處理和除錯功能
-
-#### 用戶體驗改善
-1. **照片瀏覽體驗**：點擊放大、說明文字顯示、多種關閉方式
-2. **手機友善設計**：觸控手勢、響應式佈局、適當的按鈕大小
-3. **操作流程優化**：簡化的返回邏輯、智能的篩選條件記憶
-4. **介面一致性**：統一的標題和術語使用
+#### 🔍 除錯資源
+- **Apps Script**：執行日誌中的除錯資訊
+- **WordPress**：`error_log` 中的 BYOB API 日誌
+- **瀏覽器**：Console 中的 JavaScript 除錯資訊
 
 ---
 
-## 專案總結
+## 📈 專案整體進度
 
-### 已完成的核心功能
-1. ✅ 餐廳資料編輯頁面
-2. ✅ LOGO上傳和管理系統
-3. ✅ 前台LOGO顯示功能
-4. ✅ 開酒服務邏輯優化
-5. ✅ 雙重LOGO系統
-6. ✅ 照片管理頁面
-7. ✅ 前台餐廳照片顯示功能
-8. ✅ 返回餐廳列表功能優化
-9. ✅ 篩選條件記憶基礎框架
+### 🎯 已完成里程碑
+- ✅ 餐廳直接加入功能架構設計
+- ✅ 後端邏輯開發完成
+- ✅ 頁面模板建立完成
+- ✅ 舊程式碼清理完成
+- ✅ 語法錯誤修復完成
+- ✅ 餐廳資料編輯頁面欄位擴充
+- ✅ 餐廳類型「其他」選項 UI 實作
 
-### 技術架構優勢
-1. **模組化設計**：功能分離，易於維護和擴展
-2. **響應式架構**：支援多種裝置和螢幕尺寸
-3. **錯誤處理完善**：完整的錯誤處理和除錯機制
-4. **用戶體驗優先**：以用戶需求為中心的設計理念
-5. **擴展性良好**：為未來功能擴展預留了接口
+### 🚧 進行中項目
+- 🔄 餐廳類型「其他」選項資料傳遞問題解決
+- 🔄 餐廳資料編輯頁面功能完善
 
-### 下一步發展方向
-1. **業者註冊流程UX完善**：優化從審核到註冊完成的整個流程
-2. **後台整體UX優化**：提升後台管理介面的使用體驗
-3. **菜單管理功能**：開發餐廳菜單管理系統
-4. **系統穩定性提升**：進行全面的功能測試和優化
+### 📋 待完成項目
+- ⏳ 解決「其他」餐廳類型資料傳遞問題
+- ⏳ CSS 下拉選單問題修復
+- ⏳ 完整功能測試和驗證
 
-**技術實作：**
-```php
-// 獲取兩個 LOGO 的上傳時間，選擇最新的
-$admin_logo = get_field('restaurant_photo', get_the_ID());
-$user_logo_id = get_post_meta(get_the_ID(), '_restaurant_logo', true);
-
-$logo_id = null;
-
-if ($admin_logo && is_array($admin_logo)) {
-    $admin_logo_id = $admin_logo['ID'];
-    $admin_time = get_post_modified_time('U', false, $admin_logo_id);
-    
-    if ($user_logo_id) {
-        $user_time = get_post_modified_time('U', false, $user_logo_id);
-        // 選擇最新的
-        $logo_id = ($admin_time > $user_time) ? $admin_logo_id : $user_logo_id;
-    } else {
-        $logo_id = $admin_logo_id;
-    }
-} else {
-    $logo_id = $user_logo_id;
-}
-```
-
-**運作邏輯：**
-- **情況 1**：業者先上傳 → 管理員後上傳 → 顯示管理員的
-- **情況 2**：管理員先上傳 → 業者後上傳 → 顯示業者的
-- **情況 3**：只有業者上傳 → 顯示業者的
-- **情況 4**：只有管理員上傳 → 顯示管理員的
-
-##### 3. 後台編輯頁面優化
-**上傳須知改善：**
-- 新增「建議上傳正方形或接近正方形的圖片檔案，以達到最佳顯示效果」
-- 放在第一條，讓用戶第一眼就看到重要建議
-- 使用加粗顯示突出重要性
-
-**操作指引優化：**
-- 修改標籤為「上傳 LOGO或具代表性的餐廳照片(選擇檔案之後按更新餐廳資料)」
-- 清楚告訴用戶選擇檔案後需要按「更新餐廳資料」按鈕
-- 提供明確的操作指引
-
-**介面簡化：**
-- 移除複雜的JavaScript切換功能
-- 預設使用 `object-fit: contain`（保持比例）
-- 簡化CSS樣式，移除不必要的複雜邏輯
-
-**JavaScript 功能簡化：**
-```javascript
-// 移除複雜的 LOGO 顯示模式切換
-// 移除 changeLogoDisplay() 函數
-// 移除 DOMContentLoaded 中的 LOGO 初始化邏輯
-// 保留基本的開酒服務欄位顯示邏輯
-```
-
-##### 4. 前台開酒服務顯示邏輯優化
-**問題描述：**
-- 選擇"其他"時前台顯示"other"而不是說明內容
-- 前台頁面沒有正確處理開酒服務的條件式顯示
-
-**解決方案：**
-```php
-// 餐廳列表頁面（archive-restaurant.php）
-$open_bottle_service = get_field('open_bottle_service');
-$open_bottle_service_other_note = get_field('open_bottle_service_other_note');
-
-if ($open_bottle_service): 
-    if ($open_bottle_service === 'other' && $open_bottle_service_other_note): ?>
-        <div class="field"><strong>是否提供開酒服務？：</strong><?php echo esc_html($open_bottle_service_other_note); ?></div>
-    <?php else: ?>
-        <div class="field"><strong>是否提供開酒服務？：</strong><?php echo esc_html($open_bottle_service); ?></div>
-    <?php endif;
-else: ?>
-    <div class="field"><strong>是否提供開酒服務？：</strong>暫無資料</div>
-<?php endif; ?>
-```
-
-#### 修改的檔案清單
-- `wordpress/archive-restaurant.php` - LOGO讀取邏輯改為時間優先原則
-- `wordpress/single_restaurant.php` - LOGO讀取邏輯改為時間優先原則
-- `wordpress/woocommerce/myaccount/restaurant-profile.php` - 後台編輯頁面優化和UX改善
-- `wordpress/restaurant-member-functions.php` - 圖片上傳處理邏輯優化
-
-#### 解決的技術問題
-- 圖片裁切問題：禁用自動縮圖生成，使用原始圖片
-- 雙重LOGO系統：實作時間優先的雙重LOGO系統
-- 前台顯示邏輯：修改前台邏輯，顯示說明內容
-- 後台介面複雜性：簡化介面，預設使用最佳顯示模式
-
-#### 重要里程碑
-*重要里程碑：成功實作雙重LOGO系統，解決前台圖片顯示問題，建立完整的餐廳業者LOGO管理解決方案*
+### 🎉 預期完成時間
+**2025年8月23日** - 餐廳類型「其他」選項功能完整上線
 
 ---
 
-#### 測試和驗證
-- ✅ LOGO上傳功能正常
-- ✅ 前台顯示正確（保持比例）
-- ✅ 雙重LOGO系統運作正常
-- ✅ 開酒服務邏輯正確
+## 📝 技術筆記
+
+### 系統架構
+- **前端**：WordPress 主題 + WooCommerce My Account
+- **後端**：WordPress + ACF + 自訂函數
+- **資料來源**：Google 表單 + Apps Script + REST API
+- **資料儲存**：WordPress 文章 + ACF 自訂欄位
+
+### 關鍵函數
+- `byob_create_restaurant_article()` - 建立餐廳文章的核心函數
+- `byob_create_restaurant_post()` - 處理 Google 表單 API 請求
+- `byob_handle_restaurant_profile_submit()` - 處理餐廳資料編輯表單
+
+### 資料流程
+1. **Google 表單提交** → Apps Script 處理
+2. **Apps Script 發送** → WordPress REST API
+3. **WordPress 處理** → 建立餐廳文章 + 更新 ACF 欄位
+4. **業者登入** → 編輯餐廳資料
+5. **資料更新** → 儲存到 ACF 欄位
 
 ---
 
----
-
-### 2025-08-16 開發進度
-
-#### 主要成就
-- ✅ 照片管理頁面主要功能完全開發完成
-- ✅ 解決照片上傳權限和技術問題
-- ✅ 優化照片管理頁面使用者體驗和樣式
-- ✅ 建立完整的餐廳環境照片管理系統
-- ✅ **重要里程碑：成功解決舊照片格式兼容性問題**
-
-#### 技術突破
-
-##### 1. 照片管理頁面核心功能開發
-**檔案位置：**
-- `wordpress/restaurant-member-functions.php` 中的 `byob_restaurant_photos_content` 函數
-
-**已完成功能：**
-- ✅ 餐廳環境照片上傳（最多3張）
-- ✅ 照片預覽和管理
-- ✅ 照片刪除功能
-- ✅ 照片說明文字上傳
-- ✅ 上傳區塊永久顯示（即使達上限）
-- ✅ 上傳須知優化（建議尺寸、排序邏輯說明）
-- ✅ 樣式優化（按鈕顏色、通知訊息背景色）
-- ✅ 照片預覽區塊寬度控制（不延伸至整個欄位）
-
-**技術架構：**
-```php
-// 使用 ACF 群組欄位管理多張照片
-$photo_1 = get_field('restaurant_photo_1', $restaurant_id);
-$photo_2 = get_field('restaurant_photo_2', $restaurant_id);
-$photo_3 = get_field('restaurant_photo_3', $restaurant_id);
-
-// 照片上傳處理邏輯
-function byob_handle_photo_upload($restaurant_id) {
-    // 權限檢查
-    $user_id = get_current_user_id();
-    $user = get_user_by('id', $user_id);
-    if (!in_array('restaurant_owner', $user->roles)) {
-        return new WP_Error('permission_denied', '只有餐廳業者才能上傳照片');
-    }
-    
-    // 檔案上傳處理
-    $upload = wp_handle_upload($file, array('test_form' => false));
-    $attachment_id = wp_insert_attachment($attachment, $upload['file'], $restaurant_id);
-    
-    // 儲存到第一個可用的群組欄位
-    $new_photo = array(
-        'photo' => $attachment_id,
-        'description' => sanitize_text_field($_POST['photo_description'] ?? '')
-    );
-}
-```
-
-##### 2. 權限系統優化
-**問題描述：**
-- 照片上傳時出現「您沒有權限上傳照片到此餐廳」錯誤
-- 權限檢查邏輯過於嚴格
-
-**解決方案：**
-- 修改前：使用 `current_user_can('edit_post', ...)`
-- 修改後：明確檢查用戶角色和餐廳擁有權
-
-##### 3. 檔案上傳機制優化
-**問題描述：**
-- 使用 `wp_handle_sideload` 導致「上傳失敗：Array」錯誤
-- 檔案處理邏輯不正確
-
-**解決方案：**
-- 修改前：`wp_handle_sideload` + `wp_insert_post`
-- 修改後：`wp_handle_upload` + `wp_insert_attachment`
-
-##### 4. ACF 資料結構處理優化
-**問題描述：**
-- ACF 圖片欄位有時返回 ID，有時返回完整陣列
-- 照片顯示邏輯不一致
-
-**解決方案：**
-- 統一處理圖片資料結構，支援兩種資料格式
-- 建立多層備用方案獲取圖片 URL
-
-##### 5. 使用者體驗優化
-**上傳區塊永久顯示：**
-- 即使達到 3 張照片限額，上傳區塊也會保留
-- 只是表單會被替換為狀態訊息
-- 讓用戶清楚了解當前狀態和操作方式
-
-**樣式優化：**
-- 通知訊息統一使用淺藍色背景 (#e7f3ff)
-- 上傳按鈕使用深紅色背景 (rgba(139, 38, 53, 0.7))
-- 照片預覽區塊寬度控制 (minmax(200px, 300px))
-
-**上傳須知優化：**
-- 建議尺寸：1200x800 像素
-- 排序邏輯：最晚上傳的照片會顯示在最前面
-- 支援格式：JPG、PNG、WebP
-- 檔案大小：單張不超過 2MB
-
-##### 6. 響應式設計優化
-**照片網格佈局：**
-- 桌機：多欄顯示，固定寬度 (minmax(200px, 300px))
-- 手機：自動調整為單欄
-- 使用 `justify-content: start` 讓照片靠左對齊
-
-**狀態訊息對齊：**
-- 使用 `display: flex; align-items: center` 實現垂直置中，靠左對齊
-
-##### 7. **重要里程碑：舊照片格式兼容性問題解決**
-**問題描述：**
-- 舊照片無法刪除，出現「沒有找到指定的照片」錯誤
-- 從後台刪除附件後，ACF 欄位資料未同步更新，造成「幽靈照片」
-
-**根本原因：**
-- 舊照片資料格式（簡單數字）與新程式碼期望格式（陣列）不匹配
-- 舊格式：`photo['photo'] = 123`
-- 新格式：`photo['photo'] = {'ID': 123, ...}
-
-**解決方案：**
-```php
-// 新增統一的照片 ID 獲取函數
-function byob_get_photo_id($photo_data) {
-    if (empty($photo_data) || !is_array($photo_data)) {
-        return null;
-    }
-    
-    if (isset($photo_data['photo'])) {
-        if (is_numeric($photo_data['photo'])) {
-            // 舊格式：photo['photo'] = 123
-            return intval($photo_data['photo']);
-        } elseif (is_array($photo_data['photo']) && isset($photo_data['photo']['ID'])) {
-            // 新格式：photo['photo'] = {'ID': 123, ...}
-            return intval($photo_data['photo']['ID']);
-        }
-    }
-    
-    return null;
-}
-
-// 新增照片有效性檢查函數
-function byob_is_photo_valid($photo_id) {
-    if (!$photo_id) {
-        return false;
-    }
-    
-    $attachment = get_post($photo_id);
-    if (!$attachment || $attachment->post_type !== 'attachment') {
-        return false;
-    }
-    
-    // 檢查檔案是否存在
-    $file_path = get_attached_file($photo_id);
-    if (!$file_path || !file_exists($file_path)) {
-        return false;
-    }
-    
-    return true;
-}
-
-// 新增自動清理無效照片函數
-function byob_cleanup_invalid_photos($restaurant_id) {
-    $photo_1 = get_field('restaurant_photo_1', $restaurant_id);
-    $photo_2 = get_field('restaurant_photo_2', $restaurant_id);
-    $photo_3 = get_field('restaurant_photo_3', $restaurant_id);
-    
-    $cleaned = false;
-    
-    // 檢查並清理無效照片
-    if ($photo_1 && !byob_is_photo_valid(byob_get_photo_id($photo_1))) {
-        update_field('restaurant_photo_1', array(), $restaurant_id);
-        $cleaned = true;
-    }
-    
-    if ($photo_2 && !byob_is_photo_valid(byob_get_photo_id($photo_2))) {
-        update_field('restaurant_photo_2', array(), $restaurant_id);
-        $cleaned = true;
-    }
-    
-    if ($photo_3 && !byob_is_photo_valid(byob_get_photo_id($photo_3))) {
-        update_field('restaurant_photo_3', array(), $restaurant_id);
-        $cleaned = true;
-    }
-    
-    return $cleaned;
-}
-```
-
-**技術突破：**
-- 成功解決舊照片格式兼容性問題
-- 實作自動資料清理機制
-- 建立統一的照片 ID 處理邏輯
-- 支援舊格式和新格式的照片操作
-
-#### 解決的技術問題
-
-##### 1. 權限檢查問題
-- **問題**：照片上傳權限被拒絕
-- **原因**：權限檢查邏輯過於嚴格
-- **解決**：明確檢查用戶角色和餐廳擁有權
-
-##### 2. 檔案上傳錯誤
-- **問題**：「上傳失敗：Array」錯誤
-- **原因**：使用錯誤的檔案上傳 API
-- **解決**：改用 `wp_handle_upload` 和 `wp_insert_attachment`
-
-##### 3. 照片顯示問題
-- **問題**：WebP 格式照片無法正確顯示
-- **原因**：ACF 資料結構不一致
-- **解決**：統一處理圖片資料結構，支援多種格式
-
-##### 4. 頁面崩潰問題
-- **問題**：上傳照片後出現「嚴重錯誤」
-- **原因**：`wp_generate_attachment_metadata` 函數調用錯誤
-- **解決**：移除有問題的函數調用
-
-##### 5. **舊照片格式兼容性問題**
-- **問題**：舊照片無法刪除，出現「沒有找到指定的照片」錯誤
-- **原因**：舊照片資料格式與新程式碼不匹配
-- **解決**：建立統一的照片 ID 處理邏輯，支援舊格式和新格式
-
-##### 6. **幽靈照片問題**
-- **問題**：從後台刪除附件後，ACF 欄位資料未同步更新
-- **原因**：WordPress 附件刪除與 ACF 欄位不同步
-- **解決**：實作自動資料清理機制，定期檢查和清理無效資料
-
-#### 技術架構改進
-
-##### 1. 照片管理系統
-- 使用 ACF 群組欄位替代 Repeater（免費版限制）
-- 三個獨立的群組欄位管理多張照片
-- 支援照片說明文字和圖片檔案
-
-##### 2. 權限管理系統
-- 明確的用戶角色檢查
-- 餐廳擁有權驗證
-- 安全的檔案上傳控制
-
-##### 3. 錯誤處理系統
-- 統一的錯誤訊息樣式
-- 詳細的錯誤原因說明
-- 友善的用戶提示
-
-##### 4. **照片格式兼容性系統**
-- 統一的照片 ID 獲取邏輯
-- 自動的照片有效性檢查
-- 智能的資料清理機制
-
-#### 測試和驗證
-- ✅ 照片上傳、預覽、刪除功能正常
-- ✅ JPG、PNG、WebP 格式支援，響應式設計正常
-- ✅ 權限檢查、錯誤處理、檔案格式驗證正常
-- ✅ **舊照片格式兼容性問題完全解決**
-- ✅ 自動資料清理功能正常運作
-
-#### 重要里程碑
-
-##### 2025-08-16 里程碑
-*重要里程碑：成功開發完整的照片管理頁面，解決複雜的技術問題，建立穩定的餐廳環境照片管理系統，並成功解決舊照片格式兼容性問題*
-
-**技術成就：**
-- 解決 ACF 免費版限制，實作多照片管理
-- 優化權限檢查和檔案上傳機制
-- 建立統一的錯誤處理和樣式系統
-- 實作響應式照片預覽和管理介面
-- **成功解決舊照片格式兼容性問題，建立統一的照片處理邏輯**
-- **實作自動資料清理機制，解決幽靈照片問題**
-
-**業務價值：**
-- 提供完整的餐廳環境照片管理功能
-- 改善業者操作體驗和視覺效果
-- 增強系統穩定性和可用性
-- 為前台照片展示奠定基礎
-- **解決歷史遺留問題，提升系統整體穩定性**
-- **建立可擴展的照片管理架構**
-
-#### 下一步計劃
-
-##### 短期目標（明天）
-1. 進行前台的餐廳照片顯示程式設計
-2. 回來進行業者後台的「餐廳環境照片管理」頁面微調
-
-##### 中期目標（本週）
-1. 完成前台餐廳照片顯示功能
-2. 完成後台照片管理頁面微調
-3. 開始菜單管理頁面開發
-
-##### 長期目標（下週）
-1. 完成菜單管理頁面
-2. 前台頁面整合測試
-3. 系統穩定性檢查
-
----
-
-## 總結
-
-### 技術進展
-- 成功解決前台LOGO顯示問題
-- 實作完整的雙重LOGO管理系統
-- 開發完整的照片管理頁面功能
-- 建立可擴展的圖片管理架構
-- 成功解決舊照片格式兼容性問題，建立統一的照片處理邏輯
-- 實作自動資料清理機制，解決幽靈照片問題
-- **成功開發餐廳直接加入功能，建立四檔案架構**
-- **實作完整的短代碼系統和表單處理邏輯**
-
-### 業務價值
-- 提高LOGO顯示品質和一致性
-- 提供管理員緊急介入能力
-- 建立完整的餐廳環境照片管理系統
-- 改善業者操作體驗和系統穩定性
-- 解決歷史遺留問題，提升系統整體穩定性
-- 建立可擴展的照片管理架構，為未來功能擴展奠定基礎
-- **大幅簡化餐廳業者加入流程，提升用戶體驗**
-- **建立更直接的註冊管道，減少業者加入障礙**
-
-### 開發效率
-- 解決複雜的技術問題
-- 建立可重複使用的解決方案
-- 優化程式碼結構和維護性
-- 為未來功能擴展奠定基礎
-- 成功解決舊照片兼容性問題，避免重複開發
-- 建立統一的照片處理邏輯，提高開發效率
-- **成功整合多種WordPress技術，建立穩固的開發基礎**
-- **建立可擴展的註冊系統架構，為後續功能開發奠定基礎**
-
----
-
-*最後更新：2025-08-16*
-*負責人：AI Assistant*
-*下次重點：進行前台的餐廳照片顯示程式設計，回來進行業者後台的「餐廳環境照片管理」頁面微調*
-
----
-
-## 2025-08-18 重要進度記錄
-
-### 🎯 今日主要成就：餐廳直接加入功能開發
-
-#### 功能概述
-成功開發餐廳業者直接在網站註冊的完整功能，無需填寫Google表單，大幅簡化業者加入流程。
-
-#### 技術架構突破
-
-##### 1. 四檔案架構設計
-- **檔案結構**：4支檔案（推薦方案）
-  - `page-restaurant-registration.php` - WordPress頁面模板
-  - `functions.php` - 核心功能（短代碼、表單處理）
-  - `restaurant-registration.css` - 樣式檔案
-  - `restaurant-registration.js` - 前端互動功能
-- **整合方式**：WordPress頁面 + UX Builder + PHP短代碼嵌入
-- **CSS放置**：WordPress自訂→附加CSS（推薦）
-
-##### 2. 短代碼系統實作
-- 成功實作 `[restaurant_registration_form]` 短代碼
-- 完美整合到 WordPress 頁面系統
-- 支援 UX Builder 視覺化編輯
-
-##### 3. 表單處理系統
-- 實作 `byob_handle_restaurant_registration` 函數
-- 支援客戶端和伺服器端雙重驗證
-- 完整的資料清理和安全檢查
-
-#### 功能特色
-
-##### 1. 單頁式表單設計
-- **表單結構**：簡化多步驟複雜性，提升用戶體驗
-- **表單欄位**：
-  - 基本資訊：餐廳名稱、聯絡人、Email、電話、是否為業者
-  - 餐廳詳情：餐廳類型、行政區、地址
-  - BYOB政策：是否收開瓶費、開瓶費金額、酒器設備、開酒服務
-  - 其他資訊：官方網站、社群連結、備註說明
-
-##### 2. 智能表單驗證
-- 客戶端即時驗證（必填欄位、Email格式、電話格式）
-- 伺服器端安全驗證（nonce檢查、資料清理）
-- 條件欄位顯示（開瓶費欄位根據選擇動態顯示/隱藏）
-
-##### 3. 直接發布流程
-- 註冊完成後餐廳立即上架，無需管理員審核
-- 跳過邀請碼流程，直接進入會員註冊/登入
-- 完整的成功指引和下一步操作說明
-
-#### 技術突破
-
-##### 1. WordPress整合優化
-- 完美整合自定義文章類型 `restaurant`
-- 自動更新 ACF 欄位資料
-- 支援新用戶註冊和現有用戶登入
-
-##### 2. 前端互動功能
-- 響應式設計，手機和桌機都有良好體驗
-- 現代化UI設計（圓角、陰影、漸層背景）
-- 智能表單驗證和錯誤提示
-
-##### 3. 樣式系統設計
-- 成功訊息樣式：使用 `#D87F8D` 底色，70%透明度
-- 按鈕設計：白色背景配深色文字，懸停效果
-- 響應式佈局：適配各種裝置尺寸
-
-#### 待解決問題
-
-##### 1. "查看餐廳"按鈕連結問題（優先級：高）
-- **問題描述**：成功頁面的"查看餐廳"按鈕仍然連結到餐廳列表頁面
-- **預期行為**：應該連結到剛註冊成功的單一餐廳頁面
-- **連結格式**：`https://byobmap.com/byob-restaurant/{餐廳名稱}/`
-- **技術細節**：需要正確獲取餐廳ID和slug，建立單一餐廳頁面連結
-- **調試狀態**：已添加調試信息，需要進一步測試和修正
-
-##### 2. 餐廳直接加入流程完善（優先級：高）
-- 整個註冊到上架的流程需要進一步完善
-- 註冊成功後的用戶體驗需要優化
-- 表單驗證和錯誤提示需要完善
-- 成功訊息樣式需要根據底色調整文字顏色
-
-#### 重要里程碑
-
-##### 2025-08-18 里程碑
-*重要里程碑：成功開發完整的餐廳直接加入功能，建立四檔案架構，整合WordPress頁面、UX Builder、PHP短代碼等技術，為餐廳業者提供更便捷的加入管道*
-
-**技術成就：**
-- 成功建立四檔案架構，整合多種WordPress技術
-- 實作完整的短代碼系統和表單處理邏輯
-- 建立智能表單驗證和條件欄位顯示系統
-- 實作直接發布流程，跳過複雜的審核流程
-- 建立響應式設計和現代化UI系統
-
-**業務價值：**
-- 大幅簡化餐廳業者加入流程
-- 提供更直接的註冊管道，提升用戶體驗
-- 建立可擴展的註冊系統架構
-- 為未來功能擴展奠定基礎
-
-**開發效率：**
-- 成功整合多種WordPress技術
-- 建立可重複使用的表單處理系統
-- 優化用戶體驗和操作流程
-- 為後續功能開發建立穩固基礎
-
-#### 下一步計劃
-
-##### 短期目標（明天）
-1. 解決"查看餐廳"按鈕連結問題
-2. 完善餐廳直接加入的整個流程
-3. 進行功能測試和除錯
-
-##### 中期目標（本週）
-1. 完成餐廳直接加入功能
-2. 開始菜單管理頁面開發
-3. 系統整體穩定性檢查
-
-##### 長期目標（下週）
-1. 完成菜單管理頁面
-2. 前台頁面整合測試
-3. 使用者體驗優化
-
----
-
-## 總結
-
-### 技術進展
-- 成功解決前台LOGO顯示問題
-- 實作完整的雙重LOGO管理系統
-- 開發完整的照片管理頁面功能
-- 建立可擴展的圖片管理架構
-- 成功解決舊照片格式兼容性問題，建立統一的照片處理邏輯
-- 實作自動資料清理機制，解決幽靈照片問題
-- **成功開發餐廳直接加入功能，建立四檔案架構**
-- **實作完整的短代碼系統和表單處理邏輯**
-
-### 業務價值
-- 提高LOGO顯示品質和一致性
-- 提供管理員緊急介入能力
-- 建立完整的餐廳環境照片管理系統
-- 改善業者操作體驗和系統穩定性
-- 解決歷史遺留問題，提升系統整體穩定性
-- 建立可擴展的照片管理架構，為未來功能擴展奠定基礎
-- **大幅簡化餐廳業者加入流程，提升用戶體驗**
-- **建立更直接的註冊管道，減少業者加入障礙**
-
-### 開發效率
-- 解決複雜的技術問題
-- 建立可重複使用的解決方案
-- 優化程式碼結構和維護性
-- 為未來功能擴展奠定基礎
-- 成功解決舊照片兼容性問題，避免重複開發
-- 建立統一的照片處理邏輯，提高開發效率
-- **成功整合多種WordPress技術，建立穩固的開發基礎**
-- **建立可擴展的註冊系統架構，為後續功能開發奠定基礎**
-
----
-
-*最後更新：2025-08-18*
-*負責人：AI Assistant*
-*下次重點：解決"查看餐廳"按鈕連結問題，完善餐廳直接加入的整個流程*
-
----
-
-## 2025-08-19 重要進度記錄
-
-### 🎯 今日主要成就：CF7表單設計與技術問題解決
-
-#### 功能概述
-成功解決餐廳直接加入功能的關鍵技術問題，完成CF7表單設計，為餐廳業者提供更專業、更易用的註冊介面。
-
-#### 技術問題解決
-
-##### 1. 會員狀態問題解決（重要里程碑）
-- **問題描述**：直接註冊的餐廳在後台顯示"未註冊"狀態
-- **根本原因**：直接註冊流程未建立餐廳與用戶的關聯
-- **解決方案**：修改 `functions.php` 中的 `byob_handle_restaurant_registration` 函數
-- **技術實作**：
-  ```php
-  // 檢查現有用戶或創建新用戶
-  $user_id = email_exists($email);
-  if (!$user_id) {
-      $user_id = wp_insert_user([
-          'user_login' => $email,
-          'user_email' => $email,
-          'user_pass' => $password,
-          'role' => 'restaurant_owner'
-      ]);
-  } else {
-      // 為現有用戶添加餐廳業者角色
-      $user = get_user_by('id', $user_id);
-      if (!in_array('restaurant_owner', $user->roles)) {
-          $user->add_role('restaurant_owner');
-      }
-  }
-  
-  // 建立餐廳與用戶的雙向關聯
-  update_post_meta($post_id, '_restaurant_owner_id', $user_id);
-  update_user_meta($user_id, '_owned_restaurant_id', $post_id);
-  ```
-- **結果**：後台會員管理頁面正確顯示"已註冊"狀態
-
-##### 2. 用戶登入密碼問題解決（重要里程碑）
-- **問題描述**：直接註冊的用戶無法登入（無密碼）
-- **解決方案**：在註冊表單中添加密碼設定欄位
-- **實作內容**：
-  - 表單新增：密碼、確認密碼欄位
-  - 驗證邏輯：密碼匹配檢查、最小長度驗證（6字元）
-  - 用戶體驗：用戶自行設定密碼，無需記住隨機密碼
-- **技術細節**：
-  ```php
-  // 密碼驗證
-  if ($password !== $confirm_password) {
-      wp_die('密碼與確認密碼不符');
-  }
-  if (strlen($password) < 6) {
-      wp_die('密碼長度至少需要6個字元');
-  }
-  
-  // 直接使用用戶設定的密碼
-  $user_data['user_pass'] = $password;
-  ```
-- **結果**：用戶可以正常登入系統
-
-#### CF7表單設計突破
-
-##### 1. 完整表單欄位設計
-- **基本資訊欄位**：
-  - 餐廳名稱：`restaurant_name`（對應 WordPress post_title）
-  - 聯絡人姓名：`contact_person`
-  - 聯絡Email：`contact_email`
-  - 聯絡電話：`restaurant_phone`
-  - 設定密碼：`user_password`
-  - 確認密碼：`confirm_password`
-
-- **餐廳詳情欄位**：
-  - 餐廳類型：`restaurant_type`（核取方塊群組）
-  - 行政區：`district`（下拉選單）
-  - 餐廳地址：`restaurant_address`
-
-- **BYOB政策欄位**：
-  - 是否收開瓶費：`is_charged`（選項按鈕）
-  - 開瓶費說明：`corkage_fee`（單行文字）
-  - 酒器設備：`equipment`（核取方塊群組）
-  - 是否提供開酒服務：`open_bottle_service`（下拉選單）
-  - 開酒服務其他說明：`open_bottle_service_other_note`（單行文字）
-
-- **其他資訊欄位**：
-  - 餐廳網站：`website_url`
-  - 社群連結：`social_media_links`
-  - 是否為餐廳負責人：`is_owner`（下拉選單）
-
-##### 2. CF7與ACF欄位對應規劃
-- **WordPress內建欄位對應**：
-  - `restaurant_name` → `post_title`（餐廳名稱）
-
-- **ACF欄位對應**：
-  - 所有其他欄位都對應到同名的ACF欄位
-  - 確保資料正確映射和儲存
-
-##### 3. 欄位類型與驗證設定
-- **密碼欄位**：使用CF7的「密碼欄位」類型，最小長度6字元
-- **必填欄位**：餐廳名稱、聯絡人、Email、電話、密碼等關鍵資訊
-- **選填欄位**：網站、社群連結、備註等輔助資訊
-- **條件式欄位**：開瓶費說明、開酒服務說明等
-
-#### 技術架構優化
-
-##### 1. 表單處理邏輯優化
-- 移除複雜的隨機密碼生成邏輯
-- 簡化用戶角色分配流程
-- 優化餐廳與用戶的關聯建立
-
-##### 2. 資料驗證系統
-- 客戶端即時驗證
-- 伺服器端安全驗證
-- 完整的錯誤處理機制
-
-##### 3. 用戶體驗改善
-- 簡化密碼設定流程
-- 清晰的欄位標籤和提示
-- 友善的錯誤訊息
-
-#### 待解決問題
-
-##### 1. CF7條件式欄位邏輯（優先級：高）
-- **開瓶費條件式欄位**：
-  - 選擇"酌收"時顯示金額輸入欄位
-  - 選擇"其他"時顯示說明輸入欄位
-- **開酒服務條件式欄位**：
-  - 選擇"其他"時顯示說明輸入欄位
-
-##### 2. CF7表單實作（優先級：高）
-- 完成所有欄位的CF7設定
-- 測試表單提交功能
-- 驗證資料正確性
-
-#### 重要里程碑
-
-##### 2025-08-19 里程碑
-*重要里程碑：成功解決餐廳直接加入功能的關鍵技術問題，完成CF7表單設計，建立完整的欄位對應規劃*
-
-**技術成就：**
-- 成功解決會員狀態顯示問題，建立餐廳與用戶的正確關聯
-- 成功解決用戶登入密碼問題，提供用戶友善的密碼設定流程
-- 完成CF7表單的完整設計，包含所有必要欄位和驗證規則
-- 建立CF7與ACF欄位的完整對應規劃，確保資料正確映射
-
-**業務價值：**
-- 確保餐廳直接註冊功能的完整性和穩定性
-- 為餐廳業者提供更專業、更易用的註冊介面
-- 建立可擴展的表單系統架構
-- 為後續功能開發奠定堅實基礎
-
-**開發效率：**
-- 解決關鍵技術問題，避免功能缺陷
-- 建立完整的表單設計規範
-- 優化用戶體驗和操作流程
-- 為CF7實作建立清晰的技術路線
-
-#### 下一步計劃
-
-##### 短期目標（明天）
-1. 在CF7中建立密碼欄位
-2. 實作CF7條件式欄位邏輯
-3. 開發CF7表單處理函數
-
-##### 中期目標（本週）
-1. 完成CF7表單實作
-2. 進行ACF欄位檢查與調整
-3. 完成表單測試與除錯
-
-##### 長期目標（下週）
-1. 系統整體穩定性檢查
-2. 使用者體驗優化
-3. 功能迭代優化
-
----
-
-## 總結
-
-### 技術進展
-- 成功解決前台LOGO顯示問題
-- 實作完整的雙重LOGO管理系統
-- 開發完整的照片管理頁面功能
-- 建立可擴展的圖片管理架構
-- 成功解決舊照片格式兼容性問題，建立統一的照片處理邏輯
-- 實作自動資料清理機制，解決幽靈照片問題
-- **成功開發餐廳直接加入功能，建立四檔案架構**
-- **實作完整的短代碼系統和表單處理邏輯**
-
-### 業務價值
-- 提高LOGO顯示品質和一致性
-- 提供管理員緊急介入能力
-- 建立完整的餐廳環境照片管理系統
-- 改善業者操作體驗和系統穩定性
-- 解決歷史遺留問題，提升系統整體穩定性
-- 建立可擴展的照片管理架構，為未來功能擴展奠定基礎
-- **大幅簡化餐廳業者加入流程，提升用戶體驗**
-- **建立更直接的註冊管道，減少業者加入障礙**
-
-### 開發效率
-- 解決複雜的技術問題
-- 建立可重複使用的解決方案
-- 優化程式碼結構和維護性
-- 為未來功能擴展奠定基礎
-- 成功解決舊照片兼容性問題，避免重複開發
-- 建立統一的照片處理邏輯，提高開發效率
-- **成功整合多種WordPress技術，建立穩固的開發基礎**
-- **建立可擴展的註冊系統架構，為後續功能開發奠定基礎**
-
----
-
-*最後更新：2025-08-19*
-*負責人：AI Assistant*
-*下次重點：在CF7中建立密碼欄位，實作CF7條件式欄位邏輯，開發CF7表單處理函數*
-
----
-
-*最後更新：2025-08-19*
-*負責人：AI Assistant*
-*下次重點：評估餐廳直接加入功能的未來發展方向，制定功能取捨決策*
-
----
-
-## 2025-08-19 今日進度更新
-
-### 🚨 嚴重錯誤修復（已完成）
-
-#### 問題描述
-- 網站出現"嚴重錯誤"，無法正常訪問
-- 用戶無法使用任何功能，系統完全癱瘓
-
-#### 問題診斷
-- **根本原因**：`functions.php` 中存在重複的函數定義
-- **具體問題**：
-  - 重複定義 `byob_restaurant_registration_shortcode` 函數
-  - 重複定義 `byob_handle_restaurant_registration` 函數
-  - 這些函數已經在 `restaurant-registration-functions.php` 中正確定義
-  - 當 WordPress 載入時，遇到重複定義並拋出致命錯誤
-
-#### 解決方案
-- **刪除重複函數**：從 `functions.php` 中移除重複的函數定義
-- **清理代碼**：刪除從第1509行開始的重複代碼塊
-- **保持架構**：`functions.php` 只負責載入 `restaurant-registration-functions.php`
-- **語法檢查**：通過語法檢查，確認沒有錯誤
-
-#### 修復結果
-- ✅ 網站恢復正常運作
-- ✅ 嚴重錯誤完全解決
-- ✅ 系統穩定性恢復
-- ✅ 用戶可以正常訪問網站
-
-### 🔧 修改的檔案
-
-#### `wordpress/functions.php`
-- **修復內容**：刪除重複的函數定義
-- **保持功能**：載入餐廳註冊功能檔案
-- **結果**：解決函數衝突，恢復系統正常運作
-
-### 📊 技術成就
-
-#### 系統穩定性
-- **問題解決**：成功診斷並修復致命錯誤
-- **架構優化**：清理重複代碼，避免未來衝突
-- **維護性提升**：建立清晰的函數定義架構
-
-#### 開發效率
-- **快速診斷**：準確識別問題根源
-- **有效修復**：一次性解決所有重複定義
-- **預防措施**：建立避免重複定義的機制
-
-### 🎯 功能評估準備
-
-#### 現況分析
-- **基礎建設完成**：餐廳直接加入功能已建立完整架構
-- **技術問題解決**：會員狀態、用戶登入、函數衝突等問題已解決
-- **系統穩定運行**：功能可以正常使用和測試
-
-#### 評估準備
-- **功能完整性**：所有必要功能都已實作
-- **穩定性驗證**：通過實際使用測試驗證功能穩定性
-- **用戶體驗基礎**：建立了基本的用戶操作流程
-
-### 📋 明日工作重點
-
-#### 主要目標
-**評估餐廳直接加入功能的未來發展方向，制定功能取捨決策**
-
-#### 核心任務
-1. **功能現況評估**：分析穩定性、用戶體驗、維護成本
-2. **決策制定**：在保留改善 vs 取消替代之間做出選擇
-3. **方案設計**：根據決策結果設計具體的改進或替代方案
-
-#### 決策考量因素
-- **用戶需求**：餐廳業者對即時註冊的需求程度
-- **技術可行性**：維護和優化功能的技術難度
-- **成本效益**：開發和維護成本的比較
-- **用戶體驗**：不同方案對整體體驗的影響
-
-### 🏆 今日重要成就
-
-#### 技術突破
-- **嚴重錯誤修復**：成功解決導致網站癱瘓的致命錯誤
-- **系統穩定性恢復**：確保網站正常運作和用戶訪問
-- **架構優化**：清理重複代碼，建立清晰的函數定義架構
-
-#### 業務價值
-- **服務恢復**：確保 BYOB 平台正常運作
-- **用戶體驗保護**：避免用戶因系統錯誤而無法使用服務
-- **系統可靠性提升**：建立更穩定的技術基礎
-
-#### 開發效率
-- **問題診斷能力**：快速準確識別技術問題根源
-- **解決方案執行**：有效實施修復方案
-- **預防機制建立**：避免類似問題再次發生
-
----
-
-*最後更新：2025-08-19*
-*負責人：AI Assistant*
-*下次重點：評估餐廳直接加入功能的未來發展方向，制定功能取捨決策*
-
----
-
-## 2025-08-20 今日進度更新
-
-### 🔄 餐廳直接加入功能重新開發決策（已完成）
-
-#### 問題分析
-- **CF7 限制**：Contact Form 7 外掛無法滿足密碼創建需求
-- **功能缺失**：無法實現用戶帳號建立和權限分配
-- **技術瓶頸**：表單外掛的限制影響核心註冊功能
-
-#### 決策結果
-- **開發策略**：完全從頭開始，重新建立自建 PHP 解決方案
-- **架構選擇**：採用分離式架構（Scheme B），確保代碼品質和維護性
-- **技術路線**：放棄 CF7，使用原生 PHP + WordPress 功能
-
-#### 開發優勢
-- **完全控制**：可以實現所有必要的註冊功能
-- **架構清晰**：分離式架構便於維護和擴展
-- **功能完整**：用戶帳號、餐廳文章、權限管理一應俱全
-
-### 🧹 舊程式碼清理完成（已完成）
-
-#### 刪除檔案
-- `wordpress/restaurant-registration-functions.php` - 舊的註冊功能檔案
-- `wordpress/restaurant-registration.js` - 舊的 JavaScript 檔案
-- `wordpress/page-restaurant-registration.php` - 舊的頁面模板
-
-#### 清理 functions.php
-- **移除無用代碼**：刪除第1500-1505行的無用載入程式碼
-- **保持功能完整**：保留現有的邀請碼註冊系統
-- **雙軌制註冊**：維持 Google 表單 + 邀請碼的原有流程
-
-#### 清理結果
-- ✅ 舊代碼完全移除
-- ✅ 系統架構更清晰
-- ✅ 避免代碼衝突
-- ✅ 為新功能開發做好準備
-
-### 🏗️ 系統架構重構完成（已完成）
-
-#### 共用函數建立
-- **核心函數**：`byob_create_restaurant_article` - 兩種註冊流程的共用函數
-- **功能統一**：確保 Google 表單和直接註冊的資料處理邏輯完全一致
-- **代碼重用**：避免重複代碼，提升維護效率
-
-#### 函數重構
-- **Google 表單流程**：`byob_create_restaurant_post` - 重構為使用共用函數
-- **直接註冊流程**：`byob_create_direct_restaurant` - 預留函數，準備開發
-- **架構清晰**：兩種註冊流程獨立但共用核心邏輯
-
-#### 技術特點
-- **模組化設計**：功能分離，便於維護和測試
-- **擴展性強**：未來可以輕鬆添加新的註冊流程
-- **穩定性高**：共用函數經過測試，確保可靠性
-
-### 📄 頁面模板建立完成（已完成）
-
-#### 檔案建立
-- **模板檔案**：`wordpress/page-restaurant-join-us.php` - 餐廳直接加入頁面模板
-- **架構設計**：簡化頁面模板，適合在 UXBuilder 中編輯
-- **功能整合**：保留頁面標題和表單容器，表單內容將在 UXBuilder 中插入
-
-#### 設計特點
-- **UXBuilder 友好**：適合在視覺編輯器中進行內容編輯
-- **結構清晰**：頁面標題、描述、表單容器分工明確
-- **擴展性強**：可以輕鬆添加更多內容區塊
-
-#### 技術實現
-- **WordPress 標準**：使用標準的頁面模板結構
-- **主題整合**：與現有主題完全兼容
-- **SEO 優化**：保持頁面結構的完整性
-
-### ⚙️ 後端邏輯建立完成（已完成）
-
-#### 檔案建立
-- **功能檔案**：`wordpress/direct-restaurant-registration.php` - 餐廳直接加入功能
-- **功能完整**：包含所有必要的後端邏輯
-- **安全可靠**：實現完整的資料驗證和安全檢查
-
-#### 核心功能
-- **表單驗證**：必填欄位檢查、格式驗證、資料清理
-- **用戶管理**：用戶帳號建立、角色分配、權限設定
-- **餐廳建立**：餐廳文章建立、ACF 欄位更新、Meta 資料記錄
-- **郵件通知**：密碼重設郵件發送、用戶引導
-- **AJAX 處理**：非同步表單提交、錯誤處理、成功回應
-
-#### 技術特點
-- **資料安全**：完整的資料清理和驗證
-- **錯誤處理**：詳細的錯誤訊息和處理機制
-- **用戶體驗**：自動密碼生成和郵件通知
-- **系統整合**：與 WordPress 和 WooCommerce 完全整合
-
-### 🔧 語法錯誤修復完成（已完成）
-
-#### 問題診斷
-- **錯誤類型**：`functions.php` 中函數定義錯誤導致嚴重錯誤
-- **具體問題**：內部函數定義在另一個函數內部，違反 PHP 語法規則
-- **影響範圍**：整個網站無法訪問，顯示"嚴重錯誤"
-
-#### 解決方案
-- **函數改造**：將內部函數改為匿名函數（closure）
-- **語法修正**：使用 `$get_param_value = function()` 的語法
-- **調用更新**：更新所有函數調用，使用新的變數函數
-
-#### 修復結果
-- ✅ 語法錯誤完全解決
-- ✅ 網站恢復正常運作
-- ✅ 功能完全正常
-- ✅ 避免未來語法問題
-
-### 🎨 CSS 樣式清理完成（已完成）
-
-#### 清理範圍
-- **清理起點**：從第549行開始的所有舊餐廳加入相關 CSS 樣式
-- **清理內容**：移除舊的註冊容器、步驟指示器、表單步驟等不需要的樣式
-- **保留樣式**：保留與餐廳加入無關的其他樣式
-
-#### 清理項目
-- **註冊容器**：`.restaurant-registration-container` 相關樣式
-- **步驟指示器**：`.step-indicator`, `.step` 等樣式
-- **表單步驟**：`.form-step` 相關樣式
-- **載入提示**：`.loading-overlay` 等樣式
-
-#### 準備工作
-- ✅ 舊樣式完全清理
-- ✅ 為新的表單樣式開發做好準備
-- ✅ 避免樣式衝突
-- ✅ 確保樣式的一致性
-
-### 📊 今日技術成就總結
-
-#### 架構重構
-- **系統架構**：從混亂的舊架構重構為清晰的分離式架構
-- **代碼品質**：建立高品質、可維護的代碼基礎
-- **功能完整性**：後端邏輯完全建立，功能完整
-
-#### 技術突破
-- **語法問題解決**：成功解決複雜的 PHP 語法錯誤
-- **架構設計**：建立可擴展的雙軌制註冊系統
-- **代碼清理**：徹底清理舊代碼，建立乾淨的開發環境
-
-#### 開發效率
-- **快速重構**：在一天內完成系統架構的重新設計
-- **問題解決**：快速診斷和解決技術問題
-- **代碼品質**：建立高標準的代碼架構
-
-### 🎯 明日工作重點
-
-#### 主要目標
-**完成餐廳加入頁面的前端開發，建立完整的用戶註冊體驗**
-
-#### 核心任務
-1. **表單 HTML 生成函數**：建立動態選項生成功能
-2. **CSS 樣式檔案**：設計美觀且響應式的表單樣式
-3. **JavaScript 功能檔案**：實現表單驗證和 AJAX 提交
-4. **頁面建立和整合**：在後台建立頁面並整合到 UXBuilder
-5. **完整功能測試**：測試所有功能的正確性
-
-#### 預估時間
-- **總預估時間**：8-13 小時
-- **建議分組**：
-  - **上午**：完成表單 HTML 生成函數和 CSS 樣式
-  - **下午**：完成 JavaScript 功能和頁面建立
-  - **晚上**：完成測試和除錯
-
-### 🏆 今日重要成就
-
-#### 技術突破
-- **系統架構重構**：從混亂到清晰的架構重新設計
-- **後端邏輯建立**：完整的餐廳註冊功能後端實現
-- **語法錯誤修復**：解決複雜的 PHP 語法問題
-- **代碼環境清理**：建立乾淨、可維護的開發環境
-
-#### 業務價值
-- **功能完整性**：建立了完整的餐廳註冊功能架構
-- **系統穩定性**：解決了所有技術問題，系統穩定運行
-- **開發效率**：建立了高品質的代碼基礎，便於未來開發
-
-#### 開發效率
-- **架構設計能力**：成功設計可擴展的系統架構
-- **問題解決能力**：快速診斷和解決複雜技術問題
-- **代碼重構能力**：在短時間內完成系統重構
-
----
-
-*最後更新：2025-08-20*
-*負責人：AI Assistant*
-*下次重點：完成餐廳加入頁面的前端開發，建立完整的用戶註冊體驗*
+*下次重點：解決餐廳類型「其他」選項的資料傳遞問題，確保整個資料流程正常運作*
