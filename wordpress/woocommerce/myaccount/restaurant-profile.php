@@ -312,7 +312,8 @@ $restaurant_types = array(
     '牛排' => '牛排',
     'Lounge Bar' => 'Lounge Bar',
     'Buffet' => 'Buffet',
-    'Fine dining' => 'Fine dining'
+    'Fine dining' => 'Fine dining',
+    '其他' => '其他'
 );
 
 $current_types = get_field('restaurant_type', $restaurant_id);
@@ -328,6 +329,13 @@ foreach ($restaurant_types as $value => $label) {
 
 echo '</div>';
 echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">請選擇您的餐廳類型（最多3個）</p>';
+echo '</div>';
+
+// 其他類型說明（條件式顯示）
+echo '<div id="other_type_note_field" class="form-group" style="margin-bottom: 25px; display: none;">';
+echo '<label for="restaurant_type_other_note" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">其他類型說明 *</label>';
+echo '<textarea id="restaurant_type_other_note" name="restaurant_type_other_note" rows="3" placeholder="請說明您的餐廳類型..." style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; resize: vertical; transition: border-color 0.3s;">' . esc_textarea(get_field('restaurant_type_other_note', $restaurant_id)) . '</textarea>';
+echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">請詳細說明您的餐廳類型（必填）</p>';
 echo '</div>';
 
 
@@ -607,6 +615,7 @@ echo '<script>
 function limitCheckboxes(checkbox, maxCount, groupName) {
     var checkboxes = document.querySelectorAll(\'input[name="\' + groupName + \'[]"]\');
     var checkedCount = 0;
+    var otherTypeNoteField = document.getElementById(\'other_type_note_field\');
     
     // 計算已選中的數量
     checkboxes.forEach(function(cb) {
@@ -620,6 +629,20 @@ function limitCheckboxes(checkbox, maxCount, groupName) {
         checkbox.checked = false;
         alert("餐廳類型最多只能選擇 " + maxCount + " 個選項");
         return false;
+    }
+    
+    // 檢查是否選擇了「其他」類型
+    var otherCheckbox = document.querySelector(\'input[name="\' + groupName + \'[]"][value="其他"]\');
+    if (otherCheckbox && otherCheckbox.checked) {
+        otherTypeNoteField.style.display = \'block\';
+        // 設定為必填
+        document.getElementById(\'restaurant_type_other_note\').required = true;
+    } else {
+        otherTypeNoteField.style.display = \'none\';
+        // 移除必填
+        document.getElementById(\'restaurant_type_other_note\').required = false;
+        // 清空內容
+        document.getElementById(\'restaurant_type_other_note\').value = \'\';
     }
     
     return true;
@@ -657,6 +680,15 @@ function toggleOtherNote() {
 // 頁面載入完成後初始化開酒服務欄位的顯示狀態
 document.addEventListener(\'DOMContentLoaded\', function() {
     toggleOtherNote();
+    
+    // 初始化其他類型說明欄位的顯示狀態
+    var otherCheckbox = document.querySelector(\'input[name="restaurant_type[]"][value="其他"]\');
+    var otherTypeNoteField = document.getElementById(\'other_type_note_field\');
+    
+    if (otherCheckbox && otherCheckbox.checked) {
+        otherTypeNoteField.style.display = \'block\';
+        document.getElementById(\'restaurant_type_other_note\').required = true;
+    }
 });
 
 
