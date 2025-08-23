@@ -111,50 +111,75 @@ function parseLatestSpreadsheetData() {
           parsedData[wordpressField] = value || '';
           Logger.log('🍷 開酒服務選項: "' + value + '" -> 直接傳送，無需轉換');
         } else if (wordpressField === 'restaurant_type') {
-          // 特殊處理餐廳類型，檢查是否包含「其他」選項
+          // 特殊處理餐廳類型，使用「排除法」識別「其他」內容
           var restaurantTypes = value || '';
           Logger.log('🔍 處理餐廳類型: "' + restaurantTypes + '"');
           
-          if (restaurantTypes.indexOf('其他') !== -1) {
-            Logger.log('✅ 檢測到「其他」選項');
-            
-            // 如果包含「其他」，需要從餐廳類型中提取說明文字
-            var typesArray = restaurantTypes.split(',').map(function(type) {
-              return type.trim();
-            });
-            Logger.log('📋 分割後的類型陣列: [' + typesArray.join(', ') + ']');
-            
-            // 分離「其他」和其說明文字
-            var otherIndex = typesArray.indexOf('其他');
-            var otherNote = '';
-            Logger.log('📍 「其他」在陣列中的位置: ' + otherIndex);
-            
-            if (otherIndex !== -1 && otherIndex + 1 < typesArray.length) {
-              // 提取「其他」後面的說明文字
-              otherNote = typesArray[otherIndex + 1];
-              Logger.log('📝 提取到的說明文字: "' + otherNote + '"');
-              
-              // 從類型陣列中移除說明文字
-              typesArray.splice(otherIndex + 1, 1);
-              Logger.log('🗑️ 移除說明文字後的類型陣列: [' + typesArray.join(', ') + ']');
-            }
-            
-            // 重新組合餐廳類型（不包含說明文字）
-            var cleanTypes = typesArray.join(', ');
-            parsedData[wordpressField] = cleanTypes;
-            Logger.log('🏷️ 最終餐廳類型: "' + cleanTypes + '"');
-            
-            // 設定其他類型說明
-            if (otherNote && otherNote !== '其他') {
-              parsedData['restaurant_type_other_note'] = otherNote;
-              Logger.log('✅ 設定其他類型說明: "' + otherNote + '"');
-            } else {
-              Logger.log('⚠️ 沒有有效的其他類型說明');
-            }
-          } else {
-            Logger.log('❌ 未檢測到「其他」選項');
-            parsedData[wordpressField] = restaurantTypes;
+          // 防護機制：檢查是否已經處理過
+          if (parsedData.hasOwnProperty('restaurant_type')) {
+            Logger.log('⚠️ 餐廳類型已經處理過，跳過重複處理');
+            continue; // 使用 continue 而不是 return
           }
+          
+          // 已知的餐廳類型清單
+          var knownTypes = [
+            '台式', '法式', '義式', '日式', '美式', '熱炒', '小酒館', '咖啡廳', 
+            '私廚', '異國料理', '燒烤', '火鍋', '牛排', 'Lounge Bar', 'Buffet', 'Fine dining'
+          ];
+          
+          // 分割餐廳類型
+          var typesArray = restaurantTypes.split(',').map(function(type) {
+            return type.trim();
+          });
+          Logger.log('📋 分割後的類型陣列: [' + typesArray.join(', ') + ']');
+          
+          // 使用「排除法」識別「其他」內容
+          var validTypes = [];
+          var otherNote = '';
+          var hasOther = false;
+          
+          for (var i = 0; i < typesArray.length; i++) {
+            var type = typesArray[i];
+            
+            if (knownTypes.includes(type) || type === '其他') {
+              // 這是已知類型或「其他」選項
+              validTypes.push(type);
+              if (type === '其他') {
+                hasOther = true;
+              }
+              Logger.log('✅ 識別到已知類型: "' + type + '"');
+            } else {
+              // 這是未知類型，可能是「其他」的說明文字
+              otherNote = type;
+              Logger.log('🔍 識別到未知類型，可能是「其他」說明: "' + type + '"');
+            }
+          }
+          
+          // 處理結果
+          if (otherNote && hasOther) {
+            // 有「其他」選項且有說明文字
+            Logger.log('🎯 檢測到「其他」選項 + 說明文字: "' + otherNote + '"');
+            parsedData[wordpressField] = validTypes.join(', ');
+            parsedData['restaurant_type_other_note'] = otherNote;
+          } else if (otherNote && !hasOther) {
+            // 有未知類型但沒有「其他」選項，自動添加「其他」
+            Logger.log('🔄 檢測到未知類型但無「其他」選項，自動添加「其他」');
+            validTypes.push('其他');
+            parsedData[wordpressField] = validTypes.join(', ');
+            parsedData['restaurant_type_other_note'] = otherNote;
+          } else {
+            // 沒有未知類型，或沒有說明文字
+            Logger.log('📝 沒有檢測到「其他」內容');
+            parsedData[wordpressField] = validTypes.join(', ');
+          }
+          
+          Logger.log('🏷️ 最終餐廳類型: "' + parsedData[wordpressField] + '"');
+          if (parsedData['restaurant_type_other_note']) {
+            Logger.log('📝 其他類型說明: "' + parsedData['restaurant_type_other_note'] + '"');
+          }
+          
+          // 標記為已處理，防止重複處理
+          parsedData['_restaurant_type_processed'] = true;
         } else {
           parsedData[wordpressField] = value || '';
         }
