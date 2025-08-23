@@ -356,14 +356,13 @@ function byob_create_restaurant_post($request) {
             $restaurant_data['is_charged'] = 'other';
         }
         
+        // 開酒服務選項 - 直接使用原始值，因為 ACF 現在也是中文
+        // Google 表單選項：有、無、其他
+        // ACF 選項：有、無、其他
+        // 不需要轉換，直接使用
         $open_bottle_service_raw = $restaurant_data['open_bottle_service'];
-        if (strpos($open_bottle_service_raw, '是') !== false) {
-            $restaurant_data['open_bottle_service'] = 'yes';
-        } elseif (strpos($open_bottle_service_raw, '否') !== false) {
-            $restaurant_data['open_bottle_service'] = 'no';
-        } elseif (strpos($open_bottle_service_raw, '其他') !== false) {
-            $restaurant_data['open_bottle_service'] = 'other';
-        }
+        // 記錄除錯資訊
+        error_log('BYOB API: 開酒服務原始值 = "' . $open_bottle_service_raw . '"');
         
         // 調用共用函數建立餐廳文章
         // 注意：這裡調用的是兩種註冊流程的共用函數
