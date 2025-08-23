@@ -164,17 +164,36 @@ function byob_create_restaurant_article($restaurant_data, $source = 'direct') {
             throw new Exception('Failed to create post: ' . $post_id->get_error_message());
         }
         
-        // 處理餐廳類型
+        // 處理餐廳類型 - 增強處理邏輯，支援「其他」選項
         $types = $restaurant_data['restaurant_type'];
+        $other_note = $restaurant_data['restaurant_type_other_note'] ?? '';
+        
         if (!empty($types)) {
             if (!is_array($types)) {
                 // 如果是字串，嘗試用逗號分割，如果沒有逗號就直接轉為陣列
                 if (strpos($types, ',') !== false) {
-            $types = array_map('trim', explode(',', $types));
+                    $types = array_map('trim', explode(',', $types));
                 } else {
                     $types = array(trim($types));
                 }
             }
+            
+            // 記錄除錯資訊
+            error_log('BYOB API: 餐廳類型處理 - 原始類型: ' . print_r($types, true));
+            error_log('BYOB API: 餐廳類型處理 - 其他說明: "' . $other_note . '"');
+            
+            // 確保「其他」選項存在（如果沒有「其他」但有說明文字，自動添加）
+            if (!empty($other_note) && !in_array('其他', $types)) {
+                $types[] = '其他';
+                error_log('BYOB API: 自動添加「其他」選項，因為有說明文字: "' . $other_note . '"');
+            }
+            
+            // 清理空值
+            $types = array_filter($types, function($type) {
+                return !empty(trim($type));
+            });
+            
+            error_log('BYOB API: 餐廳類型處理 - 最終類型: ' . print_r($types, true));
         } else {
             $types = array();
         }
@@ -345,6 +364,10 @@ function byob_create_restaurant_post($request) {
             'notes' => $get_param_value($request, $param_mapping['notes']),
             'is_owner' => $get_param_value($request, $param_mapping['is_owner'])
         );
+        
+        // 記錄餐廳類型相關的除錯資訊
+        error_log('BYOB API: 餐廳類型原始值 = "' . $restaurant_data['restaurant_type'] . '"');
+        error_log('BYOB API: 餐廳類型其他說明 = "' . $restaurant_data['restaurant_type_other_note'] . '"');
         
         // 處理 ACF 欄位值格式轉換
         $is_charged_raw = $restaurant_data['is_charged'];
