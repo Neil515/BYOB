@@ -325,6 +325,16 @@ $current_types = is_array($current_types) ? $current_types : array();
         $other_note = get_field('restaurant_type_other_note', $restaurant_id);
         echo '<!-- DEBUG: restaurant_type = ' . print_r($current_types, true) . ' -->';
         echo '<!-- DEBUG: restaurant_type_other_note = ' . $other_note . ' -->';
+        
+        // 更詳細的除錯資訊
+        echo '<!-- DEBUG: restaurant_id = ' . $restaurant_id . ' -->';
+        echo '<!-- DEBUG: ACF 函數是否存在: ' . (function_exists('get_field') ? '是' : '否') . ' -->';
+        
+        // 檢查所有 ACF 欄位
+        if (function_exists('get_field')) {
+            $all_fields = get_fields($restaurant_id);
+            echo '<!-- DEBUG: 所有 ACF 欄位: ' . print_r($all_fields, true) . ' -->';
+        }
 
 foreach ($restaurant_types as $value => $label) {
     $checked = in_array($value, $current_types) ? 'checked' : '';
@@ -699,6 +709,17 @@ document.addEventListener(\'DOMContentLoaded\', function() {
     if (otherCheckbox && otherCheckbox.checked) {
         otherTypeNoteField.style.display = \'block\';
         console.log(\'DEBUG: 顯示其他類型說明欄位\');
+        
+        // 填入 ACF 中儲存的說明文字
+        var otherNoteField = document.getElementById(\'restaurant_type_other_note\');
+        if (otherNoteField) {
+            // 從 PHP 變數中獲取說明文字
+            var otherNoteValue = \'' . esc_js($other_note) . '\';
+            if (otherNoteValue && otherNoteValue !== \'\') {
+                otherNoteField.value = otherNoteValue;
+                console.log(\'DEBUG: 填入其他類型說明: "\' + otherNoteValue + \'"\');
+            }
+        }
     } else {
         console.log(\'DEBUG: 隱藏其他類型說明欄位\');
     }
