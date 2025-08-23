@@ -469,26 +469,26 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
 
 echo '<select id="open_bottle_service" name="open_bottle_service" onchange="toggleOtherNote()" style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; transition: border-color 0.3s; min-width: 200px; text-overflow: clip; white-space: nowrap;">';
 echo '<option value="">請選擇</option>';
-echo '<option value="yes" ' . ($open_bottle_service_value === 'yes' ? 'selected' : '') . '>是</option>';
-echo '<option value="no" ' . ($open_bottle_service_value === 'no' ? 'selected' : '') . '>否</option>';
-echo '<option value="other" ' . ($open_bottle_service_value === 'other' ? 'selected' : '') . '>其他</option>';
+echo '<option value="有" ' . ($open_bottle_service_value === '有' ? 'selected' : '') . '>有</option>';
+echo '<option value="無" ' . ($open_bottle_service_value === '無' ? 'selected' : '') . '>無</option>';
+echo '<option value="其他" ' . ($open_bottle_service_value === '其他' ? 'selected' : '') . '>其他</option>';
 echo '</select>';
 echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">請選擇是否提供開酒服務</p>';
 echo '</div>';
 
-// 開酒服務說明文字（是/否選項）
-echo '<div id="service_status_text" class="form-group" style="margin-bottom: 25px; display: ' . (in_array($open_bottle_service_value, array('yes', 'no')) ? 'block' : 'none') . ';">';
+// 開酒服務說明文字（有/無選項）
+echo '<div id="service_status_text" class="form-group" style="margin-bottom: 25px; display: ' . (in_array($open_bottle_service_value, array('有', '無')) ? 'block' : 'none') . ';">';
 echo '<div style="background: #e8f5e8; border: 1px solid #c3e6cb; padding: 15px; border-radius: 8px; text-align: center;">';
-if ($open_bottle_service_value === 'yes') {
+if ($open_bottle_service_value === '有') {
     echo '<p style="margin: 0; color: #155724; font-weight: bold; font-size: 16px;">✅ 提供開酒服務</p>';
-} elseif ($open_bottle_service_value === 'no') {
+} elseif ($open_bottle_service_value === '無') {
     echo '<p style="margin: 0; color: #721c24; font-weight: bold; font-size: 16px;">❌ 未提供開酒服務</p>';
 }
 echo '</div>';
 echo '</div>';
 
 // 開酒服務其他說明
-echo '<div id="other_note_field" class="form-group" style="margin-bottom: 25px; display: ' . ($open_bottle_service_value === 'other' ? 'block' : 'none') . ';">';
+echo '<div id="other_note_field" class="form-group" style="margin-bottom: 25px; display: ' . ($open_bottle_service_value === '其他' ? 'block' : 'none') . ';">';
 echo '<label for="open_bottle_service_other_note" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">其他說明</label>';
 echo '<input type="text" id="open_bottle_service_other_note" name="open_bottle_service_other_note" value="' . esc_attr(get_field('open_bottle_service_other_note', $restaurant_id)) . '" placeholder="請說明您提供的開酒服務內容..." style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; transition: border-color 0.3s;">';
 echo '<p style="font-size: 14px; color: 666; margin-top: 5px;">請詳細說明您提供的開酒服務內容（選填）</p>';
@@ -665,20 +665,20 @@ function toggleOtherNote() {
     serviceStatusText.style.display = \'none\';
     
     // 根據選擇顯示對應的欄位
-    if (openBottleService.value === \'yes\') {
+    if (openBottleService.value === \'有\') {
         serviceStatusText.style.display = \'block\';
         // 更新說明文字
         serviceStatusText.innerHTML = \'<div style="background: #e8f5e8; border: 1px solid #c3e6cb; padding: 15px; border-radius: 8px; text-align: center;"><p style="margin: 0; color: #155724; font-weight: bold; font-size: 16px;">✅ 提供開酒服務</p></div>\';
-    } else if (openBottleService.value === \'no\') {
+    } else if (openBottleService.value === \'無\') {
         serviceStatusText.style.display = \'block\';
         // 更新說明文字
         serviceStatusText.innerHTML = \'<div style="background: #e8f5e8; border: 1px solid #c3e6cb; padding: 15px; border-radius: 8px; text-align: center;"><p style="margin: 0; color: #721c24; font-weight: bold; font-size: 16px;">❌ 未提供開酒服務</p></div>\';
-    } else if (openBottleService.value === \'other\') {
+    } else if (openBottleService.value === \'其他\') {
         otherNoteField.style.display = \'block\';
     }
     
     // 如果不是選擇「其他」，清空其他說明欄位的值
-    if (openBottleService.value !== \'other\') {
+    if (openBottleService.value !== \'其他\') {
         document.getElementById(\'open_bottle_service_other_note\').value = \'\';
     }
 }
