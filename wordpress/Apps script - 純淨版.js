@@ -105,16 +105,11 @@ function parseLatestSpreadsheetData() {
             parsedData[wordpressField] = value || '';
           }
         } else if (wordpressField === 'open_bottle_service') {
-          // 轉換開酒服務選項
-          if (String(value).indexOf('是') !== -1) {
-            parsedData[wordpressField] = '是';
-          } else if (String(value).indexOf('否') !== -1) {
-            parsedData[wordpressField] = '否';
-          } else if (String(value).indexOf('其他') !== -1) {
-            parsedData[wordpressField] = '其他';
-          } else {
-            parsedData[wordpressField] = value || '';
-          }
+          // 開酒服務選項 - 直接傳送 Google 表單的值，因為 ACF 現在也是中文
+          // Google 表單選項：有、無、其他
+          // ACF 選項：有、無、其他
+          parsedData[wordpressField] = value || '';
+          Logger.log('🍷 開酒服務選項: "' + value + '" -> 直接傳送，無需轉換');
         } else if (wordpressField === 'restaurant_type') {
           // 特殊處理餐廳類型，檢查是否包含「其他」選項
           var restaurantTypes = value || '';
