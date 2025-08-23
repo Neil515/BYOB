@@ -92,6 +92,12 @@ function parseLatestSpreadsheetData() {
       if (formFieldIndex !== undefined) {
         var value = lastFormRow[formFieldIndex];
         
+        // 跳過 restaurant_type_other_note 的處理，因為它是由餐廳類型邏輯自動生成的
+        if (wordpressField === 'restaurant_type_other_note') {
+          Logger.log('⏭️ 跳過 restaurant_type_other_note 的欄位映射，因為它由餐廳類型邏輯自動生成');
+          continue;
+        }
+        
         // 特殊處理某些欄位
         if (wordpressField === 'is_charged') {
           // 轉換開瓶費選項
@@ -156,17 +162,24 @@ function parseLatestSpreadsheetData() {
           }
           
           // 處理結果
+          Logger.log('🔍 處理結果檢查:');
+          Logger.log('  - otherNote = "' + otherNote + '"');
+          Logger.log('  - hasOther = ' + hasOther);
+          Logger.log('  - validTypes = [' + validTypes.join(', ') + ']');
+          
           if (otherNote && hasOther) {
             // 有「其他」選項且有說明文字
             Logger.log('🎯 檢測到「其他」選項 + 說明文字: "' + otherNote + '"');
             parsedData[wordpressField] = validTypes.join(', ');
             parsedData['restaurant_type_other_note'] = otherNote;
+            Logger.log('✅ 已設定 restaurant_type_other_note = "' + otherNote + '"');
           } else if (otherNote && !hasOther) {
             // 有未知類型但沒有「其他」選項，自動添加「其他」
             Logger.log('🔄 檢測到未知類型但無「其他」選項，自動添加「其他」');
             validTypes.push('其他');
             parsedData[wordpressField] = validTypes.join(', ');
             parsedData['restaurant_type_other_note'] = otherNote;
+            Logger.log('✅ 已設定 restaurant_type_other_note = "' + otherNote + '"');
           } else {
             // 沒有未知類型，或沒有說明文字
             Logger.log('📝 沒有檢測到「其他」內容');
@@ -174,8 +187,12 @@ function parseLatestSpreadsheetData() {
           }
           
           Logger.log('🏷️ 最終餐廳類型: "' + parsedData[wordpressField] + '"');
-          if (parsedData['restaurant_type_other_note']) {
-            Logger.log('📝 其他類型說明: "' + parsedData['restaurant_type_other_note'] + '"');
+          Logger.log('📝 最終其他類型說明: "' + (parsedData['restaurant_type_other_note'] || '無') + '"');
+          
+          // 強制檢查和設定
+          if (otherNote && otherNote !== '' && (!parsedData['restaurant_type_other_note'] || parsedData['restaurant_type_other_note'] === '')) {
+            Logger.log('⚠️ 強制設定 restaurant_type_other_note = "' + otherNote + '"');
+            parsedData['restaurant_type_other_note'] = otherNote;
           }
           
           // 標記為已處理，防止重複處理
@@ -249,6 +266,18 @@ function toHalfWidth(str) {
 function sendToWordPress(data) {
   Logger.log('準備發送到 WordPress 的資料:');
   Logger.log(JSON.stringify(data, null, 2));
+  
+  // 特別檢查餐廳類型相關欄位
+  Logger.log('🍽️ 餐廳類型檢查:');
+  Logger.log('  - restaurant_type = "' + (data.restaurant_type || '無') + '"');
+  Logger.log('  - restaurant_type_other_note = "' + (data.restaurant_type_other_note || '無') + '"');
+  
+  // 檢查資料完整性
+  if (data.restaurant_type_other_note && data.restaurant_type_other_note !== '') {
+    Logger.log('✅ 其他類型說明已準備好: "' + data.restaurant_type_other_note + '"');
+  } else {
+    Logger.log('❌ 其他類型說明為空或未設定');
+  }
   
   var options = {
     'method': 'POST',
