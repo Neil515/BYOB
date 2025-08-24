@@ -697,6 +697,29 @@ function toggleOtherNote() {
 document.addEventListener(\'DOMContentLoaded\', function() {
     toggleOtherNote();
     
+    // 初始化開酒服務「其他」選項的顯示狀態
+    var openBottleService = document.getElementById(\'open_bottle_service\');
+    var otherNoteField = document.getElementById(\'open_bottle_service_other_note\');
+    
+    // 除錯：檢查開酒服務「其他」選項的狀態
+    console.log(\'DEBUG: openBottleService = \', openBottleService);
+    console.log(\'DEBUG: openBottleService.value = \', openBottleService ? openBottleService.value : \'N/A\');
+    console.log(\'DEBUG: otherNoteField = \', otherNoteField);
+    
+    if (openBottleService && openBottleService.value === \'其他\') {
+        otherNoteField.style.display = \'block\';
+        console.log(\'DEBUG: 顯示開酒服務其他說明欄位\');
+        
+        // 填入 ACF 中儲存的說明文字
+        var otherNoteValue = \'' . esc_js(get_field('open_bottle_service_other_note', $restaurant_id)) . '\';
+        if (otherNoteValue && otherNoteValue !== \'\') {
+            otherNoteField.value = otherNoteValue;
+            console.log(\'DEBUG: 填入開酒服務其他說明: "\' + otherNoteValue + \'"\');
+        }
+    } else {
+        console.log(\'DEBUG: 隱藏開酒服務其他說明欄位\');
+    }
+    
     // 初始化其他類型說明欄位的顯示狀態
     var otherCheckbox = document.querySelector(\'input[name="restaurant_type[]"][value="其他"]\');
     var otherTypeNoteField = document.getElementById(\'other_type_note_field\');
