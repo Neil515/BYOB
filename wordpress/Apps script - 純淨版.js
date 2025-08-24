@@ -98,6 +98,12 @@ function parseLatestSpreadsheetData() {
           continue;
         }
         
+        // 跳過 open_bottle_service_other_note 的處理，因為它是由開酒服務邏輯自動生成的
+        if (wordpressField === 'open_bottle_service_other_note') {
+          Logger.log('⏭️ 跳過 open_bottle_service_other_note 的欄位映射，因為它由開酒服務邏輯自動生成');
+          continue;
+        }
+        
         // 特殊處理某些欄位
         if (wordpressField === 'is_charged') {
           // 轉換開瓶費選項
@@ -111,11 +117,35 @@ function parseLatestSpreadsheetData() {
             parsedData[wordpressField] = value || '';
           }
         } else if (wordpressField === 'open_bottle_service') {
-          // 開酒服務選項 - 直接傳送 Google 表單的值，因為 ACF 現在也是中文
-          // Google 表單選項：有、無、其他
-          // ACF 選項：有、無、其他
-          parsedData[wordpressField] = value || '';
-          Logger.log('🍷 開酒服務選項: "' + value + '" -> 直接傳送，無需轉換');
+          // 特殊處理開酒服務，使用「排除法」識別「其他」內容
+          var bottleService = value || '';
+          Logger.log('🍷 處理開酒服務: "' + bottleService + '"');
+          
+          // 防護機制：檢查是否已經處理過
+          if (parsedData.hasOwnProperty('open_bottle_service')) {
+            Logger.log('⚠️ 開酒服務已經處理過，跳過重複處理');
+            continue; // 使用 continue 而不是 return
+          }
+          
+          // 已知的開酒服務選項清單
+          var knownServices = ['有', '無'];
+          
+          // 檢查是否包含未知的服務類型
+          if (bottleService && !knownServices.includes(bottleService)) {
+            // 如果不在已知清單中，設定為「其他」
+            Logger.log('🔄 檢測到未知開酒服務類型，自動設定為「其他」: "' + bottleService + '"');
+            parsedData[wordpressField] = '其他';
+            parsedData['open_bottle_service_other_note'] = bottleService;
+            Logger.log('✅ 已設定 open_bottle_service = "其他"');
+            Logger.log('✅ 已設定 open_bottle_service_other_note = "' + bottleService + '"');
+          } else {
+            // 在已知清單中，直接使用
+            parsedData[wordpressField] = bottleService;
+            Logger.log('✅ 開酒服務選項: "' + bottleService + '" -> 直接使用');
+          }
+          
+          // 標記為已處理，防止重複處理
+          parsedData['_open_bottle_service_processed'] = true;
         } else if (wordpressField === 'restaurant_type') {
           // 特殊處理餐廳類型，使用「排除法」識別「其他」內容
           var restaurantTypes = value || '';
