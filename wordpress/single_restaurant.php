@@ -94,11 +94,36 @@
       <?php 
       $types = get_field('restaurant_type');
       if ($types): 
-        // 處理複選情況
+        // 處理餐廳類型，將「其他」替換為「其他: [說明文字]」
+        $type_output = '';
         if (is_array($types)) {
-          $type_output = implode(' / ', $types);
+          $processed_types = array();
+          foreach ($types as $type) {
+            if ($type === '其他') {
+              // 獲取其他類型說明
+              $other_note = get_field('restaurant_type_other_note');
+              if (!empty($other_note)) {
+                $processed_types[] = '其他: ' . $other_note;
+              } else {
+                $processed_types[] = $type;
+              }
+            } else {
+              $processed_types[] = $type;
+            }
+          }
+          $type_output = implode(' / ', $processed_types);
         } else {
-          $type_output = $types;
+          // 如果是字串，檢查是否包含「其他」
+          if (strpos($types, '其他') !== false) {
+            $other_note = get_field('restaurant_type_other_note');
+            if (!empty($other_note)) {
+              $type_output = str_replace('其他', '其他: ' . $other_note, $types);
+            } else {
+              $type_output = $types;
+            }
+          } else {
+            $type_output = $types;
+          }
         }
       ?>
         <div class="field"><strong>餐廳類型：</strong><?php echo esc_html($type_output); ?></div>
@@ -171,12 +196,12 @@
        }
 
                if ($open_bottle_service): 
-          if ($open_bottle_service === 'yes') {
-            $service_output = '是';
-          } elseif ($open_bottle_service === 'no') {
-            $service_output = '否';
-          } elseif ($open_bottle_service === 'other') {
-            // 當選擇"other"時，優先顯示說明文字
+          if ($open_bottle_service === '有') {
+            $service_output = '有';
+          } elseif ($open_bottle_service === '無') {
+            $service_output = '無';
+          } elseif ($open_bottle_service === '其他') {
+            // 當選擇"其他"時，直接顯示說明文字，不顯示"其他"兩字
             if ($open_bottle_service_other_note && !empty(trim($open_bottle_service_other_note))) {
               $service_output = $open_bottle_service_other_note;
             } else {
