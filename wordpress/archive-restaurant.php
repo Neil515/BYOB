@@ -128,7 +128,37 @@ document.addEventListener('DOMContentLoaded', function() {
         <?php
           $types = get_field('restaurant_type');
           if ($types):
-            $type_output = is_array($types) ? implode(' / ', $types) : $types;
+            // 處理餐廳類型，將「其他」替換為「其他: [說明文字]」
+            $type_output = '';
+            if (is_array($types)) {
+              $processed_types = array();
+              foreach ($types as $type) {
+                if ($type === '其他') {
+                  // 獲取其他類型說明
+                  $other_note = get_field('restaurant_type_other_note');
+                  if (!empty($other_note)) {
+                    $processed_types[] = '其他: ' . $other_note;
+                  } else {
+                    $processed_types[] = $type;
+                  }
+                } else {
+                  $processed_types[] = $type;
+                }
+              }
+              $type_output = implode(' / ', $processed_types);
+            } else {
+              // 如果是字串，檢查是否包含「其他」
+              if (strpos($types, '其他') !== false) {
+                $other_note = get_field('restaurant_type_other_note');
+                if (!empty($other_note)) {
+                  $type_output = str_replace('其他', '其他: ' . $other_note, $types);
+                } else {
+                  $type_output = $types;
+                }
+              } else {
+                $type_output = $types;
+              }
+            }
             echo '<span class="restaurant-type">（' . esc_html($type_output) . '）</span>';
           endif;
         ?>
