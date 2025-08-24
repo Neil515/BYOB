@@ -148,7 +148,8 @@ function parseLatestSpreadsheetData() {
           parsedData['_open_bottle_service_processed'] = true;
         } else if (wordpressField === 'restaurant_type') {
           // 特殊處理餐廳類型，使用「排除法」識別「其他」內容
-          var restaurantTypes = value || '';
+          // 確保 restaurantTypes 是字串格式，防止數字類型錯誤
+          var restaurantTypes = String(value || '');
           Logger.log('🔍 處理餐廳類型: "' + restaurantTypes + '"');
           
           // 防護機制：檢查是否已經處理過
@@ -157,15 +158,23 @@ function parseLatestSpreadsheetData() {
             continue; // 使用 continue 而不是 return
           }
           
+          // 檢查是否為空或空白
+          if (!restaurantTypes || restaurantTypes.trim() === '') {
+            Logger.log('⚠️ 餐廳類型為空，跳過處理');
+            continue;
+          }
+          
           // 已知的餐廳類型清單
           var knownTypes = [
             '台式', '法式', '義式', '日式', '美式', '熱炒', '小酒館', '咖啡廳', 
             '私廚', '異國料理', '燒烤', '火鍋', '牛排', 'Lounge Bar', 'Buffet', 'Fine dining'
           ];
           
-          // 分割餐廳類型
+          // 分割餐廳類型（確保是字串格式）
           var typesArray = restaurantTypes.split(',').map(function(type) {
             return type.trim();
+          }).filter(function(type) {
+            return type.length > 0; // 過濾空字串
           });
           Logger.log('📋 分割後的類型陣列: [' + typesArray.join(', ') + ']');
           
