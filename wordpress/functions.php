@@ -198,6 +198,19 @@ function byob_create_restaurant_article($restaurant_data, $source = 'direct') {
             $types = array();
         }
         
+        // 處理開酒服務 - 增強處理邏輯，支援「其他」選項
+        $bottleService = $restaurant_data['open_bottle_service'] ?? '';
+        $bottleServiceOtherNote = $restaurant_data['open_bottle_service_other_note'] ?? '';
+        
+        if (!empty($bottleServiceOtherNote)) {
+            // 如果有其他說明，自動設定為「其他」
+            $bottleService = '其他';
+            error_log('BYOB API: 開酒服務處理 - 自動設定為「其他」，因為有說明文字: "' . $bottleServiceOtherNote . '"');
+        }
+        
+        error_log('BYOB API: 開酒服務處理 - 最終選項: "' . $bottleService . '"');
+        error_log('BYOB API: 開酒服務處理 - 其他說明: "' . $bottleServiceOtherNote . '"');
+        
         // 處理設備
         $equipment = $restaurant_data['equipment'];
         if (!empty($equipment) && !is_array($equipment)) {
@@ -224,7 +237,7 @@ function byob_create_restaurant_article($restaurant_data, $source = 'direct') {
                 'is_charged' => sanitize_text_field($restaurant_data['is_charged']),
                 'corkage_fee' => sanitize_text_field($restaurant_data['corkage_fee'] ?? ''),
                 'equipment' => $equipment ?: array(),
-                'open_bottle_service' => sanitize_text_field($restaurant_data['open_bottle_service'] ?? ''),
+                'open_bottle_service' => sanitize_text_field($bottleService),
                 'open_bottle_service_other_note' => sanitize_textarea_field($restaurant_data['open_bottle_service_other_note'] ?? ''),
                 'phone' => sanitize_text_field($restaurant_data['phone']),
                 'website' => esc_url_raw($restaurant_data['website'] ?? ''),
