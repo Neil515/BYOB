@@ -376,7 +376,7 @@ echo '</div>';
 // 行政區
 echo '<div class="form-group" style="margin-bottom: 25px;">';
 echo '<label for="district" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">行政區 *</label>';
-echo '<select id="district" name="district" required style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; transition: border-color 0.3s;">';
+echo '<select id="district" name="district" required style="width: 100%; height: 50px; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; line-height: 20px; transition: border-color 0.3s; display: flex; align-items: center;">';
 echo '<option value="">請選擇行政區</option>';
 echo '<option value="中正區" ' . (get_field('district', $restaurant_id) === '中正區' ? 'selected' : '') . '>中正區</option>';
 echo '<option value="大同區" ' . (get_field('district', $restaurant_id) === '大同區' ? 'selected' : '') . '>大同區</option>';
@@ -477,7 +477,7 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
     echo '<p style="font-size: 12px; color: #666; margin-bottom: 5px;">🔍 除錯：ACF 欄位值 = "' . esc_html($open_bottle_service_value) . '"</p>';
 }
 
-echo '<select id="open_bottle_service" name="open_bottle_service" onchange="toggleOtherNote()" style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; transition: border-color 0.3s; min-width: 200px; text-overflow: clip; white-space: nowrap;">';
+echo '<select id="open_bottle_service" name="open_bottle_service" onchange="toggleOtherNote()" style="width: 100%; height: 50px; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; line-height: 20px; transition: border-color 0.3s; min-width: 200px; text-overflow: clip; white-space: nowrap; display: flex; align-items: center;">';
 echo '<option value="">請選擇</option>';
 echo '<option value="有" ' . ($open_bottle_service_value === '有' ? 'selected' : '') . '>有</option>';
 echo '<option value="無" ' . ($open_bottle_service_value === '無' ? 'selected' : '') . '>無</option>';
