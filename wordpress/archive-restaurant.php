@@ -228,13 +228,52 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
 
         <div class="info-group wine-info">
-          <?php if(get_field('is_charged')): ?>
-            <div class="field"><strong>是否收開瓶費：</strong><?php the_field('is_charged'); ?> 🥂</div>
+          <?php 
+          // 先獲取 is_charged 值
+          $is_charged = get_field('is_charged');
+          if ($is_charged): 
+            if (is_array($is_charged)) {
+              $charged_output = implode(' / ', $is_charged);
+            } else {
+              $charged_output = $is_charged;
+            }
+          ?>
+            <div class="field"><strong>是否收開瓶費：</strong><?php echo esc_html($charged_output); ?> 🥂</div>
           <?php else: ?>
             <div class="field"><strong>是否收開瓶費：</strong>暫無資料</div>
           <?php endif; ?>
-          <?php if(get_field('corkage_fee')): ?>
-            <div class="field"><strong>開瓶費說明：</strong><?php the_field('corkage_fee'); ?> 🪙</div>
+          <?php 
+          // 根據 is_charged 選項顯示對應的開瓶費資訊
+          // 注意：這裡不重新獲取 $is_charged，使用上面已經獲取的值
+          $corkage_fee_amount = get_field('corkage_fee_amount');
+          $corkage_fee_note = get_field('corkage_fee_note');
+          
+          // 除錯：顯示開瓶費相關欄位的值
+          if (current_user_can('administrator')) {
+            echo '<!-- DEBUG: is_charged = ' . var_export($is_charged, true) . ' -->';
+            echo '<!-- DEBUG: corkage_fee_amount = ' . var_export($corkage_fee_amount, true) . ' -->';
+            echo '<!-- DEBUG: corkage_fee_note = ' . var_export($corkage_fee_note, true) . ' -->';
+          }
+          
+          if ($is_charged): 
+            // 處理陣列情況
+            $charged_value = is_array($is_charged) ? $is_charged[0] : $is_charged;
+            
+            if (($charged_value === '酌收' || $charged_value === 'yes') && $corkage_fee_amount) {
+              $fee_output = $corkage_fee_amount;
+            } elseif (($charged_value === '其他' || $charged_value === 'other') && $corkage_fee_note) {
+              $fee_output = $corkage_fee_note;
+            } elseif ($charged_value === '酌收' || $charged_value === 'yes') {
+              $fee_output = '酌收（金額未設定）';
+            } elseif ($charged_value === '其他' || $charged_value === 'other') {
+              $fee_output = '其他（說明未設定）';
+            } elseif ($charged_value === 'no') {
+              $fee_output = '不收開瓶費';
+            } else {
+              $fee_output = $charged_value;
+            }
+          ?>
+            <div class="field"><strong>開瓶費說明：</strong><?php echo esc_html($fee_output); ?> 🪙</div>
           <?php else: ?>
             <div class="field"><strong>開瓶費說明：</strong>暫無資料</div>
           <?php endif; ?>
