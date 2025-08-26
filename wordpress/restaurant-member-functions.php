@@ -1981,9 +1981,14 @@ function byob_handle_restaurant_profile_submit($restaurant_id) {
             update_field('is_charged', sanitize_text_field($_POST['is_charged']), $restaurant_id);
         }
         
-        // 新增欄位：開瓶費說明（單行文字）
-        if (isset($_POST['corkage_fee'])) {
-            update_field('corkage_fee', sanitize_text_field($_POST['corkage_fee']), $restaurant_id);
+        // 新增欄位：開瓶費金額（數值）
+        if (isset($_POST['corkage_fee_amount'])) {
+            update_field('corkage_fee_amount', intval($_POST['corkage_fee_amount']), $restaurant_id);
+        }
+        
+        // 新增欄位：開瓶費其他說明（單行文字）
+        if (isset($_POST['corkage_fee_note'])) {
+            update_field('corkage_fee_note', sanitize_text_field($_POST['corkage_fee_note']), $restaurant_id);
         }
         
         // 新增欄位：酒器設備（核取方塊陣列）
