@@ -39,7 +39,11 @@ add_action('rest_api_init', function () {
                 'required' => true,
                 'sanitize_callback' => 'sanitize_text_field',
             ),
-            'corkage_fee' => array(
+            'corkage_fee_amount' => array(
+                'required' => false,
+                'sanitize_callback' => 'byob_sanitize_int',
+            ),
+            'corkage_fee_note' => array(
                 'required' => false,
                 'sanitize_callback' => 'sanitize_text_field',
             ),
@@ -97,6 +101,11 @@ add_action('rest_api_init', function () {
         'permission_callback' => '__return_true',
     ));
 });
+
+// 自訂數值清理函數
+function byob_sanitize_int($value) {
+    return intval($value);
+}
 
 // API 金鑰驗證
 function byob_verify_api_key($request) {
@@ -235,7 +244,8 @@ function byob_create_restaurant_article($restaurant_data, $source = 'direct') {
                 'restaurant_type_other_note' => sanitize_text_field($restaurant_data['restaurant_type_other_note'] ?? ''),
                 'address' => sanitize_text_field($restaurant_data['address']),
                 'is_charged' => sanitize_text_field($restaurant_data['is_charged']),
-                'corkage_fee' => sanitize_text_field($restaurant_data['corkage_fee'] ?? ''),
+                'corkage_fee_amount' => intval($restaurant_data['corkage_fee_amount'] ?? 0),
+                'corkage_fee_note' => sanitize_text_field($restaurant_data['corkage_fee_note'] ?? ''),
                 'equipment' => $equipment ?: array(),
                 'open_bottle_service' => sanitize_text_field($bottleService),
                 'open_bottle_service_other_note' => sanitize_textarea_field($restaurant_data['open_bottle_service_other_note'] ?? ''),
@@ -318,7 +328,8 @@ function byob_create_restaurant_post($request) {
             'address' => array('address', 'restaurant_address', 'location'),
             'is_charged' => array('is_charged', 'charged', 'corkage_charged'),
             'phone' => array('phone', 'contact_phone', 'phone_number'),
-            'corkage_fee' => array('corkage_fee', 'fee', 'corkage_fee_amount'),
+            'corkage_fee_amount' => array('corkage_fee_amount', 'fee_amount', '開瓶費金額'),
+            'corkage_fee_note' => array('corkage_fee_note', 'fee_note', '其他：請說明'),
             'equipment' => array('equipment', 'equipment_list', 'available_equipment'),
             'open_bottle_service' => array('open_bottle_service', 'bottle_service', 'service_type'),
             'open_bottle_service_other_note' => array('open_bottle_service_other_note', 'service_note', 'other_service'),
@@ -368,7 +379,8 @@ function byob_create_restaurant_post($request) {
             'address' => $get_param_value($request, $param_mapping['address']),
             'is_charged' => $get_param_value($request, $param_mapping['is_charged']),
             'phone' => $get_param_value($request, $param_mapping['phone']),
-            'corkage_fee' => $get_param_value($request, $param_mapping['corkage_fee']),
+            'corkage_fee_amount' => $get_param_value($request, $param_mapping['corkage_fee_amount']),
+            'corkage_fee_note' => $get_param_value($request, $param_mapping['corkage_fee_note']),
             'equipment' => $get_param_value($request, $param_mapping['equipment']),
             'open_bottle_service' => $get_param_value($request, $param_mapping['open_bottle_service']),
             'open_bottle_service_other_note' => $get_param_value($request, $param_mapping['open_bottle_service_other_note']),
