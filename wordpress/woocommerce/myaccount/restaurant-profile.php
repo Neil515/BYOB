@@ -69,7 +69,8 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
         $debug_fields = array(
             'restaurant_type' => '餐廳類型',
             'is_charged' => '是否收開瓶費',
-            'corkage_fee' => '開瓶費說明',
+            'corkage_fee_amount' => '開瓶費金額',
+            'corkage_fee_note' => '開瓶費其他說明',
             'equipment' => '酒器設備',
             'open_bottle_service' => '開酒服務',
             'open_bottle_service_other_note' => '開酒服務其他說明',
@@ -427,11 +428,18 @@ echo '</div>';
 echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">請選擇您的開瓶費政策</p>';
 echo '</div>';
 
-// 開瓶費說明
-echo '<div class="form-group" style="margin-bottom: 25px;">';
-echo '<label for="corkage_fee" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">開瓶費說明</label>';
-echo '<input type="text" id="corkage_fee" name="corkage_fee" value="' . esc_attr(get_field('corkage_fee', $restaurant_id)) . '" placeholder="例：每瓶酌收100元，或依酒款而定" style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; transition: border-color 0.3s;">';
-echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">您的開瓶費金額，或其他說明</p>';
+// 開瓶費金額欄位（當選擇「酌收」時顯示）
+echo '<div id="corkage_amount_field" class="form-group" style="margin-bottom: 25px; display: none;">';
+echo '<label for="corkage_fee_amount" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">開瓶費金額 *</label>';
+echo '<input type="number" id="corkage_fee_amount" name="corkage_fee_amount" value="' . esc_attr(get_field('corkage_fee_amount', $restaurant_id)) . '" placeholder="例：100" min="0" step="1" style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; transition: border-color 0.3s;">';
+echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">請輸入開瓶費金額（元）</p>';
+echo '</div>';
+
+// 開瓶費其他說明欄位（當選擇「其他」時顯示）
+echo '<div id="corkage_note_field" class="form-group" style="margin-bottom: 25px; display: none;">';
+echo '<label for="corkage_fee_note" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">其他說明 *</label>';
+echo '<input type="text" id="corkage_fee_note" name="corkage_fee_note" value="' . esc_attr(get_field('corkage_fee_note', $restaurant_id)) . '" placeholder="例：依酒款而定，或僅開紅酒" style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; transition: border-color 0.3s;">';
+echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">請說明您的開瓶費政策</p>';
 echo '</div>';
 
 // 酒器設備
@@ -693,9 +701,53 @@ function toggleOtherNote() {
     }
 }
 
+// 控制開瓶費欄位的顯示邏輯
+function toggleCorkageFields() {
+    var isChargedRadios = document.querySelectorAll(\'input[name="is_charged"]\');
+    var corkageAmountField = document.getElementById(\'corkage_amount_field\');
+    var corkageNoteField = document.getElementById(\'corkage_note_field\');
+    
+    // 隱藏所有開瓶費相關欄位
+    corkageAmountField.style.display = \'none\';
+    corkageNoteField.style.display = \'none\';
+    
+    // 找到選中的選項
+    var selectedValue = \'\';
+    for (var i = 0; i < isChargedRadios.length; i++) {
+        if (isChargedRadios[i].checked) {
+            selectedValue = isChargedRadios[i].value;
+            break;
+        }
+    }
+    
+    // 根據選擇顯示對應的欄位
+    if (selectedValue === \'yes\') {
+        // 選擇「酌收」時顯示金額欄位
+        corkageAmountField.style.display = \'block\';
+        // 清空其他說明欄位的值
+        document.getElementById(\'corkage_fee_note\').value = \'\';
+    } else if (selectedValue === \'other\') {
+        // 選擇「其他」時顯示說明欄位
+        corkageNoteField.style.display = \'block\';
+        // 清空金額欄位的值
+        document.getElementById(\'corkage_fee_amount\').value = \'\';
+    } else {
+        // 選擇「不收費」時清空所有欄位的值
+        document.getElementById(\'corkage_fee_amount\').value = \'\';
+        document.getElementById(\'corkage_fee_note\').value = \'\';
+    }
+}
+
 // 頁面載入完成後初始化開酒服務欄位的顯示狀態
 document.addEventListener(\'DOMContentLoaded\', function() {
     toggleOtherNote();
+    toggleCorkageFields();
+    
+    // 為開瓶費選項按鈕添加事件監聽器
+    var isChargedRadios = document.querySelectorAll(\'input[name="is_charged"]\');
+    for (var i = 0; i < isChargedRadios.length; i++) {
+        isChargedRadios[i].addEventListener(\'change\', toggleCorkageFields);
+    }
     
     // 初始化開酒服務「其他」選項的顯示狀態
     var openBottleService = document.getElementById(\'open_bottle_service\');
