@@ -845,7 +845,9 @@ function byob_display_restaurant_registration_page() {
                 <div style="background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
                     <?php echo esc_html($success_message); ?>
                     <br><br>
-                    <a href="<?php echo wp_login_url(); ?>" style="background-color: #8b2635; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">前往登入</a>
+                    <div style="text-align: center;">
+                        <a href="https://byobmap.com/my-account/" style="background-color: rgba(139, 38, 53, 0.7); color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">前往登入</a>
+                    </div>
                 </div>
             <?php endif; ?>
             
