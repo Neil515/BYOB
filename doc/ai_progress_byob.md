@@ -747,4 +747,102 @@ align-items: center;    /* 垂直置中對齊 */
 
 ---
 
-*下次重點：開發餐廳直接加入頁面，讓餐廳業者可以不透過 Google 表單直接註冊，並實作 Google Maps API 地址驗證功能*
+## 🎯 2025年8月27日 - 餐廳直接加入頁面開發重大突破 ⭐
+
+### 🚀 今日核心成就
+
+**Flatsome 主題相容性問題解決** ⭐ 重大技術突破
+- **問題描述**：獨立 PHP 檔案 `restaurant-direct-join.php` 在 Flatsome 主題下造成網站嚴重錯誤
+- **根本原因**：Flatsome 主題對外部 PHP 檔案載入有特定要求，與 UXBuilder 整合存在相容性問題
+- **解決方案**：將功能直接整合到 `functions.php` 中，使用 `flatsome_byob_` 前綴避免函數名稱衝突
+- **技術要點**：使用內聯樣式避免 CSS 類別問題，簡化字串處理避免語法錯誤
+
+**餐廳直接加入頁面基礎架構完成** ✅
+- 建立 Flatsome 相容的餐廳註冊表單短代碼：`[flatsome_byob_restaurant_registration_form]`
+- 實作完整的表單欄位：餐廳名稱、聯絡人姓名、聯絡電話、餐廳地址、餐廳Email、密碼
+- 建立基本的 AJAX 處理邏輯和資料驗證
+- 解決網站嚴重錯誤問題，表單正常顯示
+
+### 🔧 技術實作細節
+
+**函數命名策略**
+- 所有函數使用 `flatsome_byob_` 前綴
+- 避免與 Flatsome 主題內建函數名稱衝突
+- 確保 AJAX action 名稱唯一性
+
+**檔案整合策略**
+- 直接整合到 `functions.php` 中
+- 移除獨立的 `restaurant-direct-join.php` 檔案
+- 確保 Flatsome 主題和 UXBuilder 完全相容
+
+**樣式處理策略**
+- 使用內聯樣式避免 CSS 類別問題
+- 簡化字串處理避免語法錯誤
+- 確保表單樣式與 Flatsome 主題風格一致
+
+### 📁 修改的檔案
+
+**主要修改**
+- `wordpress/functions.php`：整合餐廳直接加入功能
+- `wordpress/restaurant-direct-join.php`：已移除（相容性問題）
+
+**新增功能**
+- `flatsome_byob_create_simple_restaurant()`：建立簡化餐廳文章
+- `flatsome_byob_handle_direct_restaurant_registration()`：處理餐廳註冊
+- `flatsome_byob_validate_direct_registration_form()`：驗證表單資料
+- `flatsome_byob_handle_direct_registration_ajax()`：AJAX 處理
+- `flatsome_byob_restaurant_registration_form_shortcode()`：短代碼函數
+
+### 🎯 明日工作重點
+
+**第一階段：功能測試與完善**
+- 測試表單提交、資料儲存、用戶建立、餐廳文章建立等核心功能
+- 確認所有欄位資料是否正確儲存
+
+**第二階段：功能增強**
+- ACF 欄位整合：將餐廳資料正確儲存到 ACF 欄位中
+- 用戶角色設定：確保餐廳業者權限正確設定
+- 自動登入功能：註冊成功後自動登入用戶
+- 跳轉邏輯實作：註冊成功後跳轉到餐廳資料編輯頁面
+
+**第三階段：使用者體驗優化**
+- 表單樣式美化：讓表單更符合 Flatsome 主題風格
+- 錯誤處理改善：改善錯誤訊息的顯示方式
+- 成功訊息優化：優化成功註冊後的用戶體驗
+- 載入狀態添加：添加表單提交時的載入指示器
+
+### 🔍 技術問題解決記錄
+
+**問題 1：網站嚴重錯誤**
+- **現象**：載入 `restaurant-direct-join.php` 後網站出現嚴重錯誤
+- **原因**：Flatsome 主題相容性問題
+- **解決**：整合到 `functions.php` 中
+
+**問題 2：函數名稱衝突**
+- **現象**：函數名稱可能與主題內建函數衝突
+- **原因**：沒有使用前綴區分
+- **解決**：使用 `flatsome_byob_` 前綴
+
+**問題 3：CSS 類別問題**
+- **現象**：複雜的 CSS 類別可能造成樣式問題
+- **原因**：字串處理複雜性
+- **解決**：使用內聯樣式
+
+### 📊 專案進度更新
+
+**已完成里程碑**
+- ✅ 餐廳直接加入頁面基礎架構完成 ⭐ 8月27日重大突破
+- ✅ Flatsome 主題相容性問題解決
+- ✅ 餐廳註冊表單正常顯示
+- ✅ 基本 AJAX 處理邏輯完成
+
+**進行中項目**
+- 🔄 餐廳直接加入頁面功能測試與完善（明日重點）
+- 🔄 Google Maps API 地址驗證功能實作
+
+**預期完成時間**
+**2025年8月28日** - 餐廳直接加入頁面功能完善，開始 Google Maps API 地址驗證功能實作
+
+---
+
+*下次重點：測試和完善餐廳直接加入頁面的核心功能，包括資料儲存、用戶建立、自動登入和頁面跳轉等*
