@@ -1647,7 +1647,7 @@ function byob_run_invitation_test() {
         echo '<h4>測試邀請生成（不發送郵件）：</h4>';
         
         // 暫時覆蓋郵件函數以避免真的發送
-        add_filter('pre_wp_mail', function($return, $atts) {
+        add_filter('pre_wp_mail', function($atts, $return) {
             echo '<div class="notice notice-info"><p>📧 模擬發送郵件到：' . $atts['to'] . '</p></div>';
             echo '<div class="notice notice-info"><p>📧 郵件主旨：' . $atts['subject'] . '</p></div>';
             return true; // 阻止真的發送郵件
@@ -1695,7 +1695,169 @@ function byob_load_restaurant_profile_content() {
 // 使用 WooCommerce 內容鉤子
 add_action('woocommerce_account_content', 'byob_load_restaurant_profile_content', 5);
 
-// 載入餐廳直接加入功能（暫時停用）
-// require_once get_template_directory() . '/direct-restaurant-registration.php';
+// 載入餐廳直接加入功能
+// require_once get_template_directory() . '/restaurant-direct-join.php';
 
-?>
+/**
+ * 餐廳直接加入功能 - Flatsome 主題相容版本
+ */
+
+// 防止直接訪問
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+/**
+ * 建立簡化餐廳文章
+ */
+function flatsome_byob_create_simple_restaurant($restaurant_data) {
+    // 基本餐廳建立邏輯
+    $post_data = array(
+        'post_title' => sanitize_text_field($restaurant_data['restaurant_name']),
+        'post_content' => '',
+        'post_status' => 'publish',
+        'post_type' => 'restaurant',
+        'post_author' => $restaurant_data['user_id'] ?? 1,
+    );
+    
+    $post_id = wp_insert_post($post_data);
+    if (is_wp_error($post_id)) {
+        return new WP_Error('restaurant_creation_failed', '餐廳建立失敗');
+    }
+    
+    return array(
+        'success' => true,
+        'post_id' => $post_id,
+        'message' => '餐廳已成功建立！'
+    );
+}
+
+/**
+ * 處理餐廳註冊
+ */
+function flatsome_byob_handle_direct_restaurant_registration($form_data) {
+    // 基本驗證
+    if (empty($form_data['restaurant_name']) || empty($form_data['email'])) {
+        return new WP_Error('missing_field', '必填欄位不能為空');
+    }
+    
+    // 建立用戶
+    $user_data = array(
+        'user_login' => $form_data['email'],
+        'user_email' => $form_data['email'],
+        'user_pass' => $form_data['password'],
+        'display_name' => $form_data['contact_person'],
+        'role' => 'restaurant_owner'
+    );
+    
+    $user_id = wp_insert_user($user_data);
+    if (is_wp_error($user_id)) {
+        return new WP_Error('user_creation_failed', '用戶建立失敗');
+    }
+    
+    // 建立餐廳
+    $restaurant_data = array(
+        'restaurant_name' => $form_data['restaurant_name'],
+        'user_id' => $user_id
+    );
+    
+    $result = flatsome_byob_create_simple_restaurant($restaurant_data);
+    if (is_wp_error($result)) {
+        wp_delete_user($user_id);
+        return $result;
+    }
+    
+    return array(
+        'success' => true,
+        'message' => '註冊成功！'
+    );
+}
+
+/**
+ * 驗證表單資料
+ */
+function flatsome_byob_validate_direct_registration_form($form_data) {
+    return array(
+        'restaurant_name' => sanitize_text_field($form_data['restaurant_name']),
+        'contact_person' => sanitize_text_field($form_data['contact_person']),
+        'phone' => sanitize_text_field($form_data['phone']),
+        'address' => sanitize_text_field($form_data['address']),
+        'email' => sanitize_email($form_data['email']),
+        'password' => $form_data['password']
+    );
+}
+
+/**
+ * AJAX 處理
+ */
+function flatsome_byob_handle_direct_registration_ajax() {
+    if (!wp_verify_nonce($_POST['nonce'], 'flatsome_byob_direct_registration')) {
+        wp_send_json_error('安全驗證失敗');
+    }
+    
+    $cleaned_data = flatsome_byob_validate_direct_registration_form($_POST);
+    $result = flatsome_byob_handle_direct_restaurant_registration($cleaned_data);
+    
+    if (is_wp_error($result)) {
+        wp_send_json_error($result->get_error_message());
+    }
+    
+    wp_send_json_success($result);
+}
+
+// 註冊 AJAX 處理函數
+add_action('wp_ajax_flatsome_byob_direct_registration', 'flatsome_byob_handle_direct_registration_ajax');
+add_action('wp_ajax_nopriv_flatsome_byob_direct_registration', 'flatsome_byob_handle_direct_registration_ajax');
+
+/**
+ * 餐廳註冊表單短代碼 - Flatsome 相容版本
+ */
+function flatsome_byob_restaurant_registration_form_shortcode($atts) {
+    $nonce = wp_create_nonce('flatsome_byob_direct_registration');
+    
+    $form_html = '<div style="max-width: 600px; margin: 0 auto; padding: 20px; background: #f9f9f9; border-radius: 8px;">';
+    $form_html .= '<form id="flatsome-byob-restaurant-registration" method="post">';
+    $form_html .= '<div style="margin-bottom: 15px;"><label style="display: block; margin-bottom: 5px; font-weight: bold;">餐廳名稱 *</label><input type="text" name="restaurant_name" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;"></div>';
+    $form_html .= '<div style="margin-bottom: 15px;"><label style="display: block; margin-bottom: 5px; font-weight: bold;">聯絡人姓名 *</label><input type="text" name="contact_person" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;"></div>';
+    $form_html .= '<div style="margin-bottom: 15px;"><label style="display: block; margin-bottom: 5px; font-weight: bold;">聯絡電話 *</label><input type="tel" name="phone" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;"></div>';
+    $form_html .= '<div style="margin-bottom: 15px;"><label style="display: block; margin-bottom: 5px; font-weight: bold;">餐廳地址 *</label><textarea name="address" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; min-height: 80px; resize: vertical;"></textarea></div>';
+    $form_html .= '<div style="margin-bottom: 15px;"><label style="display: block; margin-bottom: 5px; font-weight: bold;">餐廳Email *</label><input type="email" name="email" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;"></div>';
+    $form_html .= '<div style="margin-bottom: 15px;"><label style="display: block; margin-bottom: 5px; font-weight: bold;">密碼 *</label><input type="password" name="password" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;"></div>';
+    $form_html .= '<input type="hidden" name="nonce" value="' . $nonce . '">';
+    $form_html .= '<button type="submit" style="width: 100%; padding: 15px; background: #8b2635; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; transition: background-color 0.3s;">註冊餐廳</button>';
+    $form_html .= '</form>';
+    $form_html .= '<div id="flatsome-byob-registration-message" style="margin-top: 15px;"></div>';
+    $form_html .= '</div>';
+    
+    $form_html .= '<script>';
+    $form_html .= 'jQuery(document).ready(function($) {';
+    $form_html .= '$("#flatsome-byob-restaurant-registration").on("submit", function(e) {';
+    $form_html .= 'e.preventDefault();';
+    $form_html .= 'var formData = new FormData(this);';
+    $form_html .= 'formData.append("action", "flatsome_byob_direct_registration");';
+    $form_html .= '$.ajax({';
+    $form_html .= 'url: "' . admin_url('admin-ajax.php') . '",';
+    $form_html .= 'type: "POST",';
+    $form_html .= 'data: formData,';
+    $form_html .= 'processData: false,';
+    $form_html .= 'contentType: false,';
+    $form_html .= 'success: function(response) {';
+    $form_html .= 'if (response.success) {';
+    $form_html .= '$("#flatsome-byob-registration-message").html("<div style=background:#d4edda;color:#155724;padding:15px;border-radius:4px;text-align:center;>" + response.data.message + "</div>");';
+    $form_html .= '} else {';
+    $form_html .= '$("#flatsome-byob-registration-message").html("<div style=background:#f8d7da;color:#721c24;padding:15px;border-radius:4px;text-align:center;>" + response.data + "</div>");';
+    $form_html .= '}';
+    $form_html .= '},';
+    $form_html .= 'error: function() {';
+    $form_html .= '$("#flatsome-byob-registration-message").html("<div style=background:#f8d7da;color:#721c24;padding:15px;border-radius:4px;text-align:center;>發生錯誤</div>");';
+    $form_html .= '}';
+    $form_html .= '});';
+    $form_html .= '});';
+    $form_html .= '});';
+    $form_html .= '</script>';
+    
+    return $form_html;
+}
+
+// 註冊短代碼
+add_shortcode('flatsome_byob_restaurant_registration_form', 'flatsome_byob_restaurant_registration_form_shortcode');
