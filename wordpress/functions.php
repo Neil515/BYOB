@@ -1725,6 +1725,42 @@ function flatsome_byob_create_simple_restaurant($restaurant_data) {
         return new WP_Error('restaurant_creation_failed', '餐廳建立失敗');
     }
     
+    // 設定餐廳與用戶的關聯
+    update_post_meta($post_id, '_restaurant_owner_id', $restaurant_data['user_id']);
+    
+    // 更新 ACF 欄位
+    if (function_exists('update_field')) {
+        $acf_updates = array(
+            'contact_person' => sanitize_text_field($restaurant_data['contact_person']),
+            'email' => sanitize_email($restaurant_data['email']),
+            'phone' => sanitize_text_field($restaurant_data['phone']),
+            'address' => sanitize_text_field($restaurant_data['address']),
+            // 缺少的必填欄位設為空值
+            'restaurant_type' => array(),
+            'district' => '',
+            'is_charged' => '',
+            'corkage_fee_amount' => 0,
+            'corkage_fee_note' => '',
+            'equipment' => array(),
+            'open_bottle_service' => '',
+            'open_bottle_service_other_note' => '',
+            'website' => '',
+            'social_links' => '',
+            'notes' => '',
+            'last_updated' => current_time('Y-m-d'),
+            'source' => '直接註冊',
+            'is_owner' => '',
+            'review_status' => 'approved',
+            'submitted_date' => current_time('mysql'),
+            'review_date' => current_time('mysql'),
+            'review_notes' => ''
+        );
+        
+        foreach ($acf_updates as $field_name => $field_value) {
+            update_field($field_name, $field_value, $post_id);
+        }
+    }
+    
     return array(
         'success' => true,
         'post_id' => $post_id,
@@ -1755,12 +1791,17 @@ function flatsome_byob_handle_direct_restaurant_registration($form_data) {
         return new WP_Error('user_creation_failed', '用戶建立失敗');
     }
     
-    // 建立餐廳
+    // 準備餐廳資料（包含所有必要欄位）
     $restaurant_data = array(
         'restaurant_name' => $form_data['restaurant_name'],
+        'contact_person' => $form_data['contact_person'],
+        'phone' => $form_data['phone'],
+        'address' => $form_data['address'],
+        'email' => $form_data['email'],
         'user_id' => $user_id
     );
     
+    // 建立餐廳
     $result = flatsome_byob_create_simple_restaurant($restaurant_data);
     if (is_wp_error($result)) {
         wp_delete_user($user_id);
