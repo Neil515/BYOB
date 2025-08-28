@@ -1,6 +1,6 @@
 <?php
 /**
- * 餐廳直接加入功能 - 極簡測試版本
+ * 餐廳直接加入功能 - 極簡版本
  */
 
 // 防止直接訪問
@@ -82,7 +82,7 @@ function byob_validate_direct_registration_form($form_data) {
         'restaurant_name' => sanitize_text_field($form_data['restaurant_name']),
         'contact_person' => sanitize_text_field($form_data['contact_person']),
         'phone' => sanitize_text_field($form_data['phone']),
-        'address' => sanitize_text_field($form_data['address']),
+        'address' => sanitize_text_field($form_data['contact_person']),
         'email' => sanitize_email($form_data['email']),
         'password' => $form_data['password']
     );
