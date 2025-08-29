@@ -1808,9 +1808,18 @@ function flatsome_byob_handle_direct_restaurant_registration($form_data) {
         return $result;
     }
     
+    // 自動登入用戶
+    wp_set_current_user($user_id);
+    wp_set_auth_cookie($user_id);
+    
+    // 準備跳轉 URL
+    $redirect_url = get_permalink(get_option('woocommerce_myaccount_page_id')) . 'restaurant-profile/';
+    
     return array(
         'success' => true,
-        'message' => '註冊成功！'
+        'redirect_url' => $redirect_url,
+        'message' => '註冊成功！正在跳轉到餐廳資料編輯頁面...',
+        'user_id' => $user_id
     );
 }
 
@@ -1843,6 +1852,7 @@ function flatsome_byob_handle_direct_registration_ajax() {
         wp_send_json_error($result->get_error_message());
     }
     
+    // 返回包含跳轉資訊的成功回應
     wp_send_json_success($result);
 }
 
@@ -1863,11 +1873,14 @@ function flatsome_byob_restaurant_registration_form_shortcode($atts) {
     $form_html .= '<div style="margin-bottom: 15px;"><label style="display: block; margin-bottom: 5px; font-weight: bold;">聯絡電話 *</label><input type="tel" name="phone" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;"></div>';
     $form_html .= '<div style="margin-bottom: 15px;"><label style="display: block; margin-bottom: 5px; font-weight: bold;">餐廳地址 *</label><textarea name="address" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; min-height: 80px; resize: vertical;"></textarea></div>';
     $form_html .= '<div style="margin-bottom: 15px;"><label style="display: block; margin-bottom: 5px; font-weight: bold;">餐廳Email *</label><input type="email" name="email" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;"></div>';
+    
     $form_html .= '<div style="margin-bottom: 15px;"><label style="display: block; margin-bottom: 5px; font-weight: bold;">密碼 *</label><input type="password" name="password" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;"></div>';
     $form_html .= '<input type="hidden" name="nonce" value="' . $nonce . '">';
     $form_html .= '<button type="submit" style="width: 100%; padding: 15px; background: #8b2635; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; transition: background-color 0.3s;">註冊餐廳</button>';
     $form_html .= '</form>';
     $form_html .= '<div id="flatsome-byob-registration-message" style="margin-top: 15px;"></div>';
+    $form_html .= '<div id="flatsome-byob-countdown" style="margin-top: 15px; text-align: center; display: none;"></div>';
+    $form_html .= '<div id="flatsome-byob-redirect-status" style="margin-top: 15px; text-align: center; display: none;"></div>';
     $form_html .= '</div>';
     
     $form_html .= '<script>';
@@ -1876,6 +1889,9 @@ function flatsome_byob_restaurant_registration_form_shortcode($atts) {
     $form_html .= 'e.preventDefault();';
     $form_html .= 'var formData = new FormData(this);';
     $form_html .= 'formData.append("action", "flatsome_byob_direct_registration");';
+    $form_html .= 'var submitButton = $(this).find("button[type=submit]");';
+    $form_html .= 'var originalText = submitButton.text();';
+    $form_html .= 'submitButton.text("處理中...").prop("disabled", true);';
     $form_html .= '$.ajax({';
     $form_html .= 'url: "' . admin_url('admin-ajax.php') . '",';
     $form_html .= 'type: "POST",';
@@ -1885,15 +1901,42 @@ function flatsome_byob_restaurant_registration_form_shortcode($atts) {
     $form_html .= 'success: function(response) {';
     $form_html .= 'if (response.success) {';
     $form_html .= '$("#flatsome-byob-registration-message").html("<div style=background:#d4edda;color:#155724;padding:15px;border-radius:4px;text-align:center;>" + response.data.message + "</div>");';
+    $form_html .= '$("#flatsome-byob-restaurant-registration").hide();';
+    $form_html .= 'if (response.data.redirect_url) {';
+    $form_html .= 'startCountdownAndRedirect(response.data.redirect_url);';
+    $form_html .= '}';
     $form_html .= '} else {';
     $form_html .= '$("#flatsome-byob-registration-message").html("<div style=background:#f8d7da;color:#721c24;padding:15px;border-radius:4px;text-align:center;>" + response.data + "</div>");';
+    $form_html .= 'submitButton.text(originalText).prop("disabled", false);';
     $form_html .= '}';
     $form_html .= '},';
     $form_html .= 'error: function() {';
-    $form_html .= '$("#flatsome-byob-registration-message").html("<div style=background:#f8d7da;color:#721c24;padding:15px;border-radius:4px;text-align:center;>發生錯誤</div>");';
+    $form_html .= '$("#flatsome-byob-registration-message").html("<div style=background:#f8d7da;color:#721c24;padding:15px;border-radius:4px;text-align:center;>發生錯誤，請稍後再試</div>");';
+    $form_html .= 'submitButton.text(originalText).prop("disabled", false);';
     $form_html .= '}';
     $form_html .= '});';
     $form_html .= '});';
+    $form_html .= 'function startCountdownAndRedirect(redirectUrl) {';
+    $form_html .= 'var countdown = 3;';
+    $form_html .= 'var countdownElement = $("#flatsome-byob-countdown");';
+    $form_html .= 'var redirectStatusElement = $("#flatsome-byob-redirect-status");';
+    $form_html .= 'countdownElement.show();';
+    $form_html .= 'redirectStatusElement.show();';
+    $form_html .= 'var countdownTimer = setInterval(function() {';
+    $form_html .= 'if (countdown > 0) {';
+    $form_html .= 'countdownElement.html("<div style=font-size:18px;color:#8b2635;font-weight:bold;>倒數計時：" + countdown + " 秒</div>");';
+    $form_html .= 'redirectStatusElement.html("<div style=color:#666;>正在準備跳轉到餐廳資料編輯頁面...</div>");';
+    $form_html .= 'countdown--;';
+    $form_html .= '} else {';
+    $form_html .= 'clearInterval(countdownTimer);';
+    $form_html .= 'countdownElement.html("<div style=font-size:18px;color:#8b2635;font-weight:bold;>正在跳轉...</div>");';
+    $form_html .= 'redirectStatusElement.html("<div style=color:#666;>跳轉中，請稍候...</div>");';
+    $form_html .= 'setTimeout(function() {';
+    $form_html .= 'window.location.href = redirectUrl;';
+    $form_html .= '}, 1000);';
+    $form_html .= '}';
+    $form_html .= '}, 1000);';
+    $form_html .= '}';
     $form_html .= '});';
     $form_html .= '</script>';
     
