@@ -1777,6 +1777,11 @@ function flatsome_byob_handle_direct_restaurant_registration($form_data) {
         return new WP_Error('missing_field', '必填欄位不能為空');
     }
     
+    // 檢查密碼是否已通過驗證
+    if (empty($form_data['password'])) {
+        return new WP_Error('missing_password', '密碼不能為空');
+    }
+    
     // 建立用戶
     $user_data = array(
         'user_login' => $form_data['email'],
@@ -1827,14 +1832,41 @@ function flatsome_byob_handle_direct_restaurant_registration($form_data) {
  * 驗證表單資料
  */
 function flatsome_byob_validate_direct_registration_form($form_data) {
-    return array(
+    // 基本資料清理
+    $cleaned_data = array(
         'restaurant_name' => sanitize_text_field($form_data['restaurant_name']),
         'contact_person' => sanitize_text_field($form_data['contact_person']),
         'phone' => sanitize_text_field($form_data['phone']),
         'address' => sanitize_text_field($form_data['address']),
         'email' => sanitize_email($form_data['email']),
-        'password' => $form_data['password']
+        'password' => $form_data['password'],
+        'confirm_password' => $form_data['confirm_password'] ?? ''
     );
+    
+    // 密碼驗證
+    if (strlen($cleaned_data['password']) < 8) {
+        return new WP_Error('password_too_short', '密碼長度至少需要8個字元');
+    }
+    
+    if ($cleaned_data['password'] !== $cleaned_data['confirm_password']) {
+        return new WP_Error('password_mismatch', '密碼與確認密碼不匹配');
+    }
+    
+    // 檢查密碼強度（可選）
+    $password = $cleaned_data['password'];
+    $strength = 0;
+    
+    if (strlen($password) >= 8) $strength++;
+    if (preg_match('/[a-z]/', $password)) $strength++;
+    if (preg_match('/[A-Z]/', $password)) $strength++;
+    if (preg_match('/[0-9]/', $password)) $strength++;
+    if (preg_match('/[^A-Za-z0-9]/', $password)) $strength++;
+    
+    if ($strength < 2) {
+        return new WP_Error('password_weak', '密碼強度太弱，建議包含大小寫字母、數字和特殊符號');
+    }
+    
+    return $cleaned_data;
 }
 
 /**
@@ -1846,6 +1878,12 @@ function flatsome_byob_handle_direct_registration_ajax() {
     }
     
     $cleaned_data = flatsome_byob_validate_direct_registration_form($_POST);
+    
+    // 檢查驗證是否失敗
+    if (is_wp_error($cleaned_data)) {
+        wp_send_json_error($cleaned_data->get_error_message());
+    }
+    
     $result = flatsome_byob_handle_direct_restaurant_registration($cleaned_data);
     
     if (is_wp_error($result)) {
@@ -1874,7 +1912,36 @@ function flatsome_byob_restaurant_registration_form_shortcode($atts) {
     $form_html .= '<div style="margin-bottom: 15px;"><label style="display: block; margin-bottom: 5px; font-weight: bold;">餐廳地址 *</label><textarea name="address" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; min-height: 80px; resize: vertical;"></textarea></div>';
     $form_html .= '<div style="margin-bottom: 15px;"><label style="display: block; margin-bottom: 5px; font-weight: bold;">餐廳Email *</label><input type="email" name="email" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;"></div>';
     
-    $form_html .= '<div style="margin-bottom: 15px;"><label style="display: block; margin-bottom: 5px; font-weight: bold;">密碼 *</label><input type="password" name="password" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;"></div>';
+    // 密碼欄位區域
+    $form_html .= '<div style="margin-bottom: 15px;">';
+    $form_html .= '<label style="display: block; margin-bottom: 5px; font-weight: bold;">密碼 *</label>';
+    $form_html .= '<div style="position: relative;">';
+    $form_html .= '<input type="password" id="password" name="password" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; padding-right: 50px;">';
+    $form_html .= '<button type="button" onclick="togglePassword(\'password\')" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px;" title="顯示密碼">👁️</button>';
+    $form_html .= '</div>';
+    $form_html .= '<div id="password-strength" style="margin-top: 5px; font-size: 12px; color: #666;"></div>';
+    $form_html .= '</div>';
+    
+    // 確認密碼欄位
+    $form_html .= '<div style="margin-bottom: 15px;">';
+    $form_html .= '<label style="display: block; margin-bottom: 5px; font-weight: bold;">確認密碼 *</label>';
+    $form_html .= '<div style="position: relative;">';
+    $form_html .= '<input type="password" id="confirm_password" name="confirm_password" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; padding-right: 50px;">';
+    $form_html .= '<button type="button" onclick="togglePassword(\'confirm_password\')" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px;" title="顯示密碼">👁️</button>';
+    $form_html .= '</div>';
+    $form_html .= '<div id="password-match" style="margin-top: 5px; font-size: 12px; color: #666;"></div>';
+    $form_html .= '</div>';
+    
+    // 密碼規則說明
+    $form_html .= '<div class="password-rules" style="background-color: white; border-left: 4px solid #8b2635; padding: 20px; border-radius: 0 8px 8px 0; box-shadow: 0 1px 4px rgba(0,0,0,0.1); margin-bottom: 20px;">';
+    $form_html .= '<h5 style="margin: 0 0 15px 0; color: #495057; font-size: 16px; font-family: \'Microsoft JhengHei\', Arial, sans-serif; font-weight: 600;">📋 密碼設定規則 <span style="color: #8b2635; font-size: 12px;">(版本1)</span>：</h5>';
+    $form_html .= '<ul style="margin: 0; padding-left: 25px; color: #6c757d; font-size: 14px; font-family: \'Microsoft JhengHei\', Arial, sans-serif; line-height: 1.8;">';
+    $form_html .= '<li>長度：至少8個字元</li>';
+    $form_html .= '<li>建議包含：大小寫字母、數字、特殊符號</li>';
+    $form_html .= '<li>避免使用：個人資訊、常見密碼</li>';
+    $form_html .= '</ul>';
+    $form_html .= '</div>';
+    
     $form_html .= '<input type="hidden" name="nonce" value="' . $nonce . '">';
     $form_html .= '<button type="submit" style="width: 100%; padding: 15px; background: #8b2635; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; transition: background-color 0.3s;">註冊餐廳</button>';
     $form_html .= '</form>';
@@ -1885,8 +1952,106 @@ function flatsome_byob_restaurant_registration_form_shortcode($atts) {
     
     $form_html .= '<script>';
     $form_html .= 'jQuery(document).ready(function($) {';
+    
+    // 密碼顯示/隱藏功能
+    $form_html .= 'window.togglePassword = function(fieldId) {';
+    $form_html .= 'const field = document.getElementById(fieldId);';
+    $form_html .= 'const button = field.nextElementSibling;';
+    $form_html .= 'if (field.type === "password") {';
+    $form_html .= 'field.type = "text";';
+    $form_html .= 'button.innerHTML = "🙈";';
+    $form_html .= 'button.title = "隱藏密碼";';
+    $form_html .= '} else {';
+    $form_html .= 'field.type = "password";';
+    $form_html .= 'button.innerHTML = "👁️";';
+    $form_html .= 'button.title = "顯示密碼";';
+    $form_html .= '}';
+    $form_html .= '};';
+    
+    // 密碼強度檢查
+    $form_html .= 'function checkPasswordStrength(password) {';
+    $form_html .= 'let strength = 0;';
+    $form_html .= 'let feedback = "";';
+    $form_html .= 'if (password.length >= 8) strength += 1;';
+    $form_html .= 'if (/[a-z]/.test(password)) strength += 1;';
+    $form_html .= 'if (/[A-Z]/.test(password)) strength += 1;';
+    $form_html .= 'if (/[0-9]/.test(password)) strength += 1;';
+    $form_html .= 'if (/[^A-Za-z0-9]/.test(password)) strength += 1;';
+    $form_html .= 'const strengthText = document.getElementById("password-strength");';
+    $form_html .= 'switch(strength) {';
+    $form_html .= 'case 0:';
+    $form_html .= 'case 1:';
+    $form_html .= 'feedback = "很弱";';
+    $form_html .= 'strengthText.style.color = "#dc3545";';
+    $form_html .= 'break;';
+    $form_html .= 'case 2:';
+    $form_html .= 'feedback = "弱";';
+    $form_html .= 'strengthText.style.color = "#fd7e14";';
+    $form_html .= 'break;';
+    $form_html .= 'case 3:';
+    $form_html .= 'feedback = "中等";';
+    $form_html .= 'strengthText.style.color = "#ffc107";';
+    $form_html .= 'break;';
+    $form_html .= 'case 4:';
+    $form_html .= 'feedback = "強";';
+    $form_html .= 'strengthText.style.color = "#28a745";';
+    $form_html .= 'break;';
+    $form_html .= 'case 5:';
+    $form_html .= 'feedback = "很強";';
+    $form_html .= 'strengthText.style.color = "#20c997";';
+    $form_html .= 'break;';
+    $form_html .= '}';
+    $form_html .= 'strengthText.innerHTML = "密碼強度：" + feedback;';
+    $form_html .= '}';
+    
+    // 密碼匹配檢查
+    $form_html .= 'function checkPasswordMatch() {';
+    $form_html .= 'const password = document.getElementById("password").value;';
+    $form_html .= 'const confirmPassword = document.getElementById("confirm_password").value;';
+    $form_html .= 'const matchIndicator = document.getElementById("password-match");';
+    $form_html .= 'const confirmField = document.getElementById("confirm_password");';
+    $form_html .= 'if (confirmPassword === "") {';
+    $form_html .= 'matchIndicator.innerHTML = "";';
+    $form_html .= 'confirmField.style.borderColor = "#ddd";';
+    $form_html .= 'return;';
+    $form_html .= '}';
+    $form_html .= 'if (password === confirmPassword) {';
+    $form_html .= 'matchIndicator.innerHTML = "✅ 密碼匹配！";';
+    $form_html .= 'matchIndicator.style.color = "#28a745";';
+    $form_html .= 'confirmField.style.borderColor = "#28a745";';
+    $form_html .= '} else {';
+    $form_html .= 'matchIndicator.innerHTML = "❌ 密碼不匹配";';
+    $form_html .= 'matchIndicator.style.color = "#dc3545";';
+    $form_html .= 'confirmField.style.borderColor = "#dc3545";';
+    $form_html .= '}';
+    $form_html .= '}';
+    
+    // 密碼驗證事件監聽器
+    $form_html .= '$("#password").on("input", function() {';
+    $form_html .= 'checkPasswordStrength(this.value);';
+    $form_html .= 'checkPasswordMatch();';
+    $form_html .= '});';
+    
+    $form_html .= '$("#confirm_password").on("input", function() {';
+    $form_html .= 'checkPasswordMatch();';
+    $form_html .= '});';
+    
+    // 表單提交處理
     $form_html .= '$("#flatsome-byob-restaurant-registration").on("submit", function(e) {';
     $form_html .= 'e.preventDefault();';
+    
+    // 前端密碼驗證
+    $form_html .= 'const password = $("#password").val();';
+    $form_html .= 'const confirmPassword = $("#confirm_password").val();';
+    $form_html .= 'if (password.length < 8) {';
+    $form_html .= '$("#flatsome-byob-registration-message").html("<div style=background:#f8d7da;color:#721c24;padding:15px;border-radius:4px;text-align:center;>密碼長度至少需要8個字元</div>");';
+    $form_html .= 'return false;';
+    $form_html .= '}';
+    $form_html .= 'if (password !== confirmPassword) {';
+    $form_html .= '$("#flatsome-byob-registration-message").html("<div style=background:#f8d7da;color:#721c24;padding:15px;border-radius:4px;text-align:center;>密碼與確認密碼不匹配</div>");';
+    $form_html .= 'return false;';
+    $form_html .= '}';
+    
     $form_html .= 'var formData = new FormData(this);';
     $form_html .= 'formData.append("action", "flatsome_byob_direct_registration");';
     $form_html .= 'var submitButton = $(this).find("button[type=submit]");';
@@ -1916,6 +2081,7 @@ function flatsome_byob_restaurant_registration_form_shortcode($atts) {
     $form_html .= '}';
     $form_html .= '});';
     $form_html .= '});';
+    
     $form_html .= 'function startCountdownAndRedirect(redirectUrl) {';
     $form_html .= 'var countdown = 3;';
     $form_html .= 'var countdownElement = $("#flatsome-byob-countdown");';
