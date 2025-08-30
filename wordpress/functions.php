@@ -1793,7 +1793,23 @@ function flatsome_byob_handle_direct_restaurant_registration($form_data) {
     
     $user_id = wp_insert_user($user_data);
     if (is_wp_error($user_id)) {
-        return new WP_Error('user_creation_failed', '用戶建立失敗');
+        // 檢查具體的錯誤原因
+        $error_code = $user_id->get_error_code();
+        $error_message = $user_id->get_error_message();
+        
+        // 根據錯誤代碼提供更詳細的錯誤訊息
+        switch ($error_code) {
+            case 'existing_user_login':
+                return new WP_Error('user_creation_failed', '用戶建立失敗 (原因：此Email已註冊)');
+            case 'existing_user_email':
+                return new WP_Error('user_creation_failed', '用戶建立失敗 (原因：此Email已註冊)');
+            case 'invalid_email':
+                return new WP_Error('user_creation_failed', '用戶建立失敗 (原因：Email格式不正確)');
+            case 'invalid_username':
+                return new WP_Error('user_creation_failed', '用戶建立失敗 (原因：用戶名稱格式不正確)');
+            default:
+                return new WP_Error('user_creation_failed', '用戶建立失敗 (原因：' . $error_message . ')');
+        }
     }
     
     // 準備餐廳資料（包含所有必要欄位）
@@ -1870,6 +1886,29 @@ function flatsome_byob_validate_direct_registration_form($form_data) {
 }
 
 /**
+ * Email 檢查 AJAX 處理
+ */
+function flatsome_byob_check_email_ajax() {
+    if (!wp_verify_nonce($_POST['nonce'], 'flatsome_byob_check_email')) {
+        wp_send_json_error('安全驗證失敗');
+    }
+    
+    $email = sanitize_email($_POST['email']);
+    
+    if (!is_email($email)) {
+        wp_send_json_error('Email格式不正確');
+    }
+    
+    $user = get_user_by('email', $email);
+    $exists = $user !== false;
+    
+    wp_send_json_success(array(
+        'exists' => $exists,
+        'message' => $exists ? '此Email已被註冊' : 'Email可用'
+    ));
+}
+
+/**
  * AJAX 處理
  */
 function flatsome_byob_handle_direct_registration_ajax() {
@@ -1898,6 +1937,10 @@ function flatsome_byob_handle_direct_registration_ajax() {
 add_action('wp_ajax_flatsome_byob_direct_registration', 'flatsome_byob_handle_direct_registration_ajax');
 add_action('wp_ajax_nopriv_flatsome_byob_direct_registration', 'flatsome_byob_handle_direct_registration_ajax');
 
+// 註冊 Email 檢查 AJAX 處理函數
+add_action('wp_ajax_flatsome_byob_check_email', 'flatsome_byob_check_email_ajax');
+add_action('wp_ajax_nopriv_flatsome_byob_check_email', 'flatsome_byob_check_email_ajax');
+
 /**
  * 餐廳註冊表單短代碼 - Flatsome 相容版本
  */
@@ -1910,7 +1953,7 @@ function flatsome_byob_restaurant_registration_form_shortcode($atts) {
     $form_html .= '<div style="margin-bottom: 15px;"><label style="display: block; margin-bottom: 5px; font-weight: bold;">聯絡人姓名 *</label><input type="text" name="contact_person" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;"></div>';
     $form_html .= '<div style="margin-bottom: 15px;"><label style="display: block; margin-bottom: 5px; font-weight: bold;">聯絡電話 *</label><input type="tel" name="phone" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;"></div>';
     $form_html .= '<div style="margin-bottom: 15px;"><label style="display: block; margin-bottom: 5px; font-weight: bold;">餐廳地址 *</label><textarea name="address" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; min-height: 80px; resize: vertical;"></textarea></div>';
-    $form_html .= '<div style="margin-bottom: 15px;"><label style="display: block; margin-bottom: 5px; font-weight: bold;">餐廳Email *</label><input type="email" name="email" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;"></div>';
+    $form_html .= '<div style="margin-bottom: 15px;"><label style="display: block; margin-bottom: 5px; font-weight: bold;">餐廳Email *</label><input type="email" id="email" name="email" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;"><div id="email-status" style="margin-top: 5px; font-size: 12px; color: #666;"></div></div>';
     
     // 密碼欄位區域
     $form_html .= '<div style="margin-bottom: 15px;">';
@@ -1933,8 +1976,8 @@ function flatsome_byob_restaurant_registration_form_shortcode($atts) {
     $form_html .= '</div>';
     
     // 密碼規則說明
-    $form_html .= '<div class="password-rules" style="background-color: white; border-left: 4px solid #8b2635; padding: 20px; border-radius: 0 8px 8px 0; box-shadow: 0 1px 4px rgba(0,0,0,0.1); margin-bottom: 20px;">';
-    $form_html .= '<h5 style="margin: 0 0 15px 0; color: #495057; font-size: 16px; font-family: \'Microsoft JhengHei\', Arial, sans-serif; font-weight: 600;">📋 密碼設定規則 <span style="color: #8b2635; font-size: 12px;">(版本1)</span>：</h5>';
+    $form_html .= '<div class="password-rules" style="background-color: white; border-left: 4px solid rgba(139, 38, 53, 0.7); padding: 20px; border-radius: 0 8px 8px 0; box-shadow: 0 1px 4px rgba(0,0,0,0.1); margin-bottom: 20px;">';
+    $form_html .= '<h5 style="margin: 0 0 15px 0; color: #495057; font-size: 16px; font-family: \'Microsoft JhengHei\', Arial, sans-serif; font-weight: 600;">📋 密碼設定規則：</h5>';
     $form_html .= '<ul style="margin: 0; padding-left: 25px; color: #6c757d; font-size: 14px; font-family: \'Microsoft JhengHei\', Arial, sans-serif; line-height: 1.8;">';
     $form_html .= '<li>長度：至少8個字元</li>';
     $form_html .= '<li>建議包含：大小寫字母、數字、特殊符號</li>';
@@ -1943,7 +1986,8 @@ function flatsome_byob_restaurant_registration_form_shortcode($atts) {
     $form_html .= '</div>';
     
     $form_html .= '<input type="hidden" name="nonce" value="' . $nonce . '">';
-    $form_html .= '<button type="submit" style="width: 100%; padding: 15px; background: #8b2635; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; transition: background-color 0.3s;">註冊餐廳</button>';
+    $form_html .= '<input type="hidden" id="email-check-nonce" value="' . wp_create_nonce('flatsome_byob_check_email') . '">';
+    $form_html .= '<button type="submit" style="width: 100%; padding: 15px; background: rgba(139, 38, 53, 0.7); color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; transition: background-color 0.3s;">註冊餐廳</button>';
     $form_html .= '</form>';
     $form_html .= '<div id="flatsome-byob-registration-message" style="margin-top: 15px;"></div>';
     $form_html .= '<div id="flatsome-byob-countdown" style="margin-top: 15px; text-align: center; display: none;"></div>';
@@ -2026,6 +2070,52 @@ function flatsome_byob_restaurant_registration_form_shortcode($atts) {
     $form_html .= '}';
     $form_html .= '}';
     
+    // Email 檢查功能
+    $form_html .= 'var emailCheckTimer;';
+    $form_html .= '$("#email").on("input", function() {';
+    $form_html .= 'clearTimeout(emailCheckTimer);';
+    $form_html .= 'var email = $(this).val();';
+    $form_html .= 'var emailStatus = $("#email-status");';
+    $form_html .= 'if (email.length > 0 && email.includes("@")) {';
+    $form_html .= 'emailStatus.html("檢查中...");';
+    $form_html .= 'emailStatus.css("color", "#666");';
+    $form_html .= 'emailCheckTimer = setTimeout(function() {';
+    $form_html .= '$.ajax({';
+    $form_html .= 'url: "' . admin_url('admin-ajax.php') . '",';
+    $form_html .= 'type: "POST",';
+    $form_html .= 'data: {';
+    $form_html .= 'action: "flatsome_byob_check_email",';
+    $form_html .= 'email: email,';
+    $form_html .= 'nonce: $("#email-check-nonce").val()';
+    $form_html .= '},';
+    $form_html .= 'success: function(response) {';
+    $form_html .= 'if (response.success) {';
+    $form_html .= 'if (response.data.exists) {';
+    $form_html .= 'emailStatus.html("❌ " + response.data.message);';
+    $form_html .= 'emailStatus.css("color", "#dc3545");';
+    $form_html .= '$("#email").css("border-color", "#dc3545");';
+    $form_html .= '} else {';
+    $form_html .= 'emailStatus.html("✅ " + response.data.message);';
+    $form_html .= 'emailStatus.css("color", "#28a745");';
+    $form_html .= '$("#email").css("border-color", "#28a745");';
+    $form_html .= '}';
+    $form_html .= '} else {';
+    $form_html .= 'emailStatus.html("❌ " + response.data);';
+    $form_html .= 'emailStatus.css("color", "#dc3545");';
+    $form_html .= '}';
+    $form_html .= '},';
+    $form_html .= 'error: function() {';
+    $form_html .= 'emailStatus.html("檢查失敗，請稍後再試");';
+    $form_html .= 'emailStatus.css("color", "#dc3545");';
+    $form_html .= '}';
+    $form_html .= '});';
+    $form_html .= '}, 500);';
+    $form_html .= '} else {';
+    $form_html .= 'emailStatus.html("");';
+    $form_html .= '$("#email").css("border-color", "#ddd");';
+    $form_html .= '}';
+    $form_html .= '});';
+    
     // 密碼驗證事件監聽器
     $form_html .= '$("#password").on("input", function() {';
     $form_html .= 'checkPasswordStrength(this.value);';
@@ -2040,9 +2130,18 @@ function flatsome_byob_restaurant_registration_form_shortcode($atts) {
     $form_html .= '$("#flatsome-byob-restaurant-registration").on("submit", function(e) {';
     $form_html .= 'e.preventDefault();';
     
-    // 前端密碼驗證
+    // 前端驗證
+    $form_html .= 'const email = $("#email").val();';
     $form_html .= 'const password = $("#password").val();';
     $form_html .= 'const confirmPassword = $("#confirm_password").val();';
+    
+    // Email 格式檢查
+    $form_html .= 'if (!email.includes("@")) {';
+    $form_html .= '$("#flatsome-byob-registration-message").html("<div style=background:#f8d7da;color:#721c24;padding:15px;border-radius:4px;text-align:center;>請輸入有效的Email地址</div>");';
+    $form_html .= 'return false;';
+    $form_html .= '}';
+    
+    // 密碼驗證
     $form_html .= 'if (password.length < 8) {';
     $form_html .= '$("#flatsome-byob-registration-message").html("<div style=background:#f8d7da;color:#721c24;padding:15px;border-radius:4px;text-align:center;>密碼長度至少需要8個字元</div>");';
     $form_html .= 'return false;';
