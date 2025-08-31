@@ -2524,4 +2524,71 @@ function byob_cleanup_invalid_photos($restaurant_id) {
 add_action('init', 'byob_init_restaurant_member_system');
 
 // 在 wp_loaded 鉤子中檢查重寫規則（確保所有鉤子都已註冊）
-add_action('wp_loaded', 'byob_check_rewrite_rules'); 
+add_action('wp_loaded', 'byob_check_rewrite_rules');
+
+// ========================================
+// 簡單的餐廳資料完整性檢查
+// ========================================
+
+/**
+ * 檢查餐廳是否有完整的基本資料
+ * @param int $restaurant_id 餐廳ID
+ * @return bool 是否完整
+ */
+function byob_is_restaurant_complete($restaurant_id) {
+    // 檢查 6 個必填欄位
+    $post = get_post($restaurant_id);
+    $restaurant_name = $post ? $post->post_title : '';
+    $phone = function_exists('get_field') ? get_field('phone', $restaurant_id) : '';
+    $address = function_exists('get_field') ? get_field('address', $restaurant_id) : '';
+    $district = function_exists('get_field') ? get_field('district', $restaurant_id) : '';
+    $restaurant_type = function_exists('get_field') ? get_field('restaurant_type', $restaurant_id) : '';
+    $corkage_fee = function_exists('get_field') ? get_field('is_charged', $restaurant_id) : '';
+    
+    // 如果所有欄位都有值，返回 true
+    return !empty(trim($restaurant_name)) && 
+           !empty(trim($phone)) && 
+           !empty(trim($address)) && 
+           !empty(trim($district)) &&
+           !empty($restaurant_type) &&
+           !empty($corkage_fee);
+}
+
+/**
+ * 前台過濾不完整的餐廳
+ */
+function byob_filter_incomplete_restaurants($query) {
+    // 只在前台頁面過濾，不影響後台
+    if (!is_admin() && $query->is_main_query() && 
+        (is_post_type_archive('restaurant') || is_singular('restaurant'))) {
+        
+        // 使用 posts_results 過濾，更可靠
+        add_filter('posts_results', 'byob_filter_complete_restaurants');
+    }
+}
+add_action('pre_get_posts', 'byob_filter_incomplete_restaurants');
+
+/**
+ * 過濾完整的餐廳
+ */
+function byob_filter_complete_restaurants($posts) {
+    if (empty($posts)) {
+        return $posts;
+    }
+    
+    $complete_posts = array();
+    
+    foreach ($posts as $post) {
+        if ($post->post_type === 'restaurant') {
+            // 檢查餐廳是否完整
+            if (byob_is_restaurant_complete($post->ID)) {
+                $complete_posts[] = $post;
+            }
+        } else {
+            // 非餐廳文章直接保留
+            $complete_posts[] = $post;
+        }
+    }
+    
+    return $complete_posts;
+} 
