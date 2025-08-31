@@ -1929,11 +1929,6 @@ function byob_handle_restaurant_profile_submit($restaurant_id) {
     }
     
     // 驗證新增的必填欄位
-    if (empty($_POST['contact_person'])) {
-        wp_redirect(add_query_arg('message', 'error', wc_get_account_endpoint_url('restaurant-profile')));
-        exit;
-    }
-    
     if (empty($_POST['district'])) {
         wp_redirect(add_query_arg('message', 'error', wc_get_account_endpoint_url('restaurant-profile')));
         exit;
@@ -1995,7 +1990,11 @@ function byob_handle_restaurant_profile_submit($restaurant_id) {
     if (function_exists('update_field')) {
         // 基本資料欄位
         update_field('phone', sanitize_text_field($_POST['restaurant_phone']), $restaurant_id);
-        update_field('contact_person', sanitize_text_field($_POST['contact_person']), $restaurant_id);
+        
+        // 聯絡人姓名使用當前用戶的顯示名稱
+        $current_user = wp_get_current_user();
+        update_field('contact_person', sanitize_text_field($current_user->display_name), $restaurant_id);
+        
         update_field('district', sanitize_text_field($_POST['district']), $restaurant_id);
         update_field('address', sanitize_textarea_field($_POST['restaurant_address']), $restaurant_id);
         update_field('business_hours', sanitize_textarea_field($_POST['business_hours']), $restaurant_id);
