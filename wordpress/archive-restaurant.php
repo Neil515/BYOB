@@ -189,7 +189,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			<?php endif; ?>
 		  </div>
 		<?php else: ?>
-		  <div class="field"><strong>地址：</strong>暫無資料</div>
+		  <div class="field"><strong>地址：</strong></div>
 		<?php endif; ?>
 
 
@@ -215,7 +215,7 @@ document.addEventListener('DOMContentLoaded', function() {
               <a href="tel:<?php echo esc_attr($tel_link); ?>"><?php echo esc_html($phone); ?> 📞</a>
             </div>
           <?php else: ?>
-            <div class="field"><strong>餐廳聯絡電話：</strong>暫無資料</div>
+            <div class="field"><strong>餐廳聯絡電話：</strong></div>
           <?php endif; ?>
 
           <?php /*
@@ -240,7 +240,7 @@ document.addEventListener('DOMContentLoaded', function() {
           ?>
             <div class="field"><strong>是否收開瓶費：</strong><?php echo esc_html($charged_output); ?> 🥂</div>
           <?php else: ?>
-            <div class="field"><strong>是否收開瓶費：</strong>暫無資料</div>
+            <div class="field"><strong>是否收開瓶費：</strong></div>
           <?php endif; ?>
           <?php 
           // 根據 is_charged 選項顯示對應的開瓶費資訊
@@ -275,12 +275,12 @@ document.addEventListener('DOMContentLoaded', function() {
           ?>
             <div class="field"><strong>開瓶費說明：</strong><?php echo esc_html($fee_output); ?> 🪙</div>
           <?php else: ?>
-            <div class="field"><strong>開瓶費說明：</strong>暫無資料</div>
+            <div class="field"><strong>開瓶費說明：</strong></div>
           <?php endif; ?>
           <?php if(get_field('equipment')): ?>
             <div class="field"><strong>提供酒器設備：</strong><?php the_field('equipment'); ?></div>
           <?php else: ?>
-            <div class="field"><strong>提供酒器設備：</strong>暫無資料</div>
+            <div class="field"><strong>提供酒器設備：</strong></div>
           <?php endif; ?>
 
           <?php /*
@@ -306,7 +306,7 @@ document.addEventListener('DOMContentLoaded', function() {
           <?php if(get_field('notes')): ?>
             <div class="field"><strong>備註說明：</strong><?php the_field('notes'); ?> 📝</div>
           <?php else: ?>
-            <div class="field"><strong>備註說明：</strong>暫無資料</div>
+            <div class="field"><strong>備註說明：</strong></div>
           <?php endif; ?>
         </div>
       </div>
