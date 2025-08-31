@@ -63,7 +63,7 @@
           <?php endif; ?>
         </div>
       <?php else: ?>
-        <div class="field"><strong>地址：</strong>暫無資料</div>
+        <div class="field"><strong>地址：</strong></div>
       <?php endif; ?>
 
       <?php 
@@ -88,7 +88,7 @@
           <a href="tel:<?php echo esc_attr($tel_link); ?>"><?php echo esc_html($phone); ?> &#128222;</a>
         </div>
       <?php else: ?>
-        <div class="field"><strong>餐廳聯絡電話：</strong>暫無資料</div>
+        <div class="field"><strong>餐廳聯絡電話：</strong></div>
       <?php endif; ?>
 
       <?php 
@@ -128,7 +128,7 @@
       ?>
         <div class="field"><strong>餐廳類型：</strong><?php echo esc_html($type_output); ?></div>
       <?php else: ?>
-        <div class="field"><strong>餐廳類型：</strong>暫無資料</div>
+        <div class="field"><strong>餐廳類型：</strong></div>
       <?php endif; ?>
     </div>
 
@@ -150,7 +150,7 @@
       ?>
         <div class="field"><strong>是否收開瓶費：</strong><?php echo esc_html($charged_output); ?> &#127864;</div>
       <?php else: ?>
-        <div class="field"><strong>是否收開瓶費：</strong>暫無資料</div>
+        <div class="field"><strong>是否收開瓶費：</strong></div>
       <?php endif; ?>
 
       <?php 
@@ -186,7 +186,7 @@
       ?>
         <div class="field"><strong>開瓶費說明：</strong><?php echo esc_html($fee_output); ?> &#127881;</div>
       <?php else: ?>
-        <div class="field"><strong>開瓶費說明：</strong>暫無資料</div>
+        <div class="field"><strong>開瓶費說明：</strong></div>
       <?php endif; ?>
 
       <?php 
@@ -200,7 +200,7 @@
       ?>
         <div class="field"><strong>提供酒器設備：</strong><?php echo esc_html($equipment_output); ?></div>
       <?php else: ?>
-        <div class="field"><strong>提供酒器設備：</strong>暫無資料</div>
+        <div class="field"><strong>提供酒器設備：</strong></div>
       <?php endif; ?>
 
                     <?php 
@@ -231,7 +231,7 @@
        ?>
          <div class="field"><strong>是否提供開酒服務：</strong><?php echo esc_html($service_output); ?></div>
        <?php else: ?>
-         <div class="field"><strong>是否提供開酒服務：</strong>暫無資料</div>
+         <div class="field"><strong>是否提供開酒服務：</strong></div>
        <?php endif; ?>
     </div>
 
@@ -256,7 +256,7 @@
 			<?php echo implode(' | ', $links); ?>
 		  </div>
 		<?php else: ?>
-		  <div class="field"><strong>官方網站/社群連結：</strong>暫無資料</div>
+		  <div class="field"><strong>官方網站/社群連結：</strong></div>
 		<?php endif; ?>
 	</div>
 
@@ -266,7 +266,7 @@
       <?php if(get_field('notes')): ?>
         <div class="field"><strong>備註說明：</strong><?php the_field('notes'); ?> &#128221;</div>
       <?php else: ?>
-        <div class="field"><strong>備註說明：</strong>暫無資料</div>
+        <div class="field"><strong>備註說明：</strong></div>
       <?php endif; ?>
     </div>
   </div>
