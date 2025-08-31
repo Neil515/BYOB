@@ -298,6 +298,11 @@ echo '<input type="hidden" name="restaurant_id" value="' . esc_attr($restaurant_
 echo '<div class="form-section" style="margin-bottom: 35px;">';
 echo '<h3 style="color: #333; border-bottom: 3px solid rgba(139, 38, 53, 0.8); padding-bottom: 15px; margin-bottom: 25px;">基本資料</h3>';
 
+// 必填欄位說明
+echo '<div style="background: rgba(212, 237, 218, 0.7); border: 1px solid #ffeaa7; padding: 15px; border-radius: 8px; margin-bottom: 25px;">';
+echo '<p style="margin: 0; color: #856404; font-size: 14px;"><strong>📋 重要提醒：</strong>標示 <span style="color: #dc3545; font-weight: bold;">*</span> 的欄位為必填項目，完成後餐廳才會顯示於前台頁面供顧客瀏覽。</p>';
+echo '</div>';
+
 // 餐廳名稱
 echo '<div class="form-group" style="margin-bottom: 25px;">';
 echo '<label for="restaurant_name" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">餐廳名稱 *</label>';
@@ -307,7 +312,7 @@ echo '</div>';
 
 // 餐廳類型
 echo '<div class="form-group" style="margin-bottom: 25px;">';
-echo '<label style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">餐廳類型</label>';
+echo '<label style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">餐廳類型 *</label>';
 echo '<div class="checkbox-group" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-top: 15px;">';
 
 $restaurant_types = array(
@@ -426,7 +431,7 @@ echo '</div>';
 
 // 是否收開瓶費
 echo '<div class="form-group" style="margin-bottom: 25px;">';
-echo '<label for="is_charged" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">是否收開瓶費</label>';
+echo '<label for="is_charged" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">是否收開瓶費 *</label>';
 echo '<div class="radio-group" style="display: flex; gap: 20px; align-items: center; flex-wrap: nowrap;">';
 echo '<label style="display: flex; align-items: center; cursor: pointer; font-weight: normal; white-space: nowrap; writing-mode: horizontal-tb; text-orientation: mixed;">';
 echo '<input type="radio" name="is_charged" value="yes" ' . (get_field('is_charged', $restaurant_id) === 'yes' ? 'checked' : '') . ' style="margin-right: 8px;">';
@@ -454,7 +459,7 @@ echo '</div>';
 // 開瓶費其他說明欄位（當選擇「其他」時顯示）
 echo '<div id="corkage_note_field" class="form-group" style="margin-bottom: 25px; display: none;">';
 echo '<label for="corkage_fee_note" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">其他說明 *</label>';
-echo '<input type="text" id="corkage_fee_note" name="corkage_fee_note" value="' . esc_attr(get_field('corkage_fee_note', $restaurant_id)) . '" placeholder="例：依酒款而定，或僅開紅酒" style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; transition: border-color 0.3s;">';
+echo '<input type="text" id="corkage_fee_note" name="corkage_fee_note" value="' . esc_attr(get_field('corkage_fee_note', $restaurant_id)) . '" placeholder="例：按酒杯收費，或每桌xxx元" style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; transition: border-color 0.3s;">';
 echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">請說明您的開瓶費政策</p>';
 echo '</div>';
 
@@ -516,7 +521,7 @@ echo '<div style="background: #e8f5e8; border: 1px solid #c3e6cb; padding: 15px;
 if ($open_bottle_service_value === '有') {
     echo '<p style="margin: 0; color: #155724; font-weight: bold; font-size: 16px;">✅ 提供開酒服務</p>';
 } elseif ($open_bottle_service_value === '無') {
-    echo '<p style="margin: 0; color: #721c24; font-weight: bold; font-size: 16px;">❌ 未提供開酒服務</p>';
+    echo '<p style="margin: 0; color: #721c24; font-weight: bold; font-size: 16px;">未提供開酒服務</p>';
 }
 echo '</div>';
 echo '</div>';
@@ -531,7 +536,7 @@ echo '</div>';
 // 其他BYOB規定或備註
 echo '<div class="form-group" style="margin-bottom: 25px;">';
 echo '<label for="restaurant_description" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">其他BYOB規定或備註</label>';
-echo '<textarea id="restaurant_description" name="restaurant_description" rows="5" placeholder="請描述您的餐廳特色、風格、服務等..." style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; resize: vertical; transition: border-color 0.3s;">' . esc_textarea($restaurant->post_content) . '</textarea>';
+echo '<textarea id="restaurant_description" name="restaurant_description" rows="5" placeholder="其他BYOB policy,或您的餐廳特色、風格、服務等..." style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; resize: vertical; transition: border-color 0.3s;">' . esc_textarea($restaurant->post_content) . '</textarea>';
 echo '</div>';
 
 // 官方網站/社群連結
