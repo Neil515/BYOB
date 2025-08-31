@@ -260,6 +260,19 @@ if ($message_to_show) {
         echo '<h3 style="margin: 0 0 10px 0;">❌ 權限不足</h3>';
         echo '<p style="margin: 0;">您沒有權限執行此操作。</p>';
         echo '</div>';
+    } elseif ($message_to_show === 'address_validation_error') {
+        $address_errors = isset($_GET['address_errors']) ? explode('|', urldecode($_GET['address_errors'])) : array();
+        echo '<div style="background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 20px; border-radius: 8px; margin-bottom: 30px;">';
+        echo '<h3 style="margin: 0 0 10px 0;">❌ 地址格式不完整</h3>';
+        if (!empty($address_errors)) {
+            echo '<ul style="margin: 10px 0 0 0; padding-left: 20px;">';
+            foreach ($address_errors as $error) {
+                echo '<li>' . esc_html($error) . '</li>';
+            }
+            echo '</ul>';
+        }
+        echo '<p style="margin: 10px 0 0 0; font-size: 14px;">請參考地址欄位下方的驗證規則，確保地址包含完整的縣市、行政區、路街和門牌資訊。</p>';
+        echo '</div>';
     }
 }
 
@@ -398,8 +411,10 @@ echo '</div>';
 // 地址
 echo '<div class="form-group" style="margin-bottom: 25px;">';
 echo '<label for="restaurant_address" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">地址 *</label>';
-echo '<textarea id="restaurant_address" name="restaurant_address" rows="3" placeholder="請輸入完整地址..." required style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; resize: vertical; transition: border-color 0.3s;">' . esc_textarea(get_field('address', $restaurant_id)) . '</textarea>';
-echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">請填完整地址，包括縣市及行政區，方便您被顧客搜尋</p>';
+echo '<textarea id="restaurant_address" name="restaurant_address" rows="3" placeholder="請輸入完整地址..." required style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; resize: vertical; transition: border-color 0.3s;" oninput="validateAddress(this.value)">' . esc_textarea(get_field('address', $restaurant_id)) . '</textarea>';
+echo '<div id="address_validation_result" style="margin-top: 10px;"></div>';
+echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">請填完整地址，包括縣市及行政區，才可顯示於前台，並且方便被顧客搜尋</p>';
+echo '<p style="font-size: 13px; color: #666; margin-top: 5px;"><strong>範例格式</strong>：台北市信義區信義路五段7號</p>';
 echo '</div>';
 
 // 營業時間
@@ -798,6 +813,12 @@ document.addEventListener(\'DOMContentLoaded\', function() {
     } else {
         console.log(\'DEBUG: 隱藏其他類型說明欄位\');
     }
+    
+    // 初始化地址驗證
+    var addressField = document.getElementById(\'restaurant_address\');
+    if (addressField && addressField.value) {
+        validateAddress(addressField.value);
+    }
 });
 
 
@@ -826,6 +847,50 @@ function deleteLogo() {
         
         // 提交表單
         form.submit();
+    }
+}
+
+// 地址驗證功能
+function validateAddress(address) {
+    var resultDiv = document.getElementById(\'address_validation_result\');
+    var textarea = document.getElementById(\'restaurant_address\');
+    
+    if (!address || address.trim() === \'\') {
+        resultDiv.innerHTML = \'\';
+        textarea.style.borderColor = \'#ddd\';
+        return;
+    }
+    
+    var errors = [];
+    var warnings = [];
+    
+    // 縣市驗證：必須包含「市」、「縣」等關鍵字
+    if (!/(市|縣)/.test(address)) {
+        errors.push(\'缺少縣市資訊（如：台北市、新北市、桃園市等）\');
+    }
+    
+    // 行政區驗證：必須包含「區」等關鍵字
+    if (!/區/.test(address)) {
+        errors.push(\'缺少行政區資訊（如：信義區、大安區等）\');
+    }
+    
+    // 路街驗證：必須包含「路」、「街」、「道」等關鍵字
+    if (!/(路|街|道)/.test(address)) {
+        errors.push(\'缺少路街資訊（如：信義路、忠孝東路等）\');
+    }
+    
+    // 門牌驗證：必須包含數字
+    if (!/\\d/.test(address)) {
+        errors.push(\'缺少門牌號碼\');
+    }
+    
+    // 顯示驗證結果
+    if (errors.length > 0) {
+        resultDiv.innerHTML = \'<div style="padding: 10px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px; color: #721c24; font-size: 14px;"><strong>⚠️ 地址格式不完整：</strong><ul style="margin: 10px 0 0 0; padding-left: 20px;"><li>\' + errors.join(\'</li><li>\') + \'</li></ul></div>\';
+        textarea.style.borderColor = \'#dc3545\';
+    } else {
+        resultDiv.innerHTML = \'<div style="padding: 10px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; color: #155724; font-size: 14px;"><strong>✅ 地址格式正確</strong></div>\';
+        textarea.style.borderColor = \'#28a745\';
     }
 }
 </script>';
