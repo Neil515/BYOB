@@ -1944,6 +1944,39 @@ function byob_handle_restaurant_profile_submit($restaurant_id) {
         exit;
     }
     
+    // 地址驗證
+    if (!empty($_POST['restaurant_address'])) {
+        $address = $_POST['restaurant_address'];
+        $address_errors = array();
+        
+        // 縣市驗證：必須包含「市」、「縣」等關鍵字
+        if (!preg_match('/(市|縣)/', $address)) {
+            $address_errors[] = '缺少縣市資訊（如：台北市、新北市、桃園市等）';
+        }
+        
+        // 行政區驗證：必須包含「區」等關鍵字
+        if (!preg_match('/區/', $address)) {
+            $address_errors[] = '缺少行政區資訊（如：信義區、大安區等）';
+        }
+        
+        // 路街驗證：必須包含「路」、「街」、「道」等關鍵字
+        if (!preg_match('/(路|街|道)/', $address)) {
+            $address_errors[] = '缺少路街資訊（如：信義路、忠孝東路等）';
+        }
+        
+        // 門牌驗證：必須包含數字
+        if (!preg_match('/\d/', $address)) {
+            $address_errors[] = '缺少門牌號碼';
+        }
+        
+        // 如果有地址錯誤，重導向並顯示錯誤訊息
+        if (!empty($address_errors)) {
+            $error_message = 'address_validation_error';
+            wp_redirect(add_query_arg(array('message' => $error_message, 'address_errors' => urlencode(implode('|', $address_errors))), wc_get_account_endpoint_url('restaurant-profile')));
+            exit;
+        }
+    }
+    
     // 更新餐廳基本資料
     $post_data = array(
         'ID' => $restaurant_id,
