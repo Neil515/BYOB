@@ -382,9 +382,10 @@ echo '</div>';
 
 // 聯絡人姓名
 echo '<div class="form-group" style="margin-bottom: 25px;">';
-echo '<label for="contact_person" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">聯絡人姓名 *</label>';
-echo '<input type="text" id="contact_person" name="contact_person" value="' . esc_attr(get_field('contact_person', $restaurant_id)) . '" placeholder="聯絡人姓名供平台聯絡用，不會出現在前台" required style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; transition: border-color 0.3s;">';
-echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">聯絡人姓名僅供平台聯絡，不會顯示於前台</p>';
+echo '<label for="contact_person" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">用戶名稱 *</label>';
+$current_user = wp_get_current_user();
+echo '<input type="text" id="contact_person" name="contact_person" value="' . esc_attr($current_user->display_name) . '" readonly style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; background-color: #f8f9fa; color: #6c757d; cursor: not-allowed;">';
+echo '<p style="font-size: 14px; color: #666; margin-top: 5px;">用戶名稱為註冊時所填名稱，無法自行修改，如需修改請聯絡<a href="https://byobmap.com/contact/" target="_blank" style="color: rgba(139, 38, 53, 0.8); text-decoration: none;">網站管理員</a></p>';
 echo '</div>';
 
 // 行政區
