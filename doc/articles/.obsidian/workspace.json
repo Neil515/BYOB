@@ -11,10 +11,14 @@
             "id": "6d664dca2cf3c1f7",
             "type": "leaf",
             "state": {
-              "type": "graph",
-              "state": {},
-              "icon": "lucide-git-fork",
-              "title": "Graph view"
+              "type": "markdown",
+              "state": {
+                "file": "BYOB -- 餐廳讓顧客自帶酒水有什麼好處(跟壞處)？.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "BYOB -- 餐廳讓顧客自帶酒水有什麼好處(跟壞處)？"
             }
           }
         ]
