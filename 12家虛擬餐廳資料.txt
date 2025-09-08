@@ -1,0 +1,146 @@
+BYOB 自帶酒水餐廳平台 - 12家虛擬餐廳資料
+
+========================================
+餐廳編號：001
+餐廳名稱：鍋神降臨
+餐廳類型：火鍋、台式、小酒館
+地址：台北市大安區復興南路一段390號
+網站/訂位：https://hotpot-god.com.tw
+Instagram：@hotpot_god_taipei
+Facebook：鍋神降臨 Hotpot God
+備註：提供新鮮海鮮火鍋，開瓶費200元
+聯絡人：陳老闆
+
+========================================
+餐廳編號：002
+餐廳名稱：麵麵俱到
+餐廳類型：義式、Fine dining、私廚
+地址：台北市信義區松仁路100號
+網站/訂位：https://pasta-perfect.com.tw
+Instagram：@pasta_perfect_taipei
+Facebook：麵麵俱到 Pasta Perfect
+備註：手工義大利麵，開瓶費300元
+聯絡人：義大利主廚 Marco
+
+========================================
+餐廳編號：003
+餐廳名稱：炭火傳奇
+餐廳類型：燒烤、美式、Lounge Bar
+地址：台北市中山區南京東路二段150號
+網站/訂位：https://charcoal-legend.com.tw
+Instagram：@charcoal_legend_taipei
+Facebook：炭火傳奇 Charcoal Legend
+備註：炭火燒烤，開瓶費150元
+聯絡人：燒烤師傅 阿明
+
+========================================
+餐廳編號：004
+餐廳名稱：肉慾橫流
+餐廳類型：牛排、Fine dining、法式
+地址：台北市松山區民生東路四段80號
+網站/訂位：https://meat-craving.com.tw
+Instagram：@meat_craving_taipei
+Facebook：肉慾橫流 Meat Craving
+備註：頂級和牛，開瓶費500元
+聯絡人：主廚 李先生
+
+========================================
+餐廳編號：005
+餐廳名稱：炒翻天
+餐廳類型：熱炒、台式、小酒館
+地址：台北市萬華區西門町成都路10號
+網站/訂位：https://stir-crazy.com.tw
+Instagram：@stir_crazy_taipei
+Facebook：炒翻天 Stir Crazy
+備註：經典台菜熱炒，開瓶費100元
+聯絡人：老闆娘 阿花
+
+========================================
+餐廳編號：006
+餐廳名稱：居酒屋の夜
+餐廳類型：日式、小酒館、私廚
+地址：台北市大安區敦化南路一段160號
+網站/訂位：https://izakaya-night.com.tw
+Instagram：@izakaya_night_taipei
+Facebook：居酒屋の夜 Izakaya Night
+備註：正宗日式料理，開瓶費250元
+聯絡人：日籍主廚 田中
+
+========================================
+餐廳編號：007
+餐廳名稱：巴黎左岸
+餐廳類型：法式、小酒館、Fine dining
+地址：台北市信義區信義路五段7號
+網站/訂位：https://paris-left-bank.com.tw
+Instagram：@paris_left_bank_taipei
+Facebook：巴黎左岸 Paris Left Bank
+備註：精緻法式料理，開瓶費400元
+聯絡人：法籍主廚 Pierre
+
+========================================
+餐廳編號：008
+餐廳名稱：漢堡帝國
+餐廳類型：美式、咖啡廳、小酒館
+地址：台北市松山區八德路四段138號
+網站/訂位：https://burger-empire.com.tw
+Instagram：@burger_empire_taipei
+Facebook：漢堡帝國 Burger Empire
+備註：手工漢堡，開瓶費120元
+聯絡人：店長 小美
+
+========================================
+餐廳編號：009
+餐廳名稱：隱藏版廚房
+餐廳類型：私廚、Fine dining、異國料理
+地址：台北市大安區安和路一段90號
+網站/訂位：https://hidden-kitchen.com.tw
+Instagram：@hidden_kitchen_taipei
+Facebook：隱藏版廚房 Hidden Kitchen
+備註：無菜單料理，開瓶費350元
+聯絡人：主廚 阿強
+
+========================================
+餐廳編號：010
+餐廳名稱：饕客天堂
+餐廳類型：Buffet、異國料理、咖啡廳
+地址：台北市中山區南京東路三段200號
+網站/訂位：https://foodie-paradise.com.tw
+Instagram：@foodie_paradise_taipei
+Facebook：饕客天堂 Foodie Paradise
+備註：多國料理自助餐，開瓶費180元
+聯絡人：經理 王小姐
+
+========================================
+餐廳編號：011
+餐廳名稱：咖啡因中毒
+餐廳類型：咖啡廳、小酒館、台式
+地址：台北市大安區師大路80號
+網站/訂位：https://caffeine-addiction.com.tw
+Instagram：@caffeine_addiction_taipei
+Facebook：咖啡因中毒 Caffeine Addiction
+備註：精品咖啡，開瓶費80元
+聯絡人：咖啡師 小陳
+
+========================================
+餐廳編號：012
+餐廳名稱：微醺時光
+餐廳類型：Lounge Bar、小酒館、異國料理
+地址：台北市信義區松壽路12號
+網站/訂位：https://tipsy-time.com.tw
+Instagram：@tipsy_time_taipei
+Facebook：微醺時光 Tipsy Time
+備註：時尚酒吧，開瓶費200元
+聯絡人：調酒師 阿傑
+
+========================================
+
+總結：
+- 火鍋：1家 (老饕火鍋)
+- 義式：1家 (義大利麵大師)
+- 燒烤：1家 (燒烤王)
+- 牛排：1家 (牛排先生)
+- 熱炒：1家 (熱炒99)
+- 其他類型：7家
+
+所有餐廳均提供BYOB服務，開瓶費範圍：80-500元
+聯絡人包含各種稱呼：老闆、主廚、店長、經理、咖啡師、調酒師等
