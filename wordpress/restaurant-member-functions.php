@@ -1975,8 +1975,7 @@ function byob_handle_restaurant_profile_submit($restaurant_id) {
     // 更新餐廳基本資料
     $post_data = array(
         'ID' => $restaurant_id,
-        'post_title' => sanitize_text_field($_POST['restaurant_name']),
-        'post_content' => sanitize_textarea_field($_POST['restaurant_description'])
+        'post_title' => sanitize_text_field($_POST['restaurant_name'])
     );
     
     $updated_post = wp_update_post($post_data);
@@ -2049,6 +2048,11 @@ function byob_handle_restaurant_profile_submit($restaurant_id) {
         // 新增欄位：社群連結（URL）
         if (isset($_POST['social_links'])) {
             update_field('social_links', esc_url_raw($_POST['social_links']), $restaurant_id);
+        }
+        
+        // 新增欄位：備註說明（多行文字）
+        if (isset($_POST['notes'])) {
+            update_field('notes', sanitize_textarea_field($_POST['notes']), $restaurant_id);
         }
         
         // 新增欄位：聯絡人Email
