@@ -535,8 +535,8 @@ echo '</div>';
 
 // 其他BYOB規定或備註
 echo '<div class="form-group" style="margin-bottom: 25px;">';
-echo '<label for="restaurant_description" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">其他BYOB規定或備註</label>';
-echo '<textarea id="restaurant_description" name="restaurant_description" rows="5" placeholder="其他BYOB policy,或您的餐廳特色、風格、服務等..." style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; resize: vertical; transition: border-color 0.3s;">' . esc_textarea($restaurant->post_content) . '</textarea>';
+echo '<label for="notes" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333; font-size: 16px;">其他BYOB規定或備註</label>';
+echo '<textarea id="notes" name="notes" rows="5" placeholder="其他BYOB policy,或您的餐廳特色、風格、服務等..." style="width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; resize: vertical; transition: border-color 0.3s;">' . esc_textarea(get_field('notes', $restaurant_id)) . '</textarea>';
 echo '</div>';
 
 // 官方網站/社群連結
