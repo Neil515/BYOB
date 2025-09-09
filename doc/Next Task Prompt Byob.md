@@ -1,10 +1,8 @@
 # 🍷 BYOB 專案工作規劃與進度追蹤
 
-## 📅 當前日期：2025年9月8日
+## 📅 當前日期：2025年9月9日
 
 ## 🚀 已完成任務
-
-
 
 **9月2日完成工作：** ⭐ 重大進展
 - [x] **第一篇文章撰寫與發布完成** ⭐ 內容行銷基礎
@@ -50,7 +48,7 @@
   - [x] 保留核心檔案：主要程式、GUI版本、設定檔案、啟動器
   - [x] 建立簡潔的專案結構
 
-**9月8日完成工作：** ⭐ 今日重大進展
+**9月8日完成工作：** ⭐ 重大進展
 - [x] **FB粉絲專頁建立完成** ⭐ 社群媒體基礎
   - [x] 建立「BYOB 自帶酒水餐廳平台」粉絲專頁
   - [x] 設定專頁資訊和使命
@@ -67,10 +65,17 @@
   - [x] 調整section高度和樣式
   - [x] 建立專業的平台形象
 
+**9月9日完成工作：** ⭐ 今日重大進展
+- [x] **修復「其他BYOB規定或備註」欄位同步問題** ⭐ 系統修復
+  - [x] 修改後台編輯頁面使用 `notes` ACF欄位
+  - [x] 修改表單提交處理邏輯，將 `restaurant_description` 改為更新 `notes` ACF欄位
+  - [x] 解決後台編輯和前台顯示不一致的問題
+  - [x] 確保資料同步和一致性
+
 **相關檔案：**
 - `wordpress/functions.php`：已整合餐廳直接加入功能、密碼驗證、Email 檢查
-- `wordpress/restaurant-member-functions.php`：已整合地址驗證、餐廳完整性檢查、前台過濾功能
-- `wordpress/woocommerce/myaccount/restaurant-profile.php`：已整合地址驗證、必填欄位標示
+- `wordpress/restaurant-member-functions.php`：已整合地址驗證、餐廳完整性檢查、前台過濾功能、備註欄位同步修復
+- `wordpress/woocommerce/myaccount/restaurant-profile.php`：已整合地址驗證、必填欄位標示、備註欄位同步修復
 - `wordpress/archive-restaurant.php`：已修改空欄位顯示邏輯
 - `wordpress/single_restaurant.php`：已修改空欄位顯示邏輯
 - `restaurant_crawler/restaurant_crawler.py`：Google Places API 爬蟲程式
@@ -82,9 +87,9 @@
 - 短代碼：`[flatsome_byob_restaurant_registration_form]`
 - `wordpress/page-restaurant-join-us.php`：簡化的頁面模板
 
-## 🔴 下個階段工作重點
+## 🔴 明天工作重點
 
-### 🚨 優先級 1：建立12家虛擬餐廳資料 ⭐ 明天重點
+### 🚨 優先級 1：完成12家虛擬餐廳資料上傳 ⭐ 明天重點
 
 **需求描述：**
 將12家虛擬餐廳資料正式建立到WordPress平台，為平台提供初始內容。
@@ -94,7 +99,7 @@
    - 使用12家虛擬餐廳資料檔案
    - 透過WordPress後台手動建立餐廳文章
    - 設定完整的餐廳資訊和ACF欄位
-   - 上傳餐廳Logo和相關圖片
+   - 上傳餐廳Logo和相關圖片（使用Midjourney生成的logo）
 
 2. **SEO優化設定**
    - 為每間餐廳設定SEO標題和描述
@@ -157,16 +162,15 @@
    - 發布到WordPress平台
    - 分享到FB粉絲專頁
 
-
 ## 📋 明天工作清單
 
-### 🔴 優先級 1：建立12家虛擬餐廳資料 ⭐ 明天重點
+### 🔴 優先級 1：完成12家虛擬餐廳資料上傳 ⭐ 明天重點
 
 **第一階段：餐廳資料匯入（上午 9:00-12:00）**
 - [ ] 使用12家虛擬餐廳資料檔案
 - [ ] 透過WordPress後台手動建立餐廳文章
 - [ ] 設定完整的餐廳資訊和ACF欄位
-- [ ] 上傳餐廳Logo和相關圖片
+- [ ] 上傳餐廳Logo和相關圖片（使用Midjourney生成的logo）
 
 **第二階段：SEO優化設定（下午 14:00-17:00）**
 - [ ] 為每間餐廳設定SEO標題和描述
@@ -211,11 +215,12 @@
 
 ## 🎯 建議的實作順序
 
-### 明天重點：建立12家虛擬餐廳資料
+### 明天重點：完成平台內容建立
 1. **餐廳資料匯入**
    - 使用12家虛擬餐廳資料檔案
    - 透過WordPress後台建立餐廳文章
    - 設定完整的ACF欄位
+   - 上傳Midjourney生成的logo
 
 2. **SEO優化設定**
    - 為每間餐廳設定SEO標題和描述
@@ -245,12 +250,13 @@
 
 ## 🎯 成功標準
 
-### 建立12家虛擬餐廳資料 ⭐ 明天重點
+### 完成12家虛擬餐廳資料上傳 ⭐ 明天重點
 - [ ] 成功建立12家虛擬餐廳到WordPress平台
 - [ ] 每間餐廳設定完整的ACF欄位和資訊
 - [ ] 為每間餐廳設定SEO優化
 - [ ] 前台顯示功能正常運作
 - [ ] 餐廳搜尋和篩選功能正常
+- [ ] 上傳Midjourney生成的餐廳logo
 
 ### 發出第一批邀約訊息 ⭐ 明天重點
 - [ ] 準備多種版本的邀約訊息模板
@@ -270,29 +276,19 @@
 
 ### 今日解決的關鍵技術點
 
-**FB粉絲專頁建立：**
-1. **專業形象建立**：建立「BYOB 自帶酒水餐廳平台」粉絲專頁
-2. **內容策略**：發布多篇有價值的內容建立專業形象
-3. **社群媒體基礎**：建立專業的社群媒體形象和可信度
-
-**12家虛擬餐廳資料建立：**
-1. **創意命名策略**：使用有吸引力的餐廳名稱，避免無趣的店名
-2. **完整資料結構**：包含餐廳名稱、類型、地址、網站、社群媒體
-3. **類型多樣化**：涵蓋火鍋、義式、燒烤、牛排、熱炒等各種類型
-4. **資料標準化**：建立統一的資料格式和結構
-
-**官網用戶體驗優化：**
-1. **狀態說明section**：添加平台狀態說明，避免用戶搜尋無結果
-2. **Flatsome內建功能**：使用Padding調整section高度，避免CSS修改
-3. **用戶體驗改善**：建立專業的平台形象和期待感
+**「其他BYOB規定或備註」欄位同步修復：**
+1. **問題識別**：後台編輯使用 `restaurant_description` 儲存到 `post_content`，前台顯示使用 `notes` ACF欄位
+2. **解決方案**：修改後台編輯頁面使用 `notes` ACF欄位，修改表單提交處理邏輯
+3. **技術實作**：更新 `restaurant-profile.php` 和 `restaurant-member-functions.php`
+4. **資料一致性**：確保後台編輯和前台顯示使用相同的資料來源
 
 ### 明天工作技術要點
 
-**建立12家虛擬餐廳資料：**
+**完成12家虛擬餐廳資料上傳：**
 1. **WordPress後台操作**：手動建立餐廳文章和ACF欄位
 2. **SEO優化設定**：為每間餐廳設定Focus Keyword和相關關鍵字
 3. **前台功能測試**：驗證餐廳列表、單一餐廳頁面、搜尋篩選功能
-4. **圖片上傳**：上傳餐廳Logo和相關圖片
+4. **圖片上傳**：上傳Midjourney生成的餐廳Logo和相關圖片
 5. **分類標籤**：設定餐廳分類和標籤系統
 
 **發出第一批邀約訊息：**
@@ -310,8 +306,8 @@
 5. **社群分享**：發布到WordPress平台並分享到FB粉絲專頁
 
 ### 系統架構演進
-- **前端**：WordPress 主題 + WooCommerce My Account + SEO 監控 + 內容行銷 + 社群媒體 + 爬蟲程式 + FB邀約系統 + 虛擬餐廳資料
-- **後端**：WordPress + ACF + Rank Math SEO + Google Analytics + Search Console + 內容管理 + 自動化資料收集 + Email發送系統
+- **前端**：WordPress 主題 + WooCommerce My Account + SEO 監控 + 內容行銷 + 社群媒體 + 爬蟲程式 + FB邀約系統 + 虛擬餐廳資料 + 備註欄位同步修復
+- **後端**：WordPress + ACF + Rank Math SEO + Google Analytics + Search Console + 內容管理 + 自動化資料收集 + Email發送系統 + 資料同步修復
 - **資料來源**：Google 表單 + Apps Script + REST API + 用戶直接註冊 + SEO 分析 + 內容行銷 + 社群媒體 + Google Maps 爬蟲 + FB專頁 + Email收集 + 虛擬餐廳資料
 - **資料儲存**：WordPress 文章 + ACF 自訂欄位 + SEO 設定 + Analytics 數據 + 內容資料庫 + 社群媒體數據 + Excel 檔案 + 聯絡記錄 + 虛擬餐廳資料庫
 
@@ -328,6 +324,7 @@
 - **Email邀約系統** - 批量Email發送和追蹤
 - **虛擬餐廳資料** - 12家創意命名的餐廳範例
 - **用戶體驗優化** - 平台狀態說明和期待感建立
+- **資料同步修復** - 後台編輯和前台顯示一致性
 
 ### 資料流程優化
 1. **餐廳資料編輯** → SEO 設定 → 搜尋引擎優化 → 流量提升
@@ -341,16 +338,17 @@
 9. **Email邀約** → 批量發送 → 回應追蹤 → 轉換率提升
 10. **虛擬餐廳** → 平台內容建立 → 用戶體驗改善 → 平台可信度提升
 11. **狀態說明** → 用戶期待管理 → 避免失望 → 平台形象建立
+12. **資料同步** → 後台編輯 → 前台顯示 → 一致性確保
 
 ---
 
-*明天重點：建立12家虛擬餐廳資料、發出第一批邀約訊息、撰寫「如何當一個好的BYOB客人」文章，建立平台內容基礎並開始餐廳邀約策略*
+*明天重點：完成12家虛擬餐廳資料上傳、發出第一批邀約訊息、撰寫「如何當一個好的BYOB客人」文章，建立平台內容基礎並開始餐廳邀約策略*
 
 ## 🔍 參考文檔
 
 - `wordpress/functions.php`：核心功能函數，已整合餐廳直接加入功能、密碼驗證、Email 檢查
-- `wordpress/restaurant-member-functions.php`：餐廳會員系統功能，已整合地址驗證、餐廳完整性檢查
-- `wordpress/woocommerce/myaccount/restaurant-profile.php`：餐廳資料編輯頁面，已整合地址驗證、必填欄位標示
+- `wordpress/restaurant-member-functions.php`：餐廳會員系統功能，已整合地址驗證、餐廳完整性檢查、備註欄位同步修復
+- `wordpress/woocommerce/myaccount/restaurant-profile.php`：餐廳資料編輯頁面，已整合地址驗證、必填欄位標示、備註欄位同步修復
 - `wordpress/archive-restaurant.php`：餐廳列表頁面，已修改空欄位顯示邏輯
 - `wordpress/single_restaurant.php`：單一餐廳頁面，已修改空欄位顯示邏輯
 - `restaurant_crawler/restaurant_crawler.py`：Google Places API 爬蟲程式
