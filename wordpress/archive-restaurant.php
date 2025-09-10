@@ -21,12 +21,98 @@
   margin: 2rem auto;
   padding: 1rem 2rem;
 }
+
+/* 分頁導航樣式 */
+.restaurant-pagination {
+  text-align: center;
+  margin: 40px 0;
+  padding: 20px 0;
+}
+
+.restaurant-pagination .page-numbers {
+  display: inline-block;
+  padding: 8px 12px;
+  margin: 0 4px;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  text-decoration: none;
+  color: #495057;
+  transition: all 0.3s ease;
+}
+
+.restaurant-pagination .page-numbers:hover {
+  background: #8b2635;
+  color: white;
+  border-color: #8b2635;
+}
+
+.restaurant-pagination .page-numbers.current {
+  background: #8b2635;
+  color: white;
+  border-color: #8b2635;
+}
+
+.restaurant-pagination .page-numbers.prev,
+.restaurant-pagination .page-numbers.next {
+  font-weight: bold;
+}
+
+/* 懶載入動畫 */
+.restaurant-card {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.6s ease;
+}
+
+.restaurant-card.loaded {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 圖片懶載入樣式 */
+.restaurant-image {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.restaurant-image.loaded {
+  opacity: 1;
+}
+
+/* 餐廳照片容器樣式 */
+.restaurant-photo {
+  width: 100%;
+  max-width: 300px;
+  height: 200px;
+  overflow: hidden;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8f9fa;
+}
+
+/* 載入中狀態 */
+.loading-placeholder {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+@keyframes loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
 </style>
 <div class="page-header">
   <h1 class="page-title">所有餐廳列表</h1>
 </div>
 
-<!-- 篩選條件記憶功能 -->
+<!-- 篩選條件記憶功能 + 懶載入優化 -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   // 篩選條件記憶功能
@@ -74,6 +160,45 @@ document.addEventListener('DOMContentLoaded', function() {
     // 這裡未來會與您購買的篩選外掛整合
   }
   
+  // 懶載入功能
+  function initLazyLoading() {
+    const restaurantCards = document.querySelectorAll('.restaurant-card');
+    const imageObserver = new IntersectionObserver((entries, observer) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const card = entry.target;
+          const img = card.querySelector('.restaurant-image');
+          
+          // 卡片動畫
+          setTimeout(() => {
+            card.classList.add('loaded');
+          }, 100);
+          
+          // 圖片懶載入
+          if (img && img.dataset.src) {
+            img.src = img.dataset.src;
+            img.onload = () => {
+              img.classList.add('loaded');
+            };
+            img.removeAttribute('data-src');
+          }
+          
+          observer.unobserve(card);
+        }
+      });
+    }, {
+      threshold: 0.1,
+      rootMargin: '50px'
+    });
+    
+    restaurantCards.forEach(card => {
+      imageObserver.observe(card);
+    });
+  }
+  
+  // 初始化懶載入
+  initLazyLoading();
+  
   // 將函數暴露到全域，供未來的外掛整合使用
   window.RestaurantFilterMemory = {
     saveFilters: saveFilters,
@@ -115,9 +240,9 @@ document.addEventListener('DOMContentLoaded', function() {
         $logo_url = wp_get_attachment_url($logo_id);
         if ($logo_url): ?>
           <div class="restaurant-photo">
-            <img src="<?php echo esc_url($logo_url); ?>" 
+            <img data-src="<?php echo esc_url($logo_url); ?>" 
                  alt="<?php echo esc_attr(get_the_title()); ?> LOGO"
-                 class="restaurant-image"
+                 class="restaurant-image loading-placeholder"
                  style="object-fit: contain; max-width: 100%; height: auto;">
           </div>
         <?php endif;
@@ -322,4 +447,17 @@ document.addEventListener('DOMContentLoaded', function() {
     <p>目前沒有餐廳資料。</p>
   <?php endif; ?>
 </div>
+
+<!-- 分頁導航 -->
+<?php
+// WordPress 預設分頁導航
+the_posts_pagination(array(
+    'prev_text' => '← 上一頁',
+    'next_text' => '下一頁 →',
+    'mid_size' => 2,
+    'before_page_number' => '<span class="meta-nav screen-reader-text">第 </span>',
+    'after_page_number' => '<span class="meta-nav screen-reader-text"> 頁</span>',
+));
+?>
+
 <?php get_footer(); ?>
