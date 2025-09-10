@@ -564,6 +564,16 @@ function byob_init_membership_systems() {
 // 在 WordPress 初始化時載入會員系統
 add_action('init', 'byob_init_membership_systems');
 
+// 設定餐廳列表頁每頁顯示30家餐廳
+function byob_custom_restaurant_posts_per_page($query) {
+    if (!is_admin() && $query->is_main_query()) {
+        if (is_post_type_archive('restaurant')) {
+            $query->set('posts_per_page', 30);
+        }
+    }
+}
+add_action('pre_get_posts', 'byob_custom_restaurant_posts_per_page');
+
 // 確保選單在正確時機註冊
 add_action('admin_menu', function() {
     // 使用與初始化相同的邏輯尋找檔案
