@@ -1,0 +1,169 @@
+2025-09-10 18:57:13,134 - INFO - 正在讀取Excel檔案: restaurant_data_台北_麻辣鍋_20250910_135138_台北_麻辣鍋_20250910_135238.xlsx
+2025-09-10 18:57:14,366 - INFO - 限制執行家數: 10/50
+2025-09-10 18:57:14,367 - INFO - 總共需要處理 10 家餐廳
+2025-09-10 18:57:14,369 - INFO - 正在處理 (1/50): 詹記麻辣火鍋 敦南店
+2025-09-10 18:57:14,370 - INFO - 正在搜尋Facebook專頁: https://www.facebook.com/%E8%A9%B9%E8%A8%98%E9%BA%BB%E8%BE%A3%E7%81%AB%E9%8D%8B-%E6%95%A6%E5%8D%97%E5%BA%97-366973803387000/?ref=settings
+2025-09-10 18:57:23,238 - WARNING - Facebook搜尋方法失敗: Message: element click intercepted: Element <a aria-hidden="false" aria-selected="false" class="x1i10hfl x3ct3a4 xggy1nq x1fmog5m xu25z0z x140muxe xo1y3bh x87ps6o x1lku1pv x1a2a7pz xjyslct xjbqb8w x18o3ruo x13fuv20 x18b5jzi x1q0q8m5 x1t7ytsu x972fbf x10w94by x1qhh985 x14e42zd x9f619 x1heor9g x1ypdohk xdj266r x14z9mp xat24cr x1lziwak xexx8yu xyri2b x18d9i69 x1c1uobl x1n2onr6 x16tdsg8 x1hl2dhg x1vjfegm x3nfvp2 x1kmio9f x1itg65n x16dsc37" href="https://www.facebook.com/ChanChiHotPots/about" role="tab" tabindex="0">...</a> is not clickable at point (598, 552). Other element would receive the click: <div class="__fb-light-mode x1qjc9v5 x9f619 x78zum5 xdt5ytf xl56j7k x1c4vz4f xg6iff7">...</div>
+  (Session info: chrome=139.0.7258.155)
+Stacktrace:
+	GetHandleVerifier [0x0x7ff7ccde3d85+79397]
+	GetHandleVerifier [0x0x7ff7ccde3de0+79488]
+	(No symbol) [0x0x7ff7ccb8c0fa]
+	(No symbol) [0x0x7ff7ccbeafd9]
+	(No symbol) [0x0x7ff7ccbe8972]
+	(No symbol) [0x0x7ff7ccbe59c1]
+	(No symbol) [0x0x7ff7ccbe48b1]
+	(No symbol) [0x0x7ff7ccbd60e8]
+	(No symbol) [0x0x7ff7ccc0b19a]
+	(No symbol) [0x0x7ff7ccbd5996]
+	(No symbol) [0x0x7ff7ccc0b3b0]
+	(No symbol) [0x0x7ff7ccc33344]
+	(No symbol) [0x0x7ff7ccc0af73]
+	(No symbol) [0x0x7ff7ccbd41b1]
+	(No symbol) [0x0x7ff7ccbd4f43]
+	GetHandleVerifier [0x0x7ff7cd0ae1ed+3005069]
+	GetHandleVerifier [0x0x7ff7cd0a831d+2980797]
+	GetHandleVerifier [0x0x7ff7cd0c7e0d+3110573]
+	GetHandleVerifier [0x0x7ff7ccdfd6de+184190]
+	GetHandleVerifier [0x0x7ff7cce0516f+215567]
+	GetHandleVerifier [0x0x7ff7ccdec974+115220]
+	GetHandleVerifier [0x0x7ff7ccdecb29+115657]
+	GetHandleVerifier [0x0x7ff7ccdd3268+11016]
+	BaseThreadInitThunk [0x0x7ff9bbd57374+20]
+	RtlUserThreadStart [0x0x7ff9bdafcc91+33]
+
+2025-09-10 18:57:23,862 - INFO - 未找到email
+2025-09-10 18:57:28,380 - INFO - 正在處理 (2/50): 詹記麻辣火鍋-西門大世界
+2025-09-10 18:57:28,381 - INFO - 正在搜尋網站: https://inline.app/booking/-KO9-zyZTRpTH7LNAe99/-NvFDHdbyHM7P2vbgoDP?language=zh-tw
+2025-09-10 18:57:28,481 - WARNING - 網站搜尋失敗 https://inline.app/booking/-KO9-zyZTRpTH7LNAe99/-NvFDHdbyHM7P2vbgoDP?language=zh-tw: 403 Client Error: Forbidden for url: https://inline.app/booking/-KO9-zyZTRpTH7LNAe99/-NvFDHdbyHM7P2vbgoDP?language=zh-tw
+2025-09-10 18:57:28,481 - INFO - 正在搜尋網站: https://inline.app/contact
+2025-09-10 18:57:28,543 - WARNING - 網站搜尋失敗 https://inline.app/contact: 403 Client Error: Forbidden for url: https://inline.app/contact
+2025-09-10 18:57:28,544 - INFO - 正在搜尋網站: https://inline.app/contact-us
+2025-09-10 18:57:28,588 - WARNING - 網站搜尋失敗 https://inline.app/contact-us: 403 Client Error: Forbidden for url: https://inline.app/contact-us
+2025-09-10 18:57:28,589 - INFO - 正在搜尋網站: https://inline.app/聯絡我們
+2025-09-10 18:57:28,641 - WARNING - 網站搜尋失敗 https://inline.app/聯絡我們: 403 Client Error: Forbidden for url: https://inline.app/%E8%81%AF%E7%B5%A1%E6%88%91%E5%80%91
+2025-09-10 18:57:28,641 - INFO - 正在搜尋網站: https://inline.app/about
+2025-09-10 18:57:28,689 - WARNING - 網站搜尋失敗 https://inline.app/about: 403 Client Error: Forbidden for url: https://inline.app/about
+2025-09-10 18:57:28,690 - INFO - 正在搜尋網站: https://inline.app/about-us
+2025-09-10 18:57:28,738 - WARNING - 網站搜尋失敗 https://inline.app/about-us: 403 Client Error: Forbidden for url: https://inline.app/about-us
+2025-09-10 18:57:28,739 - INFO - 正在搜尋網站: https://inline.app/關於我們
+2025-09-10 18:57:28,806 - WARNING - 網站搜尋失敗 https://inline.app/關於我們: 403 Client Error: Forbidden for url: https://inline.app/%E9%97%9C%E6%96%BC%E6%88%91%E5%80%91
+2025-09-10 18:57:28,808 - INFO - 未找到email
+2025-09-10 18:57:33,363 - INFO - 正在處理 (3/50): 皇家帝國麻辣火鍋
+2025-09-10 18:57:33,364 - INFO - 正在搜尋Facebook專頁: http://www.facebook.com/kingfood58/
+2025-09-10 18:57:40,735 - WARNING - Facebook搜尋方法失敗: Message: element click intercepted: Element <a aria-hidden="false" aria-selected="false" class="x1i10hfl x3ct3a4 xggy1nq x1fmog5m xu25z0z x140muxe xo1y3bh x87ps6o x1lku1pv x1a2a7pz xjyslct xjbqb8w x18o3ruo x13fuv20 x18b5jzi x1q0q8m5 x1t7ytsu x972fbf x10w94by x1qhh985 x14e42zd x9f619 x1heor9g x1ypdohk xdj266r x14z9mp xat24cr x1lziwak xexx8yu xyri2b x18d9i69 x1c1uobl x1n2onr6 x16tdsg8 x1hl2dhg x1vjfegm x3nfvp2 x1kmio9f x1itg65n x16dsc37" href="https://www.facebook.com/kingfood58/about" role="tab" tabindex="0">...</a> is not clickable at point (598, 552). Other element would receive the click: <div class="__fb-light-mode x1qjc9v5 x9f619 x78zum5 xdt5ytf xl56j7k x1c4vz4f xg6iff7">...</div>
+  (Session info: chrome=139.0.7258.155)
+Stacktrace:
+	GetHandleVerifier [0x0x7ff7ccde3d85+79397]
+	GetHandleVerifier [0x0x7ff7ccde3de0+79488]
+	(No symbol) [0x0x7ff7ccb8c0fa]
+	(No symbol) [0x0x7ff7ccbeafd9]
+	(No symbol) [0x0x7ff7ccbe8972]
+	(No symbol) [0x0x7ff7ccbe59c1]
+	(No symbol) [0x0x7ff7ccbe48b1]
+	(No symbol) [0x0x7ff7ccbd60e8]
+	(No symbol) [0x0x7ff7ccc0b19a]
+	(No symbol) [0x0x7ff7ccbd5996]
+	(No symbol) [0x0x7ff7ccc0b3b0]
+	(No symbol) [0x0x7ff7ccc33344]
+	(No symbol) [0x0x7ff7ccc0af73]
+	(No symbol) [0x0x7ff7ccbd41b1]
+	(No symbol) [0x0x7ff7ccbd4f43]
+	GetHandleVerifier [0x0x7ff7cd0ae1ed+3005069]
+	GetHandleVerifier [0x0x7ff7cd0a831d+2980797]
+	GetHandleVerifier [0x0x7ff7cd0c7e0d+3110573]
+	GetHandleVerifier [0x0x7ff7ccdfd6de+184190]
+	GetHandleVerifier [0x0x7ff7cce0516f+215567]
+	GetHandleVerifier [0x0x7ff7ccdec974+115220]
+	GetHandleVerifier [0x0x7ff7ccdecb29+115657]
+	GetHandleVerifier [0x0x7ff7ccdd3268+11016]
+	BaseThreadInitThunk [0x0x7ff9bbd57374+20]
+	RtlUserThreadStart [0x0x7ff9bdafcc91+33]
+
+2025-09-10 18:57:41,126 - INFO - 找到email: kingfood0929@gmail.com
+2025-09-10 18:57:44,882 - INFO - 正在處理 (4/50): 隱鍋 台北林森北路店
+2025-09-10 18:57:44,883 - INFO - 正在搜尋網站: https://yinhotpot.com/?utm_source=google&utm_medium=yinhotpot03
+2025-09-10 18:57:50,379 - INFO - 正在搜尋網站: https://yinhotpot.com/contact
+2025-09-10 18:57:54,355 - INFO - 正在搜尋網站: https://yinhotpot.com/contact-us
+2025-09-10 18:57:58,214 - INFO - 正在搜尋網站: https://yinhotpot.com/聯絡我們
+2025-09-10 18:58:02,986 - INFO - 正在搜尋網站: https://yinhotpot.com/about
+2025-09-10 18:58:08,226 - INFO - 正在搜尋網站: https://yinhotpot.com/about-us
+2025-09-10 18:58:14,158 - INFO - 正在搜尋網站: https://yinhotpot.com/關於我們
+2025-09-10 18:58:18,614 - INFO - 未找到email
+2025-09-10 18:58:23,237 - INFO - 正在處理 (5/50): 手工殿麻辣鍋物 信義店-信義人氣鍋物|熱門鍋物|特色鍋物|麻辣鍋推薦|必吃火鍋|麻辣火鍋|在地推薦火鍋|人氣麻辣鍋
+2025-09-10 18:58:23,247 - INFO - 正在搜尋網站: https://shougongdian.com.tw/
+2025-09-10 18:58:27,789 - INFO - 正在搜尋網站: https://shougongdian.com.tw/contact
+2025-09-10 18:58:34,702 - INFO - 正在搜尋網站: https://shougongdian.com.tw/contact-us
+2025-09-10 18:58:35,952 - WARNING - 網站搜尋失敗 https://shougongdian.com.tw/contact-us: 404 Client Error: Not Found for url: https://shougongdian.com.tw/contact-us
+2025-09-10 18:58:35,952 - INFO - 正在搜尋網站: https://shougongdian.com.tw/聯絡我們
+2025-09-10 18:58:36,844 - WARNING - 網站搜尋失敗 https://shougongdian.com.tw/聯絡我們: 404 Client Error: Not Found for url: https://shougongdian.com.tw/%E8%81%AF%E7%B5%A1%E6%88%91%E5%80%91
+2025-09-10 18:58:36,845 - INFO - 正在搜尋網站: https://shougongdian.com.tw/about
+2025-09-10 18:58:37,661 - WARNING - 網站搜尋失敗 https://shougongdian.com.tw/about: 404 Client Error: Not Found for url: https://shougongdian.com.tw/about
+2025-09-10 18:58:37,661 - INFO - 正在搜尋網站: https://shougongdian.com.tw/about-us
+2025-09-10 18:58:38,490 - WARNING - 網站搜尋失敗 https://shougongdian.com.tw/about-us: 404 Client Error: Not Found for url: https://shougongdian.com.tw/about-us
+2025-09-10 18:58:38,491 - INFO - 正在搜尋網站: https://shougongdian.com.tw/關於我們
+2025-09-10 18:58:39,373 - WARNING - 網站搜尋失敗 https://shougongdian.com.tw/關於我們: 404 Client Error: Not Found for url: https://shougongdian.com.tw/%E9%97%9C%E6%96%BC%E6%88%91%E5%80%91
+2025-09-10 18:58:39,376 - INFO - 未找到email
+2025-09-10 18:58:44,109 - INFO - 正在處理 (6/50): 問鼎 ‧ 皇上吉祥 麻辣養生鍋-忠孝店
+2025-09-10 18:58:44,111 - INFO - 未找到email
+2025-09-10 18:58:47,334 - INFO - 正在處理 (7/50): 青花驕麻辣鍋 台北中山北店
+2025-09-10 18:58:47,335 - INFO - 正在搜尋網站: https://www.chinhuajiao.com/
+2025-09-10 18:58:52,418 - INFO - 正在搜尋網站: https://www.chinhuajiao.com/contact
+2025-09-10 18:58:58,444 - INFO - 正在搜尋網站: https://www.chinhuajiao.com/contact-us
+2025-09-10 18:59:02,745 - INFO - 正在搜尋網站: https://www.chinhuajiao.com/聯絡我們
+2025-09-10 18:59:07,412 - INFO - 正在搜尋網站: https://www.chinhuajiao.com/about
+2025-09-10 18:59:12,582 - INFO - 正在搜尋網站: https://www.chinhuajiao.com/about-us
+2025-09-10 18:59:18,200 - INFO - 正在搜尋網站: https://www.chinhuajiao.com/關於我們
+2025-09-10 18:59:22,422 - INFO - 未找到email
+2025-09-10 18:59:27,337 - INFO - 正在處理 (8/50): 紅九九個人麻辣鴛鴦鍋
+2025-09-10 18:59:27,338 - INFO - 正在搜尋網站: https://www.hongjojo99.com.tw/
+2025-09-10 18:59:27,666 - WARNING - 網站搜尋失敗 https://www.hongjojo99.com.tw/: 403 Client Error: Forbidden for url: https://www.hongjojo99.com.tw/
+2025-09-10 18:59:27,667 - INFO - 正在搜尋網站: https://www.hongjojo99.com.tw/contact
+2025-09-10 18:59:27,812 - WARNING - 網站搜尋失敗 https://www.hongjojo99.com.tw/contact: 403 Client Error: Forbidden for url: https://www.hongjojo99.com.tw/contact
+2025-09-10 18:59:27,812 - INFO - 正在搜尋網站: https://www.hongjojo99.com.tw/contact-us
+2025-09-10 18:59:27,885 - WARNING - 網站搜尋失敗 https://www.hongjojo99.com.tw/contact-us: 403 Client Error: Forbidden for url: https://www.hongjojo99.com.tw/contact-us
+2025-09-10 18:59:27,886 - INFO - 正在搜尋網站: https://www.hongjojo99.com.tw/聯絡我們
+2025-09-10 18:59:27,970 - WARNING - 網站搜尋失敗 https://www.hongjojo99.com.tw/聯絡我們: 403 Client Error: Forbidden for url: https://www.hongjojo99.com.tw/%E8%81%AF%E7%B5%A1%E6%88%91%E5%80%91
+2025-09-10 18:59:27,971 - INFO - 正在搜尋網站: https://www.hongjojo99.com.tw/about
+2025-09-10 18:59:28,063 - WARNING - 網站搜尋失敗 https://www.hongjojo99.com.tw/about: 403 Client Error: Forbidden for url: https://www.hongjojo99.com.tw/about
+2025-09-10 18:59:28,064 - INFO - 正在搜尋網站: https://www.hongjojo99.com.tw/about-us
+2025-09-10 18:59:28,266 - WARNING - 網站搜尋失敗 https://www.hongjojo99.com.tw/about-us: 403 Client Error: Forbidden for url: https://www.hongjojo99.com.tw/about-us
+2025-09-10 18:59:28,266 - INFO - 正在搜尋網站: https://www.hongjojo99.com.tw/關於我們
+2025-09-10 18:59:28,323 - WARNING - 網站搜尋失敗 https://www.hongjojo99.com.tw/關於我們: 403 Client Error: Forbidden for url: https://www.hongjojo99.com.tw/%E9%97%9C%E6%96%BC%E6%88%91%E5%80%91
+2025-09-10 18:59:28,324 - INFO - 未找到email
+2025-09-10 18:59:32,584 - INFO - 正在處理 (9/50): 滿大人頂級麻辣鴛鴦鍋-吃到飽
+2025-09-10 18:59:32,586 - INFO - 未找到email
+2025-09-10 18:59:37,964 - INFO - 正在處理 (10/50): 問鼎 ‧ 皇上吉祥 麻辣養生鍋-西門店
+2025-09-10 18:59:37,965 - INFO - 正在搜尋Facebook專頁: https://www.facebook.com/wentinghotpot
+2025-09-10 18:59:45,871 - WARNING - Facebook搜尋方法失敗: Message: element click intercepted: Element <a aria-hidden="false" aria-selected="false" class="x1i10hfl x3ct3a4 xggy1nq x1fmog5m xu25z0z x140muxe xo1y3bh x87ps6o x1lku1pv x1a2a7pz xjyslct xjbqb8w x18o3ruo x13fuv20 x18b5jzi x1q0q8m5 x1t7ytsu x972fbf x10w94by x1qhh985 x14e42zd x9f619 x1heor9g x1ypdohk xdj266r x14z9mp xat24cr x1lziwak xexx8yu xyri2b x18d9i69 x1c1uobl x1n2onr6 x16tdsg8 x1hl2dhg x1vjfegm x3nfvp2 x1kmio9f x1itg65n x16dsc37" href="https://www.facebook.com/wentinghotpot/about" role="tab" tabindex="0">...</a> is not clickable at point (598, 552). Other element would receive the click: <div class="__fb-light-mode x1qjc9v5 x9f619 x78zum5 xdt5ytf xl56j7k x1c4vz4f xg6iff7">...</div>
+  (Session info: chrome=139.0.7258.155)
+Stacktrace:
+	GetHandleVerifier [0x0x7ff7ccde3d85+79397]
+	GetHandleVerifier [0x0x7ff7ccde3de0+79488]
+	(No symbol) [0x0x7ff7ccb8c0fa]
+	(No symbol) [0x0x7ff7ccbeafd9]
+	(No symbol) [0x0x7ff7ccbe8972]
+	(No symbol) [0x0x7ff7ccbe59c1]
+	(No symbol) [0x0x7ff7ccbe48b1]
+	(No symbol) [0x0x7ff7ccbd60e8]
+	(No symbol) [0x0x7ff7ccc0b19a]
+	(No symbol) [0x0x7ff7ccbd5996]
+	(No symbol) [0x0x7ff7ccc0b3b0]
+	(No symbol) [0x0x7ff7ccc33344]
+	(No symbol) [0x0x7ff7ccc0af73]
+	(No symbol) [0x0x7ff7ccbd41b1]
+	(No symbol) [0x0x7ff7ccbd4f43]
+	GetHandleVerifier [0x0x7ff7cd0ae1ed+3005069]
+	GetHandleVerifier [0x0x7ff7cd0a831d+2980797]
+	GetHandleVerifier [0x0x7ff7cd0c7e0d+3110573]
+	GetHandleVerifier [0x0x7ff7ccdfd6de+184190]
+	GetHandleVerifier [0x0x7ff7cce0516f+215567]
+	GetHandleVerifier [0x0x7ff7ccdec974+115220]
+	GetHandleVerifier [0x0x7ff7ccdecb29+115657]
+	GetHandleVerifier [0x0x7ff7ccdd3268+11016]
+	BaseThreadInitThunk [0x0x7ff9bbd57374+20]
+	RtlUserThreadStart [0x0x7ff9bdafcc91+33]
+
+2025-09-10 18:59:46,404 - INFO - 未找到email
+2025-09-10 18:59:50,268 - INFO - 結果已儲存至: restaurant_data_台北_麻辣鍋_20250910_135138_台北_麻辣鍋_20250910_135238_with_emails_limit10.xlsx
+2025-09-10 18:59:50,318 - INFO - 搜尋完成！找到 1/10 家餐廳的email
